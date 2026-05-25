@@ -3353,6 +3353,8 @@ function isRanged(fn) {
       typeof renderMonthlyChart === 'function' ? renderMonthlyChart : null,
       typeof renderEfficiencyChart === 'function' ? renderEfficiencyChart : null,
       typeof renderHero === 'function' ? renderHero : null,
+      typeof renderAscentDescent === 'function' ? renderAscentDescent : null,
+      typeof renderElevGallery === 'function' ? renderElevGallery : null,
     ].filter(Boolean));
   }
   return window._RANGED_RENDERS.has(fn);
@@ -3490,8 +3492,12 @@ window.addEventListener('DOMContentLoaded', () => {
     ],
     rides: [
       [renderHero],
-      [renderEnergyComposition], [renderElevGallery],
+      [renderEnergyComposition], [renderElevGallery], [renderAscentDescent],
       [renderRidesTable], [bindRidesTable], [renderAnnotation],
+    ],
+    explorer: [
+      [renderHero],
+      [renderRideExplorer],
     ],
     all: null,  // run everything (single-page archive)
   };
@@ -3560,6 +3566,7 @@ function buildTopNav() {
     { key: 'body',     href: 'body.html',     cn: '身体',   en: 'Body' },
     { key: 'training', href: 'training.html', cn: '训练',   en: 'Training' },
     { key: 'rides',    href: 'rides.html',    cn: '骑行',   en: 'Rides' },
+    { key: 'explorer', href: 'explorer.html', cn: '逐次',   en: 'Explorer' },
     { key: 'all',      href: 'cycling-analysis.html', cn: '全景', en: 'All' },
   ];
   const cur = (document.body.dataset.page || '').toLowerCase();
@@ -3567,5 +3574,339 @@ function buildTopNav() {
     const active = p.key === cur ? ' top-nav-link--active' : '';
     return `<a class="top-nav-link${active}" href="${p.href}"><span class="top-nav-cn">${p.cn}</span><span class="top-nav-en">${p.en}</span></a>`;
   }).join('');
+}
+
+// ============ 逐次探索 / Ride Explorer ============
+// Interactive single-ride drill-down. Picks one workout, draws its full
+// elevation profile with a hover-scrubbable cursor, a route mini-map, and
+// a stats grid. Selection persists in localStorage so navigating away
+// and back keeps you on the same ride.
+function renderRideExplorer() {
+  const H = window.HEALTH_DATA;
+  if (!H || !H.workouts) return;
+  const root = document.getElementById('rideExplorer');
+  if (!root) return;
+
+  // Eligible rides have at least a date and either a track or elev_series
+  const rides = [...H.workouts]
+    .filter(w => w.date && ((w.track || []).length > 1 || (w.elev_series || []).length > 1))
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  if (!rides.length) {
+    root.innerHTML = '<div class="empty-range">这个时间段没有可探索的骑行</div>';
+    return;
+  }
+
+  let picked = null;
+  try { picked = localStorage.getItem('cyclingExplorerRide'); } catch (_) {}
+  let current = rides.find(r => r.id === picked) || rides[0];
+
+  root.innerHTML = `
+    <div class="explorer-bar">
+      <div class="explorer-picker-wrap">
+        <label class="explorer-picker-label">挑一次骑行 · Pick a ride</label>
+        <select class="explorer-picker" id="explorerPicker">
+          ${rides.map(r => `<option value="${r.id}">${r.date} · ${(r.distance_km||0).toFixed(1)} km · ${Math.round(r.elev_gain_m||0)} m↑</option>`).join('')}
+        </select>
+      </div>
+      <div class="explorer-nav">
+        <button class="explorer-nav-btn" id="explorerPrev" title="上一次 / Previous">‹</button>
+        <span class="explorer-counter" id="explorerCounter">—</span>
+        <button class="explorer-nav-btn" id="explorerNext" title="下一次 / Next">›</button>
+      </div>
+    </div>
+    <div class="explorer-body">
+      <div class="explorer-detail" id="explorerDetail"></div>
+    </div>
+  `;
+
+  const picker = root.querySelector('#explorerPicker');
+  picker.value = current.id;
+
+  const drawCurrent = () => {
+    try { localStorage.setItem('cyclingExplorerRide', current.id); } catch (_) {}
+    const idx = rides.findIndex(r => r.id === current.id);
+    root.querySelector('#explorerCounter').textContent = `${idx + 1} / ${rides.length}`;
+    root.querySelector('#explorerPrev').disabled = idx >= rides.length - 1;
+    root.querySelector('#explorerNext').disabled = idx <= 0;
+    renderExplorerDetail(current, root.querySelector('#explorerDetail'));
+  };
+
+  picker.addEventListener('change', () => {
+    const r = rides.find(x => x.id === picker.value);
+    if (r) { current = r; drawCurrent(); }
+  });
+  root.querySelector('#explorerPrev').addEventListener('click', () => {
+    const i = rides.findIndex(r => r.id === current.id);
+    if (i < rides.length - 1) { current = rides[i + 1]; picker.value = current.id; drawCurrent(); }
+  });
+  root.querySelector('#explorerNext').addEventListener('click', () => {
+    const i = rides.findIndex(r => r.id === current.id);
+    if (i > 0) { current = rides[i - 1]; picker.value = current.id; drawCurrent(); }
+  });
+
+  drawCurrent();
+}
+
+function renderExplorerDetail(ride, host) {
+  if (!host) return;
+  const es = ride.elev_series || [];
+  const eMin = es.length ? Math.min(...es) : 0;
+  const eMax = es.length ? Math.max(...es) : 0;
+  const eRange = Math.max(1, eMax - eMin);
+
+  const fmtKm = v => (v || 0).toFixed(2);
+  const fmtMin = v => {
+    const m = Math.floor(v || 0), s = Math.round(((v || 0) - m) * 60);
+    return `${m}:${String(s).padStart(2, '0')}`;
+  };
+  const hourLabel = ride.start_iso
+    ? new Date(ride.start_iso).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false })
+    : '—';
+  const weatherStr = (ride.weather_temp_c != null)
+    ? `${ride.weather_temp_c.toFixed(1)}°C · 湿度 ${Math.round((ride.weather_humidity || 0) * 100)}%`
+    : '室内 / 无气象';
+
+  const grossClimb = Math.round(ride.elev_gain_m || 0);
+  const grossDrop = Math.round(ride.elev_loss_m || 0);
+  const net = grossClimb - grossDrop;
+
+  host.innerHTML = `
+    <div class="explorer-headline">
+      <div>
+        <div class="explorer-date">${ride.date}</div>
+        <div class="explorer-when">出发 ${hourLabel} · ${weatherStr}</div>
+      </div>
+      <div class="explorer-headline-num">
+        <span class="explorer-big">${fmtKm(ride.distance_km)}</span><span class="explorer-big-unit">km</span>
+      </div>
+    </div>
+
+    <div class="explorer-stats">
+      <div class="explorer-stat"><div class="es-label">时长</div><div class="es-value">${fmtMin(ride.duration_min)}<small>min</small></div></div>
+      <div class="explorer-stat"><div class="es-label">均速</div><div class="es-value">${ride.avg_speed_kmh ? ride.avg_speed_kmh.toFixed(2) : '—'}<small>km/h</small></div></div>
+      <div class="explorer-stat"><div class="es-label">均心率</div><div class="es-value">${ride.hr_avg ? Math.round(ride.hr_avg) : '—'}<small>bpm</small></div></div>
+      <div class="explorer-stat"><div class="es-label">最高心率</div><div class="es-value">${ride.hr_max ? Math.round(ride.hr_max) : '—'}<small>bpm</small></div></div>
+      <div class="explorer-stat"><div class="es-label">消耗</div><div class="es-value">${ride.active_kcal ? Math.round(ride.active_kcal) : '—'}<small>kcal</small></div></div>
+      <div class="explorer-stat"><div class="es-label">METS</div><div class="es-value">${ride.mets ? ride.mets.toFixed(1) : '—'}</div></div>
+      <div class="explorer-stat"><div class="es-label">爬升</div><div class="es-value">${grossClimb}<small>m ↑</small></div></div>
+      <div class="explorer-stat"><div class="es-label">下降</div><div class="es-value">${grossDrop}<small>m ↓</small></div></div>
+      <div class="explorer-stat"><div class="es-label">净海拔</div><div class="es-value">${net >= 0 ? '+' : ''}${net}<small>m</small></div></div>
+    </div>
+
+    <div class="explorer-twocol">
+      <div class="explorer-elev-wrap">
+        <div class="explorer-sub-title">海拔剖面 · Elevation profile<span class="explorer-sub-foot" id="explorerElevReadout">悬停查看 · hover to scrub</span></div>
+        <svg class="explorer-elev" id="explorerElevSvg" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="explorer-map-wrap">
+        <div class="explorer-sub-title">路线 · Route</div>
+        <div class="explorer-map" id="explorerMap"></div>
+      </div>
+    </div>
+  `;
+
+  const svg = host.querySelector('#explorerElevSvg');
+  const readout = host.querySelector('#explorerElevReadout');
+  drawExplorerElev(svg, ride, eMin, eMax, eRange, readout);
+
+  // Mini map (Leaflet). Re-init each draw — host element changes on rebuild.
+  const mapDiv = host.querySelector('#explorerMap');
+  if (mapDiv && typeof L !== 'undefined') {
+    const track = ride.track || [];
+    if (track.length > 1) {
+      // Leaflet doesn't tolerate re-init on the same node, but each render
+      // replaces the div so the new one is clean.
+      const map = L.map(mapDiv, {
+        zoomControl: true, attributionControl: false,
+        scrollWheelZoom: false, dragging: true,
+      });
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 18, subdomains: 'abcd',
+      }).addTo(map);
+      const poly = L.polyline(track, { color: '#e8b76d', weight: 3, opacity: 0.9 }).addTo(map);
+      L.circleMarker(track[0],            { radius: 5, color: '#6cc4d9', fillColor: '#6cc4d9', fillOpacity: 1, weight: 1 }).addTo(map);
+      L.circleMarker(track[track.length-1], { radius: 5, color: '#d97a8a', fillColor: '#d97a8a', fillOpacity: 1, weight: 1 }).addTo(map);
+      map.fitBounds(poly.getBounds(), { padding: [12, 12] });
+    } else {
+      mapDiv.innerHTML = '<div class="explorer-map-empty">这次没有 GPS 轨迹</div>';
+    }
+  }
+}
+
+function drawExplorerElev(svg, ride, eMin, eMax, eRange, readout) {
+  const es = ride.elev_series || [];
+  if (!svg) return;
+  if (es.length < 2) {
+    svg.innerHTML = '<text x="400" y="110" text-anchor="middle" fill="#5d5b55" font-size="13" font-family="JetBrains Mono">没有海拔细节</text>';
+    return;
+  }
+  const W = 800, H = 220, PAD_L = 38, PAD_R = 12, PAD_T = 16, PAD_B = 28;
+  const plotW = W - PAD_L - PAD_R;
+  const plotH = H - PAD_T - PAD_B;
+  const xStep = plotW / (es.length - 1);
+  const Y = v => PAD_T + (1 - (v - eMin) / eRange) * plotH;
+  const X = i => PAD_L + i * xStep;
+
+  let line = '', area = `M ${X(0)} ${PAD_T + plotH} `;
+  es.forEach((v, i) => {
+    const x = X(i), y = Y(v);
+    line += `${i === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)} `;
+    area += `L ${x.toFixed(2)} ${y.toFixed(2)} `;
+  });
+  area += `L ${X(es.length - 1)} ${PAD_T + plotH} Z`;
+
+  // y-axis tick labels (3 marks)
+  const ticks = [eMin, (eMin + eMax) / 2, eMax];
+  const tickMarks = ticks.map(v => {
+    const y = Y(v).toFixed(1);
+    return `
+      <line x1="${PAD_L}" x2="${W - PAD_R}" y1="${y}" y2="${y}" stroke="rgba(232,183,109,0.06)" stroke-width="1"/>
+      <text x="${PAD_L - 6}" y="${y}" text-anchor="end" dy="3" fill="#5d5b55" font-family="JetBrains Mono" font-size="9">${Math.round(v)}m</text>
+    `;
+  }).join('');
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="explorerElevGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="rgba(232,183,109,0.32)"/>
+        <stop offset="100%" stop-color="rgba(232,183,109,0.02)"/>
+      </linearGradient>
+    </defs>
+    ${tickMarks}
+    <path d="${area}" fill="url(#explorerElevGrad)"/>
+    <path d="${line}" fill="none" stroke="#ffd897" stroke-width="1.6" stroke-linejoin="round"/>
+    <circle cx="${X(0).toFixed(1)}" cy="${Y(es[0]).toFixed(1)}" r="4" fill="#6cc4d9" stroke="#0a0a0c" stroke-width="1"/>
+    <circle cx="${X(es.length-1).toFixed(1)}" cy="${Y(es[es.length-1]).toFixed(1)}" r="4" fill="#d97a8a" stroke="#0a0a0c" stroke-width="1"/>
+    <line class="explorer-scrub-line" id="explorerScrubLine" x1="${PAD_L}" x2="${PAD_L}" y1="${PAD_T}" y2="${PAD_T+plotH}" stroke="rgba(232,183,109,0.55)" stroke-width="1" stroke-dasharray="3,3" style="display:none;"/>
+    <circle class="explorer-scrub-dot" id="explorerScrubDot" r="4.5" fill="#e8b76d" stroke="#0a0a0c" stroke-width="1" style="display:none;"/>
+    <text x="${PAD_L}" y="${H-8}" fill="#5d5b55" font-family="JetBrains Mono" font-size="9">起 ●</text>
+    <text x="${W-PAD_R}" y="${H-8}" text-anchor="end" fill="#5d5b55" font-family="JetBrains Mono" font-size="9">● 终</text>
+    <rect class="explorer-elev-hot" x="${PAD_L}" y="${PAD_T}" width="${plotW}" height="${plotH}" fill="transparent" style="cursor:crosshair;"/>
+  `;
+
+  const scrubLine = svg.querySelector('#explorerScrubLine');
+  const scrubDot = svg.querySelector('#explorerScrubDot');
+  const hot = svg.querySelector('.explorer-elev-hot');
+  if (!hot) return;
+  const onMove = (e) => {
+    const rect = svg.getBoundingClientRect();
+    const ratio = (e.clientX - rect.left) / rect.width;
+    const xViewBox = ratio * W;
+    let idx = Math.round((xViewBox - PAD_L) / xStep);
+    if (idx < 0) idx = 0;
+    if (idx > es.length - 1) idx = es.length - 1;
+    const v = es[idx];
+    const x = X(idx), y = Y(v);
+    scrubLine.setAttribute('x1', x); scrubLine.setAttribute('x2', x); scrubLine.style.display = '';
+    scrubDot.setAttribute('cx', x); scrubDot.setAttribute('cy', y); scrubDot.style.display = '';
+    const pct = (idx / (es.length - 1)) * 100;
+    const distEst = ((idx / (es.length - 1)) * (ride.distance_km || 0)).toFixed(2);
+    if (readout) {
+      readout.innerHTML = `位置 <b>${pct.toFixed(0)}%</b> · ≈ ${distEst} km · 海拔 <b>${Math.round(v)} m</b>`;
+    }
+  };
+  const onLeave = () => {
+    scrubLine.style.display = 'none';
+    scrubDot.style.display = 'none';
+    if (readout) readout.textContent = '悬停查看 · hover to scrub';
+  };
+  hot.addEventListener('mousemove', onMove);
+  hot.addEventListener('mouseleave', onLeave);
+  hot.addEventListener('touchmove', e => {
+    if (!e.touches[0]) return;
+    onMove(e.touches[0]);
+    e.preventDefault();
+  }, { passive: false });
+}
+
+// ============ 爬升 vs 下降 / Ascent vs Descent ============
+// Top rides by elevation gain, plotted as paired ascent (up) and descent
+// (down) bars from a shared baseline. Net climb shown as a marker. Uses
+// elev_loss_m which was untapped until this section.
+function renderAscentDescent() {
+  const H = window.HEALTH_DATA;
+  if (!H || !H.workouts) return;
+  const host = document.getElementById('ascentDescentChart');
+  const summary = document.getElementById('ascentDescentSummary');
+  if (!host) return;
+  const rides = H.workouts.filter(w => (w.elev_gain_m || 0) >= 30 || (w.elev_loss_m || 0) >= 30);
+  if (!rides.length) {
+    host.innerHTML = '<div class="empty-range">这个时间段没有有海拔变化的骑行</div>';
+    if (summary) summary.textContent = '—';
+    return;
+  }
+  const top = [...rides]
+    .sort((a, b) => ((b.elev_gain_m || 0) + (b.elev_loss_m || 0)) - ((a.elev_gain_m || 0) + (a.elev_loss_m || 0)))
+    .slice(0, 12)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const maxMag = Math.max(
+    ...top.map(r => Math.max(r.elev_gain_m || 0, r.elev_loss_m || 0)),
+    1
+  );
+
+  const W = 900, H_ = 320, PAD_L = 44, PAD_R = 12, PAD_T = 22, PAD_B = 56;
+  const plotW = W - PAD_L - PAD_R, plotH = H_ - PAD_T - PAD_B;
+  const mid = PAD_T + plotH / 2;
+  const halfH = plotH / 2;
+  const barGroupW = plotW / top.length;
+  const barW = Math.min(28, barGroupW * 0.62);
+
+  const tickVals = [maxMag, maxMag / 2, 0, -maxMag / 2, -maxMag];
+  const ticks = tickVals.map(v => {
+    const y = mid - (v / maxMag) * halfH;
+    return `
+      <line x1="${PAD_L}" x2="${W - PAD_R}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(232,183,109,${v === 0 ? '0.20' : '0.05'})" stroke-width="${v === 0 ? 1 : 1}"/>
+      <text x="${PAD_L - 6}" y="${y.toFixed(1)}" dy="3" text-anchor="end" fill="#5d5b55" font-family="JetBrains Mono" font-size="9">${Math.abs(Math.round(v))}m</text>
+    `;
+  }).join('');
+
+  const bars = top.map((r, i) => {
+    const cx = PAD_L + i * barGroupW + barGroupW / 2;
+    const gain = r.elev_gain_m || 0;
+    const loss = r.elev_loss_m || 0;
+    const net = gain - loss;
+    const hUp = (gain / maxMag) * halfH;
+    const hDown = (loss / maxMag) * halfH;
+    const upX = cx - barW / 2 - 1;
+    const downX = cx + 1;
+    return `
+      <g class="ad-group" data-date="${r.date}">
+        <rect x="${upX}" y="${mid - hUp}" width="${barW/2 - 1}" height="${hUp}" fill="#ffd897" rx="2"/>
+        <rect x="${downX}" y="${mid}" width="${barW/2 - 1}" height="${hDown}" fill="#7aa0a8" rx="2"/>
+        <circle cx="${cx}" cy="${mid - (net / maxMag) * halfH}" r="3" fill="${net >= 0 ? '#e8b76d' : '#6cc4d9'}" stroke="#0a0a0c" stroke-width="1"/>
+        <text x="${cx}" y="${H_ - 36}" text-anchor="middle" fill="#5d5b55" font-family="JetBrains Mono" font-size="9" transform="rotate(-32 ${cx} ${H_ - 36})">${r.date.slice(5)}</text>
+        <title>${r.date} · ↑${Math.round(gain)}m · ↓${Math.round(loss)}m · 净 ${net >= 0 ? '+' : ''}${Math.round(net)}m</title>
+      </g>
+    `;
+  }).join('');
+
+  host.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H_}" preserveAspectRatio="xMidYMid meet" class="ad-svg">
+      ${ticks}
+      ${bars}
+      <text x="${PAD_L - 6}" y="${PAD_T + 8}" text-anchor="end" fill="#e8b76d" font-family="JetBrains Mono" font-size="10">↑ 爬升</text>
+      <text x="${PAD_L - 6}" y="${H_ - PAD_B + 10}" text-anchor="end" fill="#7aa0a8" font-family="JetBrains Mono" font-size="10">↓ 下降</text>
+    </svg>
+    <div class="ad-legend">
+      <span><span class="ad-swatch" style="background:#ffd897"></span>爬升 (gain)</span>
+      <span><span class="ad-swatch" style="background:#7aa0a8"></span>下降 (loss)</span>
+      <span><span class="ad-swatch ad-dot" style="background:#e8b76d"></span>净海拔 (net)</span>
+    </div>
+  `;
+
+  if (summary) {
+    const totalGain = rides.reduce((s, r) => s + (r.elev_gain_m || 0), 0);
+    const totalLoss = rides.reduce((s, r) => s + (r.elev_loss_m || 0), 0);
+    const netAll = totalGain - totalLoss;
+    const ratio = totalLoss > 0 ? (totalGain / totalLoss) : 0;
+    summary.innerHTML = `
+      <span><b>累计爬升</b> ${Math.round(totalGain).toLocaleString()} m</span>
+      <span><b>累计下降</b> ${Math.round(totalLoss).toLocaleString()} m</span>
+      <span><b>净变化</b> ${netAll >= 0 ? '+' : ''}${Math.round(netAll).toLocaleString()} m</span>
+      <span><b>爬升 / 下降</b> ${ratio.toFixed(2)}×</span>
+    `;
+  }
 }
 

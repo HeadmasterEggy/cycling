@@ -75,6 +75,24 @@
 </section>
 
 
+<div class="range-filter" id="rangeFilter">
+  <span class="range-filter-label">时间范围 · Time Range</span>
+  <div class="range-filter-presets">
+    <button class="range-preset" data-preset="sydney">悉尼期</button>
+    <button class="range-preset" data-preset="30d">近 30 天</button>
+    <button class="range-preset" data-preset="90d">近 90 天</button>
+    <button class="range-preset" data-preset="year">近 1 年</button>
+    <button class="range-preset" data-preset="all">全部</button>
+  </div>
+  <div class="range-filter-inputs">
+    <input type="date" id="rangeFrom">
+    <span class="range-filter-sep">→</span>
+    <input type="date" id="rangeTo">
+  </div>
+  <div class="range-filter-summary" id="rangeFilterSummary">全部数据</div>
+</div>
+
+
 <main class="main">
 <section class="map-section">
   <div class="section-title">轨迹地图<em>·</em>Cycling Map</div>
@@ -487,6 +505,25 @@
   <div class="chart-card">
     <div class="elev-gallery" id="elevGallery"></div>
     <div class="elev-summary" id="elevSummary"></div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">爬升 vs 下降<em>·</em>Ascent vs Descent</div>
+  <div class="section-sub">耗费 Top 12 骑行 · 上为爬升、下为下降、点为净海拔 · 揭示「真正出力」与「滑回去」的比例</div>
+  <div class="chart-card">
+    <div id="ascentDescentChart"></div>
+    <div class="elev-summary" id="ascentDescentSummary"></div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">逐次骑行<em>·</em>Ride Explorer</div>
+  <div class="section-sub">挑一次骑行 · 海拔剖面可悬停查看任一公里数的高度 · 路线 + 完整身体读数 · 选中状态会被记住</div>
+  <div class="chart-card" style="padding: 0;">
+    <div id="rideExplorer"></div>
   </div>
 </section>
 

@@ -79,6 +79,8 @@ SECTIONS = {
     'climate':      find_section_by_title('气候画像'),
     'daily_pulse':  find_section_by_title('日常脉搏'),
     'elev_gallery': find_section_by_title('爬升画像'),
+    'ascent_descent': find_section_by_title('爬升 vs 下降'),
+    'ride_explorer':  find_section_by_title('逐次骑行'),
     'mets':         find_section_by_title('代谢强度'),
     'departure':    find_section_by_title('出发热力图'),
     'rides_table':  find_section_by_title('全部骑行明细'),
@@ -226,8 +228,20 @@ PAGES = [
             custom_sub='34 条骑行的能量、爬升画像、明细表。挑一条放大,看那一天的身体怎么花掉了那 1000 千焦。',
             custom_meta='骑行 · Rides'),
         'intro': '',
-        'sections': ['energy', 'elev_gallery', 'rides_table'],
+        'sections': ['energy', 'elev_gallery', 'ascent_descent', 'rides_table'],
         'has_filter': True,
+    },
+    {
+        'file': 'explorer.html',
+        'page_key': 'explorer',
+        'title': '逐次 · Ride Explorer',
+        'hero': make_hero(
+            custom_h1='挑一次出门<br><em>逐次放大</em>',
+            custom_sub='挑一条骑行,看它的海拔剖面、心率、消耗与路线。悬停海拔曲线看任一公里数的高度,左右按钮在历次骑行间穿梭。',
+            custom_meta='逐次 · Explorer'),
+        'intro': '',
+        'sections': ['ride_explorer'],
+        'has_filter': False,
     },
 ]
 
@@ -249,8 +263,8 @@ ALL_TITLES_ORDER = [
     'map', 'records', 'cities', 'temporal', 'monthly', 'journey',
     'hr_zones', 'calendar', 'load', 'body', 'climb', 'quadrant',
     'daily_stack', 'efficiency', 'fitness_form', 'hr_range', 'energy',
-    'climate', 'daily_pulse', 'elev_gallery', 'mets', 'departure',
-    'rides_table',
+    'climate', 'daily_pulse', 'elev_gallery', 'ascent_descent',
+    'ride_explorer', 'mets', 'departure', 'rides_table',
 ]
 all_body = "\n\n".join(SECTIONS[s] for s in ALL_TITLES_ORDER)
 all_html = PAGE_TEMPLATE.format(
