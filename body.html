@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>身体 · Body Signals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,700&family=JetBrains+Mono:wght@300;400;500&family=Noto+Serif+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""/>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="body">
+
+<nav id="topNav" class="top-nav" aria-label="主导航"></nav>
+
+<section class="hero">
+  <div class="hero-meta"><span id="heroMetaText">身体 · Body Signals</span><span class="hero-fresh" id="heroFresh"></span></div>
+  <h1 id="heroH1">身体在听<br><em>心率与适应</em></h1>
+  <p class="hero-sub" id="heroSub">34 次骑行的心率、VO₂max 的爬升、体重的浮动、湿度温度对心率的拉拽。骑行不是一组数字 —— 是身体在被改写。</p>
+</section>
+
+
+
+<main class="main">
+<section class="analysis-section">
+  <div class="section-title">健康指标<em>·</em>Health Signals</div>
+  <div class="section-sub">34 次有 Apple Watch 记录的骑行 · 心率 / 卡路里 / 天气</div>
+
+  <div class="analysis-grid">
+
+    <div class="chart-card">
+      <div class="chart-title">平均心率分布</div>
+      <div class="chart-sub">Avg HR per ride (zones)</div>
+      <div class="hr-zones" id="hrZones"></div>
+      <div style="font-family: var(--mono); font-size: 11px; color: var(--text-faint); text-align: center; margin-top: 12px;">
+        多数骑行在 <span style="color: var(--amber);">&lt;120 bpm</span> 区间 — 低强度有氧
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">天气 × 心率</div>
+      <div class="chart-sub">Temperature(℃) vs Avg HR · 圆面积 = 距离</div>
+      <svg class="weather-scatter" id="weatherScatter" viewBox="0 0 600 220" preserveAspectRatio="none"></svg>
+      <div style="font-family: var(--mono); font-size: 11px; color: var(--text-faint); text-align: center; margin-top: 12px;">
+        <span style="color: var(--cyan);">●</span> 仅显示有气象记录的骑行
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">心率范围<em>·</em>Heart Rate Range</div>
+  <div class="section-sub">每一根横条 = 一次骑行的 min – avg – max 心率 · 圆点 = 平均值 · 颜色越暖越接近平均区间</div>
+  <div class="chart-card">
+    <svg class="hr-range-chart" id="hrRangeChart" viewBox="0 0 900 520" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="hr-range-foot">
+      <span><span class="swatch"></span>min – max 心率区间</span>
+      <span><span class="dot"></span>平均心率</span>
+      <span style="margin-left:auto;" id="hrRangeFoot">—</span>
+    </div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">气候画像<em>·</em>Climate Profile</div>
+  <div class="section-sub">悉尼下半年配送期 · 湿度 × 温度 · 圆面积 ∝ 距离 · 颜色 = 平均心率</div>
+  <div class="chart-card">
+    <svg class="climate-chart" id="climateChart" viewBox="0 0 900 360" preserveAspectRatio="none"></svg>
+    <div class="climate-legend">
+      <span>HR 低 <span class="grad"></span> HR 高</span>
+      <span style="margin-left:auto;" id="climateFoot">—</span>
+    </div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">身体适应<em>·</em>Body Adaptation</div>
+  <div class="section-sub">基线 60 天 vs 近 30 天 · 来自 Apple Watch 全天监测</div>
+
+  <div class="trade-panel" id="tradePanel"></div>
+
+  <div class="body-grid">
+
+    <div class="chart-card">
+      <div class="chart-title">心肺耐力 (VO₂max)</div>
+      <div class="chart-sub" id="vo2Sub">最新读数 · Apple Watch 估算</div>
+      <svg class="vo2-chart" id="vo2Chart" viewBox="0 0 700 240" preserveAspectRatio="none"></svg>
+      <div class="vo2-foot">
+        <span>起点 <strong id="vo2First">—</strong></span>
+        <span id="vo2Trend">变化 —</span>
+        <span>最新 <strong id="vo2Last">—</strong></span>
+      </div>
+    </div>
+
+    <div class="body-side">
+      <div class="weight-card">
+        <div class="metric-label" style="font-family: var(--mono); font-size: 10px; color: var(--text-faint); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 12px;">Body Mass</div>
+        <div class="weight-from" id="weightFrom">—</div>
+        <div class="weight-numbers">
+          <div class="weight-now" id="weightNow">—<small>kg</small></div>
+          <div class="weight-delta" id="weightDelta">—</div>
+        </div>
+        <div class="weight-bar">
+          <div class="weight-bar-cur" id="weightBarCur"></div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title" style="font-size: 16px;">配速分布</div>
+        <div class="chart-sub">Average speed per ride</div>
+        <div class="speed-dist" id="speedDist"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="delta-grid" style="margin-top: 24px;" id="deltaGrid"></div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">日常脉搏<em>·</em>Daily Life Pulse</div>
+  <div class="section-sub">19 个月的步数与爬楼层 · 骑行之外的整体活动 · 配送期一目了然</div>
+  <div class="chart-card">
+    <svg class="daily-life-chart" id="dailyLifeChart" viewBox="0 0 900 280" preserveAspectRatio="none"></svg>
+    <div class="daily-life-legend">
+      <span><span class="swatch" style="background: var(--amber); height: 8px;"></span>每日步数</span>
+      <span><span class="swatch" style="background: var(--cyan); height: 8px;"></span>每日爬楼层</span>
+      <span style="margin-left:auto;">配送期 (04-25 → 05-19) 由阴影标出</span>
+    </div>
+    <div class="daily-life-stats" id="dailyLifeStats"></div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div id="footerGen">导出于 — · Apple Health Export</div>
+  <div style="display: flex; gap: 24px;">
+    <span>55 GPX tracks</span>
+    <span id="footerDays">— days monitored</span>
+    <span>Joey's data</span>
+  </div>
+</footer>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""></script>
+<script src="assets/routes.js"></script>
+<script src="assets/health-data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

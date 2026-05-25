@@ -1,0 +1,2797 @@
+  :root {
+    --bg: #0a0a0c;
+    --surface: #14151a;
+    --surface-2: #1c1e25;
+    --border: #2a2c35;
+    --border-bright: #3a3d48;
+    --text: #ebe8e1;
+    --text-dim: #908d85;
+    --text-faint: #5d5b55;
+    --amber: #e8b76d;
+    --amber-bright: #ffd897;
+    --amber-dim: #a87f3e;
+    --cyan: #6cc4d9;
+    --rose: #d97a8a;
+    --serif: "Fraunces", "Noto Serif SC", Georgia, serif;
+    --chinese: "Noto Serif SC", serif;
+    --mono: "JetBrains Mono", "SF Mono", Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { background: var(--bg); }
+
+  body {
+    font-family: var(--chinese);
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.6;
+    overflow-x: hidden;
+    font-feature-settings: "kern", "liga";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* 整体网格背景纹理 */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(232, 183, 109, 0.04) 1px, transparent 0);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ===== Hero Section ===== */
+  .hero {
+    position: relative;
+    padding: 80px 24px 60px;
+    max-width: 1400px;
+    margin: 0 auto;
+    z-index: 1;
+  }
+
+  .hero-meta {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-faint);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .hero-meta::before {
+    content: '';
+    width: 32px;
+    height: 1px;
+    background: var(--amber);
+  }
+
+  .hero h1 {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: clamp(40px, 7vw, 88px);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    margin-bottom: 24px;
+    color: var(--text);
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--amber);
+    font-feature-settings: "ss01";
+  }
+
+  .hero-sub {
+    font-family: var(--chinese);
+    font-weight: 300;
+    font-size: clamp(15px, 2vw, 18px);
+    color: var(--text-dim);
+    max-width: 640px;
+    line-height: 1.7;
+  }
+
+  /* ===== 顶部统计 ===== */
+  .stats-bar {
+    max-width: 1400px;
+    margin: 40px auto 0;
+    padding: 0 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    position: relative;
+    z-index: 1;
+  }
+
+  .stat {
+    background: var(--bg);
+    padding: 28px 24px;
+    position: relative;
+  }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--text-faint);
+    margin-bottom: 12px;
+  }
+
+  .stat-value {
+    font-family: var(--serif);
+    font-size: 36px;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .stat-unit {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-left: 4px;
+  }
+
+  .stat-foot {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-top: 8px;
+  }
+
+  /* ===== 数据新鲜度 ===== */
+  .hero-fresh {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    margin-left: 16px;
+    border: 1px solid var(--border-bright);
+    border-radius: 999px;
+    background: rgba(108, 196, 217, 0.06);
+    color: var(--cyan);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .hero-fresh::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 0 0 rgba(108, 196, 217, 0.45);
+    animation: fresh-pulse 2.4s ease-out infinite;
+  }
+  .hero-fresh:empty { display: none; }
+  @keyframes fresh-pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(108, 196, 217, 0.45); }
+    70%  { box-shadow: 0 0 0 7px rgba(108, 196, 217, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(108, 196, 217, 0); }
+  }
+
+  /* ===== Personal Records ===== */
+  .pr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-top: 16px;
+  }
+  .pr-card {
+    background: var(--surface);
+    padding: 22px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.2s ease;
+  }
+  .pr-card:hover { background: var(--surface-2); }
+  .pr-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--amber), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .pr-card:hover::before { opacity: 1; }
+  .pr-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pr-tag::before {
+    content: '';
+    width: 14px;
+    height: 1px;
+    background: var(--amber);
+  }
+  .pr-value {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 36px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .pr-value small {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-left: 4px;
+    font-family: var(--mono);
+    letter-spacing: 0;
+  }
+  .pr-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    line-height: 1.45;
+  }
+  .pr-meta strong {
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+
+  /* ===== 7天滚动负荷 ===== */
+  .load-chart {
+    width: 100%;
+    height: 260px;
+    display: block;
+  }
+  .load-legend {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+  }
+  .load-legend .swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+
+  /* ===== All Rides Table ===== */
+  .rides-table-wrap {
+    overflow-x: auto;
+    margin-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+  table.rides-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .rides-table thead th {
+    text-align: right;
+    padding: 14px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-faint);
+    font-weight: 400;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: pointer;
+    user-select: none;
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    white-space: nowrap;
+  }
+  .rides-table thead th:first-child,
+  .rides-table tbody td:first-child { text-align: left; }
+  .rides-table thead th:hover { color: var(--amber); }
+  .rides-table thead th.sorted { color: var(--amber); }
+  .rides-table thead th.sorted::after {
+    content: ' ↓';
+    color: var(--amber);
+  }
+  .rides-table thead th.sorted.asc::after { content: ' ↑'; }
+  .rides-table tbody td {
+    padding: 11px 12px;
+    border-bottom: 1px solid rgba(42, 44, 53, 0.5);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .rides-table tbody tr {
+    transition: background 0.15s;
+    cursor: pointer;
+  }
+  .rides-table tbody tr:hover {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+  .rides-table .col-date { color: var(--text); }
+  .rides-table .col-distance { color: var(--amber); font-weight: 500; }
+  .rides-table .col-hr { color: var(--cyan); }
+  .rides-table .bar-cell {
+    display: inline-block;
+    width: 60px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-left: 8px;
+    vertical-align: middle;
+    overflow: hidden;
+  }
+  .rides-table .bar-fill {
+    height: 100%;
+    background: var(--amber);
+    border-radius: 2px;
+  }
+
+  /* ===== 主区域 ===== */
+  .main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 60px 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .section-title {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 28px;
+    margin-bottom: 6px;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  .section-title em {
+    font-style: italic;
+    color: var(--amber);
+  }
+
+  .section-sub {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 28px;
+  }
+
+  /* ===== 地图 ===== */
+  .map-section {
+    margin-top: 24px;
+  }
+
+  .city-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .city-tab {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-family: var(--chinese);
+    font-size: 14px;
+    padding: 12px 20px;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s;
+    font-weight: 400;
+  }
+
+  .city-tab:hover {
+    color: var(--text);
+  }
+
+  .city-tab.active {
+    color: var(--amber);
+  }
+
+  .city-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--amber);
+  }
+
+  .city-tab .count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-left: 8px;
+  }
+
+  #map {
+    width: 100%;
+    height: 600px;
+    background: #0a0a0c;
+    border: 1px solid var(--border);
+    position: relative;
+  }
+
+  /* Leaflet 修正 */
+  .leaflet-container {
+    background: #0a0a0c !important;
+    font-family: var(--mono) !important;
+  }
+
+  .leaflet-control-zoom a {
+    background: var(--surface) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+  }
+
+  .leaflet-control-attribution {
+    background: rgba(20, 21, 26, 0.8) !important;
+    color: var(--text-faint) !important;
+    font-size: 9px !important;
+  }
+
+  .leaflet-control-attribution a {
+    color: var(--text-dim) !important;
+  }
+
+  /* ===== 主网格(地图 + 侧栏) ===== */
+  .map-grid {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    .map-grid {
+      grid-template-columns: 1fr;
+    }
+    #map {
+      height: 400px;
+    }
+  }
+
+  .route-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    max-height: 600px;
+    overflow-y: auto;
+  }
+
+  .route-panel::-webkit-scrollbar { width: 8px; }
+  .route-panel::-webkit-scrollbar-track { background: var(--surface); }
+  .route-panel::-webkit-scrollbar-thumb { background: var(--border); }
+  .route-panel::-webkit-scrollbar-thumb:hover { background: var(--border-bright); }
+
+  .panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-faint);
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    z-index: 2;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .route-item {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s;
+    position: relative;
+  }
+
+  .route-item:hover {
+    background: var(--surface-2);
+  }
+
+  .route-item.active {
+    background: var(--surface-2);
+    border-left: 2px solid var(--amber);
+    padding-left: 18px;
+  }
+
+  .route-item-time {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-bottom: 4px;
+  }
+
+  .route-item-title {
+    font-family: var(--serif);
+    font-size: 15px;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .route-item-stats {
+    display: flex;
+    gap: 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .route-item-stats span strong {
+    color: var(--amber);
+    font-weight: 500;
+  }
+
+  /* ===== 详情面板 ===== */
+  .detail-panel {
+    margin-top: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 24px;
+    display: none;
+  }
+
+  .detail-panel.visible {
+    display: block;
+  }
+
+  .detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .detail-title {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--text);
+  }
+
+  .detail-time {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-faint);
+    margin-top: 4px;
+  }
+
+  .detail-close {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 14px;
+  }
+
+  .detail-close:hover {
+    color: var(--text);
+    border-color: var(--border-bright);
+  }
+
+  .detail-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    margin-bottom: 24px;
+  }
+
+  .detail-stat {
+    background: var(--surface);
+    padding: 16px;
+  }
+
+  .detail-stat-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-faint);
+    margin-bottom: 6px;
+  }
+
+  .detail-stat-value {
+    font-family: var(--serif);
+    font-size: 20px;
+    color: var(--text);
+  }
+
+  .detail-stat-value small {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-left: 3px;
+  }
+
+  /* ===== 时间分析 ===== */
+  .analysis-section {
+    margin-top: 80px;
+  }
+
+  .analysis-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+
+  @media (max-width: 800px) {
+    .analysis-grid { grid-template-columns: 1fr; }
+  }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 28px;
+  }
+
+  .chart-title {
+    font-family: var(--serif);
+    font-size: 18px;
+    margin-bottom: 6px;
+  }
+
+  .chart-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 24px;
+  }
+
+  /* 时段雷达 / 极坐标 */
+  .hour-clock {
+    width: 100%;
+    aspect-ratio: 1;
+    max-width: 340px;
+    margin: 0 auto;
+    display: block;
+  }
+
+  /* 每日柱状图 */
+  .daily-chart {
+    width: 100%;
+    height: 200px;
+    display: block;
+  }
+
+  /* 周分布 */
+  .weekday-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .weekday-row {
+    display: grid;
+    grid-template-columns: 50px 1fr 30px;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .weekday-label {
+    font-family: var(--chinese);
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  .weekday-bar-bg {
+    height: 8px;
+    background: var(--surface-2);
+    position: relative;
+  }
+
+  .weekday-bar-fill {
+    height: 100%;
+    background: var(--amber);
+    transition: width 0.6s ease-out;
+  }
+
+  .weekday-count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    text-align: right;
+  }
+
+  /* ===== 注解 ===== */
+  .annotation {
+    margin-top: 80px;
+    padding: 48px 40px;
+    background: linear-gradient(180deg, var(--surface) 0%, transparent 100%);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .annotation-quote {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: clamp(18px, 2.5vw, 24px);
+    line-height: 1.5;
+    max-width: 720px;
+    color: var(--text);
+    font-style: italic;
+  }
+
+  .annotation-quote::before {
+    content: '"';
+    color: var(--amber);
+    font-size: 48px;
+    line-height: 0;
+    vertical-align: -16px;
+    margin-right: 8px;
+  }
+
+  .annotation-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-top: 24px;
+  }
+
+  /* 顶峰路线展示 */
+  .highlights {
+    margin-top: 60px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .highlight-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .highlight-card:hover {
+    border-color: var(--amber-dim);
+    background: var(--surface-2);
+  }
+
+  .highlight-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--amber);
+    margin-bottom: 12px;
+  }
+
+  .highlight-title {
+    font-family: var(--serif);
+    font-size: 18px;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+
+  .highlight-stats {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .highlight-stats > div {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .highlight-stats > div strong {
+    color: var(--text);
+    font-size: 16px;
+    font-family: var(--serif);
+    font-weight: 400;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  /* ===== 页脚 ===== */
+  footer {
+    max-width: 1400px;
+    margin: 80px auto 0;
+    padding: 40px 24px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  /* ===== 动画 ===== */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero > * { animation: fadeIn 0.8s ease-out backwards; }
+  .hero h1 { animation-delay: 0.1s; }
+  .hero-sub { animation-delay: 0.25s; }
+  .stats-bar { animation: fadeIn 0.8s 0.4s ease-out backwards; }
+
+  /* 选中状态指示 */
+  .route-item.active::before {
+    content: '●';
+    position: absolute;
+    top: 18px;
+    right: 16px;
+    color: var(--amber);
+    font-size: 8px;
+  }
+
+  /* 工具提示 */
+  .tooltip {
+    position: absolute;
+    background: var(--surface);
+    border: 1px solid var(--border-bright);
+    padding: 8px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 100;
+  }
+
+  .tooltip.visible { opacity: 1; }
+
+  /* 城市切换徽章 */
+  .city-info-box {
+    margin-top: 24px;
+    padding: 16px 20px;
+    background: var(--surface);
+    border-left: 2px solid var(--amber);
+    font-family: var(--chinese);
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+
+  .city-info-box strong {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  /* ===== 新增:健康指标 / 月度 / 日历 ===== */
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 20px 22px;
+    position: relative;
+  }
+
+  .metric-card .metric-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .metric-card .metric-value {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 38px;
+    line-height: 1;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .metric-card .metric-value small {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-left: 4px;
+    font-family: var(--mono);
+  }
+  .metric-card .metric-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .metric-card .metric-spark {
+    margin-top: 12px;
+    height: 32px;
+    width: 100%;
+  }
+  .metric-card .accent { color: var(--amber); }
+
+  /* Monthly */
+  .monthly-chart {
+    width: 100%;
+    height: 260px;
+  }
+  .monthly-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 80px;
+    align-items: center;
+    gap: 16px;
+    padding: 6px 0;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .monthly-row .month-label {
+    color: var(--text-faint);
+    letter-spacing: 0.08em;
+  }
+  .monthly-row .month-bar-bg {
+    position: relative;
+    height: 26px;
+    background: rgba(232,183,109,0.04);
+    border-left: 1px solid var(--border);
+  }
+  .monthly-row .month-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(232,183,109,0.95), rgba(255,216,151,0.65));
+    transition: width 0.6s cubic-bezier(.2,.7,.2,1);
+  }
+  .monthly-row .month-bar-fill.rides {
+    background: linear-gradient(90deg, rgba(108,196,217,0.85), rgba(108,196,217,0.4));
+  }
+  .monthly-row .month-value {
+    text-align: right;
+    color: var(--text);
+    font-size: 12px;
+  }
+  .monthly-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+  }
+  .monthly-tab {
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .monthly-tab.active {
+    border-color: var(--amber);
+    color: var(--amber);
+    background: rgba(232,183,109,0.06);
+  }
+  .monthly-tab:hover {
+    color: var(--text);
+  }
+
+  /* Calendar heatmap */
+  .cal-wrap {
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  .cal-grid {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-rows: repeat(7, 12px);
+    gap: 3px;
+    padding: 8px 0;
+  }
+  .cal-cell {
+    width: 12px;
+    height: 12px;
+    background: rgba(255,255,255,0.025);
+    border-radius: 2px;
+    transition: transform 0.1s, background 0.2s;
+    cursor: default;
+  }
+  .cal-cell.l1 { background: rgba(232,183,109,0.22); }
+  .cal-cell.l2 { background: rgba(232,183,109,0.45); }
+  .cal-cell.l3 { background: rgba(232,183,109,0.7); }
+  .cal-cell.l4 { background: rgba(255,216,151,0.92); }
+  .cal-cell:hover { transform: scale(1.5); z-index: 2; outline: 1px solid rgba(255,216,151,0.6); }
+  .cal-legend {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    margin-top: 12px;
+  }
+  .cal-legend .sw {
+    width: 10px; height: 10px; border-radius: 2px;
+    display: inline-block;
+  }
+  .cal-months {
+    display: grid;
+    grid-auto-flow: column;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.1em;
+    margin-bottom: 2px;
+    height: 14px;
+  }
+
+  /* Health metrics charts */
+  .hr-zones {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 160px;
+    padding: 8px 0;
+  }
+  .hr-zone {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+  .hr-zone-bar {
+    width: 100%;
+    background: linear-gradient(180deg, var(--amber-bright), var(--amber) 60%, var(--amber-dim));
+    border-radius: 2px 2px 0 0;
+    min-height: 4px;
+  }
+  .hr-zone-bar.cold { background: linear-gradient(180deg, #6cc4d9, #4a8c9e 60%, #2e5867); }
+  .hr-zone-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.06em;
+  }
+  .hr-zone-count {
+    font-family: var(--serif);
+    font-size: 18px;
+    color: var(--text);
+  }
+
+  .weather-scatter {
+    width: 100%;
+    height: 220px;
+  }
+
+  /* Detail panel extra rows */
+  .detail-stat.health {
+    border-color: rgba(217,122,138,0.35);
+  }
+  .detail-stat.health .detail-stat-label {
+    color: var(--rose);
+  }
+
+  /* ===== Body Adaptation Section ===== */
+  .body-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+    margin-top: 24px;
+  }
+  @media (max-width: 900px) {
+    .body-grid { grid-template-columns: 1fr; }
+  }
+
+  .vo2-chart {
+    width: 100%;
+    height: 240px;
+  }
+  .vo2-foot {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+  }
+  .vo2-foot strong {
+    color: var(--text);
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight: 400;
+  }
+  .vo2-foot .drop {
+    color: var(--rose);
+  }
+  .vo2-foot .rise {
+    color: var(--cyan);
+  }
+
+  /* Big delta cards */
+  .delta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+  .delta-card {
+    background: var(--surface);
+    padding: 20px 18px;
+  }
+  .delta-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .delta-value {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 28px;
+    color: var(--text);
+    line-height: 1;
+  }
+  .delta-value small {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-left: 3px;
+  }
+  .delta-meta {
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .delta-arrow {
+    font-family: var(--mono);
+    font-weight: 500;
+  }
+  .delta-arrow.down { color: var(--cyan); }
+  .delta-arrow.up   { color: var(--rose); }
+  .delta-arrow.flat { color: var(--text-faint); }
+  .delta-bar {
+    margin-top: 12px;
+    height: 4px;
+    background: var(--surface-2);
+    position: relative;
+    overflow: hidden;
+  }
+  .delta-bar-inner {
+    position: absolute;
+    height: 100%;
+    background: linear-gradient(90deg, var(--amber-bright), var(--amber));
+    top: 0;
+  }
+  .delta-bar-inner.cool {
+    background: linear-gradient(90deg, var(--cyan), #4a8c9e);
+  }
+  .delta-bar-inner.rose {
+    background: linear-gradient(90deg, var(--rose), #a85060);
+  }
+
+  /* Weight + summary side card */
+  .body-side {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .weight-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 24px;
+  }
+  .weight-numbers {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .weight-now {
+    font-family: var(--serif);
+    font-size: 48px;
+    color: var(--text);
+    line-height: 1;
+  }
+  .weight-now small {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-left: 4px;
+  }
+  .weight-delta {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--cyan);
+  }
+  .weight-from {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+  }
+  .weight-bar {
+    height: 4px;
+    background: var(--surface-2);
+    position: relative;
+    margin-top: 14px;
+  }
+  .weight-bar-cur {
+    position: absolute;
+    top: -3px;
+    width: 10px;
+    height: 10px;
+    background: var(--amber);
+    border-radius: 50%;
+    transform: translateX(-50%);
+  }
+
+  /* Daily overlay chart (delivery period: bars + line) */
+  .overlay-chart {
+    width: 100%;
+    height: 280px;
+  }
+  .overlay-legend {
+    display: flex;
+    gap: 18px;
+    margin-top: 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .overlay-legend .swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .overlay-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .overlay-tab {
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .overlay-tab.active {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    background: rgba(108,196,217,0.06);
+  }
+  .overlay-tab:hover {
+    color: var(--text);
+  }
+
+  /* Pace distribution */
+  .speed-dist {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    align-items: end;
+    height: 160px;
+  }
+  .speed-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    height: 100%;
+    justify-content: flex-end;
+  }
+  .speed-col .speed-bar {
+    width: 100%;
+    background: linear-gradient(180deg, var(--cyan), #2e5867);
+    border-radius: 2px 2px 0 0;
+    min-height: 3px;
+  }
+  .speed-col .speed-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.06em;
+  }
+  .speed-col .speed-count {
+    font-family: var(--serif);
+    font-size: 16px;
+    color: var(--text);
+  }
+
+  /* ===== 最近一次骑行 + 恢复状态 ===== */
+  .latest-band {
+    max-width: 1400px;
+    margin: 24px auto 0;
+    padding: 0 24px;
+    position: relative;
+    z-index: 1;
+  }
+  .latest-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+  @media (max-width: 880px) {
+    .latest-grid { grid-template-columns: 1fr; }
+  }
+  .latest-cell {
+    background: var(--surface);
+    padding: 24px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .latest-cell .lc-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--amber);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .latest-cell .lc-tag::before {
+    content: '';
+    width: 14px;
+    height: 1px;
+    background: var(--amber);
+  }
+  .latest-cell .lc-tag.cool { color: var(--cyan); }
+  .latest-cell .lc-tag.cool::before { background: var(--cyan); }
+  .latest-cell .lc-headline {
+    font-family: var(--serif);
+    font-size: 26px;
+    font-weight: 400;
+    line-height: 1.1;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .latest-cell .lc-headline em {
+    font-style: italic;
+    color: var(--amber);
+    font-weight: 400;
+  }
+  .latest-cell .lc-when {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-bottom: 16px;
+    letter-spacing: 0.05em;
+  }
+  .latest-cell .lc-stats {
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+  }
+  .latest-cell .lc-stat {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+  .latest-cell .lc-stat strong {
+    display: block;
+    font-family: var(--serif);
+    font-weight: 400;
+    color: var(--text);
+    font-size: 22px;
+    margin-bottom: 2px;
+  }
+  .latest-cell .lc-stat strong small {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-left: 2px;
+  }
+  .recovery-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .recovery-row {
+    display: grid;
+    grid-template-columns: 70px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .recovery-label {
+    color: var(--text-faint);
+    letter-spacing: 0.04em;
+  }
+  .recovery-bar {
+    position: relative;
+    height: 6px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .recovery-bar-fill {
+    position: absolute;
+    inset: 0;
+    transform-origin: left;
+    background: linear-gradient(90deg, var(--cyan), #4a8c9e);
+    transform: scaleX(var(--bar, 0.5));
+    transition: transform 0.6s cubic-bezier(.2,.7,.2,1);
+  }
+  .recovery-bar-fill.warn {
+    background: linear-gradient(90deg, var(--rose), #a85060);
+  }
+  .recovery-bar-fill.good {
+    background: linear-gradient(90deg, var(--amber-bright), var(--amber));
+  }
+  .recovery-bar-base {
+    position: absolute;
+    width: 1px;
+    top: -3px; bottom: -3px;
+    background: var(--text-faint);
+    opacity: 0.7;
+  }
+  .recovery-val {
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    min-width: 56px;
+    text-align: right;
+  }
+  .recovery-val small {
+    color: var(--text-faint);
+    font-size: 10px;
+    margin-left: 2px;
+  }
+  .recovery-readout {
+    margin-top: 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    line-height: 1.55;
+  }
+  .recovery-readout strong { color: var(--text-dim); font-weight: 400; }
+  .recovery-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text);
+    margin-left: 8px;
+  }
+  .recovery-status.good { color: var(--cyan); border: 1px solid rgba(108,196,217,0.4); background: rgba(108,196,217,0.06); }
+  .recovery-status.warn { color: var(--rose); border: 1px solid rgba(217,122,138,0.4); background: rgba(217,122,138,0.06); }
+  .recovery-status.flat { color: var(--text-dim); border: 1px solid var(--border); }
+  .latest-elev {
+    margin-top: 16px;
+  }
+  .latest-elev svg { width: 100%; height: 60px; display: block; }
+
+  /* ===== 海拔曲线 (route detail panel) ===== */
+  .detail-elev {
+    margin-bottom: 24px;
+    padding: 18px 18px 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+  }
+  .detail-elev-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .detail-elev-head .endpoints {
+    color: var(--text-dim);
+    letter-spacing: 0.02em;
+    text-transform: none;
+    font-size: 11px;
+  }
+  .detail-elev-head .endpoints b {
+    color: var(--amber);
+    font-weight: 500;
+    margin: 0 4px;
+  }
+  .detail-elev svg { width: 100%; height: 70px; display: block; }
+  .detail-elev.empty { display: none; }
+
+  /* ===== 训练效率 (Training Efficiency) ===== */
+  .effi-chart {
+    width: 100%;
+    height: 280px;
+    display: block;
+  }
+  .effi-legend {
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .effi-legend .swatch {
+    display: inline-block;
+    width: 14px;
+    height: 2px;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .effi-legend .swatch.dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+  }
+  .effi-foot {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    line-height: 1.6;
+  }
+  .effi-foot strong {
+    color: var(--text);
+    font-family: var(--serif);
+    font-size: 16px;
+    font-weight: 400;
+  }
+  .effi-foot .effi-tag {
+    color: var(--amber);
+    font-weight: 500;
+  }
+
+  /* ===== Trade-off panel (Body Adaptation lead-in) ===== */
+  .trade-panel {
+    display: grid;
+    grid-template-columns: 1.3fr repeat(3, 1fr);
+    gap: 18px;
+    align-items: stretch;
+    margin-top: 18px;
+    margin-bottom: 26px;
+    padding: 22px 24px;
+    background: linear-gradient(135deg,
+      rgba(232,183,109,0.05) 0%,
+      rgba(108,196,217,0.04) 100%);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+  .trade-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 2px; height: 100%;
+    background: linear-gradient(180deg, var(--amber) 0%, var(--cyan) 50%, var(--rose) 100%);
+  }
+  @media (max-width: 900px) {
+    .trade-panel { grid-template-columns: 1fr 1fr; padding: 18px; }
+  }
+  .trade-story {
+    grid-column: 1;
+  }
+  .trade-eyebrow {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 10px;
+  }
+  .trade-headline {
+    font-family: var(--serif);
+    font-size: 22px;
+    line-height: 1.35;
+    color: var(--text);
+    font-weight: 400;
+    letter-spacing: -0.005em;
+  }
+  .trade-headline em {
+    font-style: italic;
+    color: var(--amber-bright);
+    font-weight: 500;
+  }
+  .trade-body {
+    margin-top: 12px;
+    color: var(--text-dim);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .trade-tile {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8px 4px;
+    border-left: 1px solid var(--border);
+    padding-left: 18px;
+  }
+  @media (max-width: 900px) {
+    .trade-tile { border-left: none; border-top: 1px solid var(--border); padding: 14px 0 0; }
+  }
+  .trade-tile .t-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .trade-tile .t-value {
+    font-family: var(--serif);
+    font-size: 32px;
+    line-height: 1;
+    margin-top: 8px;
+    font-feature-settings: "tnum";
+    color: var(--text);
+  }
+  .trade-tile .t-value small {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-left: 4px;
+  }
+  .trade-tile .t-foot {
+    margin-top: 10px;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text-faint);
+    line-height: 1.5;
+  }
+  .trade-tile.up    .t-value { color: var(--amber-bright); }
+  .trade-tile.down  .t-value { color: var(--rose); }
+  .trade-tile.flat  .t-value { color: var(--cyan); }
+  .trade-tile .t-sign {
+    font-family: var(--mono);
+    font-size: 13px;
+    margin-right: 4px;
+    opacity: 0.85;
+  }
+
+  /* ===== Climb vs Pace scatter ===== */
+  .climb-chart {
+    width: 100%;
+    height: 360px;
+    display: block;
+  }
+  .climb-chart .axis,
+  .climb-chart .axis-y { stroke: var(--border); }
+  .climb-chart .grid-line {
+    stroke: var(--border);
+    stroke-dasharray: 2 4;
+    opacity: 0.6;
+  }
+  .climb-chart .tick {
+    fill: var(--text-faint);
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+  .climb-chart .axis-label {
+    fill: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .climb-chart .ride-dot {
+    transition: r 0.2s, opacity 0.2s;
+    cursor: pointer;
+  }
+  .climb-chart .ride-dot:hover { opacity: 1 !important; stroke-width: 2; }
+  .climb-chart .trend-line {
+    stroke: var(--text-dim);
+    stroke-dasharray: 4 5;
+    stroke-width: 1.2;
+    opacity: 0.55;
+  }
+
+  /* ===== Cumulative Journey ===== */
+  .journey-chart {
+    width: 100%;
+    height: 320px;
+    display: block;
+  }
+  .journey-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+    margin-top: 20px;
+  }
+  @media (max-width: 900px) {
+    .journey-grid { grid-template-columns: 1fr; }
+  }
+  .journey-side {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .milestone {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: baseline;
+    padding: 14px 16px;
+    background: var(--surface-2);
+    border-left: 2px solid var(--amber-dim);
+    gap: 12px;
+  }
+  .milestone.achieved { border-left-color: var(--amber); }
+  .milestone .ms-km {
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight: 300;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .milestone .ms-km small {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-left: 3px;
+  }
+  .milestone .ms-when {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    text-align: left;
+  }
+  .milestone .ms-when strong {
+    color: var(--amber);
+    font-weight: 500;
+  }
+  .milestone .ms-days {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .journey-context {
+    margin-top: 14px;
+    padding: 16px 18px;
+    background: linear-gradient(180deg, rgba(232,183,109,0.04) 0%, transparent 100%);
+    border: 1px solid var(--border);
+    border-radius: 0;
+  }
+  .journey-context-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 10px;
+  }
+  .journey-context-body {
+    font-family: var(--chinese);
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+  .journey-context-body strong {
+    color: var(--text);
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 15px;
+  }
+
+  /* ===== Top Days Leaderboard ===== */
+  .top-days-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-top: 16px;
+  }
+  .top-day {
+    display: grid;
+    grid-template-columns: 36px 1fr 80px 80px 60px;
+    align-items: center;
+    background: var(--surface);
+    padding: 14px 18px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    gap: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .top-day:hover { background: var(--surface-2); }
+  .top-day .td-bar {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: linear-gradient(90deg, rgba(232,183,109,0.10), rgba(232,183,109,0));
+    pointer-events: none;
+  }
+  .top-day > * { position: relative; z-index: 1; }
+  .top-day .td-rank {
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight: 300;
+    color: var(--amber);
+    font-style: italic;
+    letter-spacing: -0.02em;
+  }
+  .top-day.r1 .td-rank, .top-day.r2 .td-rank, .top-day.r3 .td-rank { color: var(--amber-bright); }
+  .top-day .td-date {
+    font-family: var(--chinese);
+    font-size: 14px;
+    color: var(--text);
+  }
+  .top-day .td-date small {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+  }
+  .top-day .td-metric {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-dim);
+    text-align: right;
+  }
+  .top-day .td-metric strong {
+    color: var(--text);
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 16px;
+  }
+  .top-day .td-metric small {
+    display: block;
+    font-size: 9px;
+    color: var(--text-faint);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  @media (max-width: 700px) {
+    .top-day { grid-template-columns: 28px 1fr 60px 60px; gap: 8px; padding: 12px 14px; }
+    .top-day .td-metric:last-child { display: none; }
+  }
+
+  /* ===== Distance histogram + Power ===== */
+  .dist-hist {
+    width: 100%;
+    height: 200px;
+    display: block;
+  }
+  .power-chart {
+    width: 100%;
+    height: 200px;
+    display: block;
+  }
+  .pwr-foot {
+    margin-top: 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .pwr-foot strong {
+    color: var(--amber);
+    font-weight: 500;
+  }
+
+  /* ===== City Atlas ===== */
+  .city-atlas {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-top: 16px;
+  }
+  .city-row {
+    display: grid;
+    grid-template-columns: 1.4fr 1.4fr 1fr 0.6fr;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 20px;
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+    transition: background 0.15s ease;
+  }
+  .city-row:hover { background: var(--surface-2); }
+  .city-row .cr-bar {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: linear-gradient(90deg, rgba(232,183,109,0.10) 0%, rgba(232,183,109,0.01) 100%);
+    transition: width 0.8s cubic-bezier(.2,.7,.2,1);
+    pointer-events: none;
+  }
+  .city-row > *:not(.cr-bar) { position: relative; z-index: 1; }
+  .city-row .cr-name {
+    font-family: var(--serif);
+    font-size: 18px;
+    color: var(--text);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+  .city-row .cr-name small {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.08em;
+    margin-top: 3px;
+    text-transform: uppercase;
+  }
+  .city-row .cr-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+  }
+  .city-row .cr-meta small {
+    display: block;
+    font-size: 10px;
+    color: var(--text-faint);
+    margin-top: 4px;
+    letter-spacing: 0.03em;
+  }
+  .city-row .cr-km {
+    font-family: var(--serif);
+    font-size: 22px;
+    color: var(--amber);
+    text-align: right;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+  }
+  .city-row .cr-km small {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    margin-left: 4px;
+    font-weight: 400;
+  }
+  .city-row .cr-share {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: right;
+    letter-spacing: 0.05em;
+  }
+  @media (max-width: 700px) {
+    .city-row { grid-template-columns: 1fr 0.8fr 0.7fr; padding: 14px; }
+    .city-row .cr-share { display: none; }
+  }
+
+  /* ===== Effort Quadrant ===== */
+  .effort-chart {
+    width: 100%;
+    height: 420px;
+    display: block;
+  }
+  .effort-chart circle { transition: opacity 0.15s ease; }
+  .effort-chart:hover circle { opacity: 0.45; }
+  .effort-chart:hover circle:hover { opacity: 1; }
+  .effort-legend {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  @media (max-width: 700px) { .effort-legend { grid-template-columns: 1fr; } }
+  .eq-tag {
+    font-family: var(--chinese);
+    font-size: 12.5px;
+    color: var(--text-dim);
+    padding: 12px 16px;
+    border-left: 2px solid var(--border);
+    background: var(--surface-2);
+    line-height: 1.5;
+  }
+  .eq-tag.eff { border-left-color: var(--cyan); }
+  .eq-tag.hard { border-left-color: var(--amber); }
+  .eq-tag.easy { border-left-color: var(--text-faint); }
+  .eq-tag.costly { border-left-color: var(--rose); }
+  .eq-tag strong {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 16px;
+    color: var(--text);
+    margin-right: 10px;
+    letter-spacing: -0.01em;
+  }
+  .eq-tag .eq-count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--amber);
+    margin-left: 6px;
+  }
+
+  /* ===== Floating Side Navigator ===== */
+  .side-nav {
+    position: fixed;
+    top: 50%;
+    right: 16px;
+    transform: translateY(-50%);
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 78vh;
+    overflow-y: auto;
+    padding: 10px 6px;
+    background: rgba(10, 10, 12, 0.78);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .side-nav::-webkit-scrollbar { width: 0; }
+  .side-nav-item {
+    padding: 6px 12px;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+    white-space: nowrap;
+    user-select: none;
+  }
+  .side-nav-item:hover { color: var(--text); background: var(--surface); }
+  .side-nav-item.active {
+    color: var(--amber);
+    border-left-color: var(--amber);
+    background: var(--surface);
+  }
+  @media (max-width: 1200px) { .side-nav { display: none; } }
+
+  /* ===== Effort Quadrant axis text helpers (overrides for SVG-injected text) ===== */
+  .eq-axis-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    fill: var(--text-dim);
+    letter-spacing: 0.08em;
+  }
+
+  /* ===== Fitness & Form (CTL / ATL / TSB) ===== */
+  .ff-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-bottom: 18px;
+  }
+  .ff-kpi {
+    background: var(--surface);
+    padding: 18px 20px;
+    position: relative;
+  }
+  .ff-kpi-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ff-kpi-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .ff-kpi-dot.ctl { background: var(--amber); box-shadow: 0 0 6px rgba(232,183,109,0.4); }
+  .ff-kpi-dot.atl { background: var(--cyan); box-shadow: 0 0 6px rgba(108,196,217,0.4); }
+  .ff-kpi-dot.tsb { background: #88b66a; box-shadow: 0 0 6px rgba(136,182,106,0.4); }
+  .ff-kpi-dot.tsb.neg { background: var(--rose); box-shadow: 0 0 6px rgba(217,122,138,0.4); }
+  .ff-kpi-value {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 30px;
+    line-height: 1;
+    color: var(--text);
+  }
+  .ff-kpi-value small {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-left: 4px;
+  }
+  .ff-kpi-foot {
+    margin-top: 8px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+  }
+  .ff-kpi-foot strong {
+    font-weight: 500;
+    color: var(--text-dim);
+  }
+  .ff-state-pill {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border: 1px solid currentColor;
+    color: var(--amber);
+    margin-top: 8px;
+  }
+  .ff-state-pill.fresh   { color: #88b66a; }
+  .ff-state-pill.optimal { color: var(--amber); }
+  .ff-state-pill.heavy   { color: var(--rose); }
+  .ff-state-pill.detrain { color: var(--text-dim); }
+
+  .ff-legend {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    align-items: center;
+  }
+  .ff-legend .swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 6px;
+    vertical-align: -1px;
+  }
+
+  /* Rides-table elevation sparkline cell */
+  .rides-table td.col-elev {
+    min-width: 88px;
+    padding-right: 6px;
+  }
+  .rides-table td.col-elev svg {
+    display: block;
+    width: 80px;
+    height: 22px;
+  }
+  .elev-spark-fill { fill: rgba(232, 183, 109, 0.18); }
+  .elev-spark-line { stroke: var(--amber); stroke-width: 1; fill: none; }
+  .elev-spark-none {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+  }
+
+  /* ===== 2026-05-25 三次迭代 ===== */
+
+  /* 心率范围 / HR Range bars */
+  .hr-range-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .hr-range-foot {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    align-items: center;
+  }
+  .hr-range-foot .swatch {
+    display: inline-block;
+    width: 22px;
+    height: 4px;
+    margin-right: 6px;
+    vertical-align: 2px;
+    background: linear-gradient(90deg, rgba(108,196,217,0.35), rgba(232,183,109,0.85));
+    border-radius: 2px;
+  }
+  .hr-range-foot .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--amber-bright);
+    margin-right: 6px;
+    vertical-align: 0;
+  }
+
+  /* 能量构成 / Energy Composition */
+  .energy-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .energy-legend {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    align-items: center;
+  }
+  .energy-legend .swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 6px;
+    vertical-align: -1px;
+  }
+  .energy-stats {
+    margin-top: 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+  .energy-stat {
+    background: var(--surface-2);
+    padding: 18px 20px;
+  }
+  .energy-stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+  }
+  .energy-stat-value {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 28px;
+    color: var(--text);
+    line-height: 1;
+  }
+  .energy-stat-value small {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-left: 4px;
+  }
+  .energy-stat-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+
+  /* 气候散点 / Climate Scatter */
+  .climate-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .climate-legend {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    align-items: center;
+  }
+  .climate-legend .grad {
+    display: inline-block;
+    width: 80px;
+    height: 8px;
+    background: linear-gradient(90deg, #6cc4d9, #ffd897, #d97a8a);
+    margin: 0 8px;
+    vertical-align: middle;
+    border-radius: 2px;
+  }
+
+  /* 日常活动 / Daily Steps + Flights */
+  .daily-life-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .daily-life-legend {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    align-items: center;
+  }
+  .daily-life-legend .swatch {
+    display: inline-block;
+    width: 12px;
+    height: 4px;
+    margin-right: 6px;
+    vertical-align: 2px;
+    border-radius: 2px;
+  }
+  .daily-life-stats {
+    margin-top: 22px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+  .dl-stat {
+    background: var(--surface-2);
+    padding: 16px 18px;
+  }
+  .dl-stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 6px;
+  }
+  .dl-stat-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .dl-stat-base {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .dl-stat-arrow {
+    color: var(--text-faint);
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .dl-stat-now {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 22px;
+    color: var(--text);
+  }
+  .dl-stat-delta {
+    display: inline-block;
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 2px 8px;
+    border: 1px solid var(--border-bright);
+    border-radius: 999px;
+  }
+  .dl-stat-delta.up { color: var(--amber); border-color: rgba(232,183,109,0.4); }
+  .dl-stat-delta.down { color: var(--cyan); border-color: rgba(108,196,217,0.4); }
+
+  /* 爬升画像 / Elevation Profile Gallery */
+  .elev-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+  .elev-card {
+    background: var(--surface-2);
+    padding: 16px 18px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .elev-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .elev-card-date {
+    color: var(--text);
+    letter-spacing: 0.04em;
+  }
+  .elev-card-gain {
+    color: var(--amber-bright);
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight: 300;
+    line-height: 1;
+  }
+  .elev-card-gain small {
+    color: var(--text-faint);
+    font-family: var(--mono);
+    font-size: 10px;
+    margin-left: 3px;
+  }
+  .elev-card svg {
+    width: 100%;
+    height: 70px;
+    display: block;
+  }
+  .elev-card-meta {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+  }
+  .elev-card-meta b {
+    color: var(--text-dim);
+    font-weight: 500;
+    margin-right: 4px;
+  }
+  .elev-summary {
+    margin-top: 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+  }
+  .elev-summary b {
+    color: var(--amber);
+    font-weight: 500;
+  }
+
+  /* 代谢强度 / METS Intensity */
+  .mets-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .mets-bands {
+    margin-top: 22px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+  .mets-band {
+    background: var(--surface-2);
+    padding: 14px 16px;
+  }
+  .mets-band-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 6px;
+  }
+  .mets-band-range {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+  }
+  .mets-band-count {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 22px;
+    color: var(--text);
+    line-height: 1;
+  }
+  .mets-band-count small {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-left: 4px;
+  }
+  .mets-band-bar {
+    margin-top: 8px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.04);
+    overflow: hidden;
+  }
+  .mets-band-bar > span {
+    display: block;
+    height: 100%;
+    border-radius: 2px;
+  }
+  .mets-legend {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    align-items: center;
+  }
+
+  /* 出发热力图 / Departure Heatmap */
+  .heatmap-wrap {
+    overflow-x: auto;
+  }
+  .heatmap {
+    display: grid;
+    grid-template-columns: 36px repeat(24, minmax(22px, 1fr));
+    gap: 2px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-faint);
+    min-width: 640px;
+  }
+  .heatmap .hm-corner,
+  .heatmap .hm-hour,
+  .heatmap .hm-wd {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 22px;
+    color: var(--text-faint);
+  }
+  .heatmap .hm-hour {
+    letter-spacing: 0.04em;
+  }
+  .heatmap .hm-wd {
+    justify-content: flex-end;
+    padding-right: 8px;
+    color: var(--text-dim);
+    font-size: 10px;
+  }
+  .heatmap .hm-cell {
+    position: relative;
+    min-height: 22px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.03);
+  }
+  .heatmap .hm-cell.has {
+    border-color: rgba(232,183,109,0.18);
+  }
+  .heatmap .hm-cell .hm-dot {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0a0a0c;
+    font-weight: 600;
+    font-size: 9px;
+  }
+  .heatmap-legend {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .heatmap-legend .grad {
+    display: inline-block;
+    width: 120px;
+    height: 8px;
+    background: linear-gradient(90deg, rgba(232,183,109,0.10), rgba(232,183,109,0.45), #ffd897);
+    border-radius: 2px;
+  }
+  .heatmap-stats {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+  .hm-stat {
+    background: var(--surface-2);
+    padding: 14px 16px;
+  }
+  .hm-stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 6px;
+  }
+  .hm-stat-value {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 22px;
+    color: var(--text);
+    line-height: 1;
+  }
+  .hm-stat-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+
+
+/* ===== Top Nav (multi-page) — 2026-05-25 五次迭代 ===== */
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  display: flex;
+  gap: 6px;
+  padding: 12px 36px;
+  background: rgba(15, 14, 12, 0.78);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border-bottom: 1px solid rgba(232, 183, 109, 0.16);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.top-nav::-webkit-scrollbar { display: none; }
+.top-nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 18px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--text-dim);
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.top-nav-link:hover {
+  color: var(--text);
+  background: rgba(232, 183, 109, 0.08);
+  border-color: rgba(232, 183, 109, 0.18);
+}
+.top-nav-link--active {
+  color: var(--accent);
+  background: rgba(232, 183, 109, 0.12);
+  border-color: rgba(232, 183, 109, 0.34);
+}
+.top-nav-cn {
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1;
+}
+.top-nav-en {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  line-height: 1;
+}
+.top-nav-link--active .top-nav-en { color: var(--accent); opacity: 0.9; }
+
+/* Slimmer hero spacing on subpages so the nav doesn't shove content down */
+body[data-page]:not([data-page="all"]) .hero {
+  padding-top: 40px;
+  padding-bottom: 56px;
+}
+body[data-page]:not([data-page="all"]) .hero h1 {
+  font-size: clamp(38px, 6vw, 70px);
+}
+
+/* Range filter widget (Phase 3 placeholder; styles arrive with the widget) */
+.range-filter {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 24px auto 32px;
+  padding: 14px 20px;
+  background: rgba(232, 183, 109, 0.04);
+  border: 1px solid rgba(232, 183, 109, 0.18);
+  border-radius: 14px;
+  max-width: 1100px;
+  flex-wrap: wrap;
+}
+.range-filter-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.range-filter-presets {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.range-preset {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 5px 11px;
+  background: transparent;
+  border: 1px solid rgba(232, 183, 109, 0.24);
+  border-radius: 999px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.range-preset:hover { color: var(--text); border-color: var(--accent); }
+.range-preset--active {
+  color: var(--bg-deep);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.range-filter-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.range-filter-inputs input[type="date"] {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: rgba(15, 14, 12, 0.6);
+  border: 1px solid rgba(232, 183, 109, 0.24);
+  color: var(--text);
+  padding: 5px 10px;
+  border-radius: 8px;
+  color-scheme: dark;
+}
+.range-filter-sep { color: var(--text-dim); font-family: var(--mono); }
+.range-filter-summary {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-left: auto;
+}
+.range-filter-summary strong { color: var(--accent); font-weight: 500; }

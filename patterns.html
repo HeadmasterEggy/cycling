@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>节律 · Patterns</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,700&family=JetBrains+Mono:wght@300;400;500&family=Noto+Serif+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""/>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="patterns">
+
+<nav id="topNav" class="top-nav" aria-label="主导航"></nav>
+
+<section class="hero">
+  <div class="hero-meta"><span id="heroMetaText">节律 · Patterns</span><span class="hero-fresh" id="heroFresh"></span></div>
+  <h1 id="heroH1">何时出门<br><em>节律与日历</em></h1>
+  <p class="hero-sub" id="heroSub">出发的时刻、星期、月份。把全部 411 天活动摊开,看身体在一周中怎么呼吸,在一年中怎么变形。</p>
+</section>
+
+
+
+<main class="main">
+<section class="analysis-section">
+  <div class="section-title">时间画像<em>·</em>Temporal Patterns</div>
+  <div class="section-sub">什么时候你在路上 / when you ride</div>
+
+  <div class="analysis-grid">
+
+    <div class="chart-card">
+      <div class="chart-title">出发时段分布</div>
+      <div class="chart-sub">Hour of departure (Sydney 34 rides)</div>
+      <svg class="hour-clock" id="hourClock" viewBox="0 0 340 340"></svg>
+      <div style="font-family: var(--mono); font-size: 11px; color: var(--text-faint); text-align: center; margin-top: 16px;">
+        峰值出发时段 <span style="color: var(--amber);">16:00-18:00</span>(晚餐配送档)
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">星期分布</div>
+      <div class="chart-sub">Day of week distribution</div>
+      <div class="weekday-rows" id="weekdayChart"></div>
+      <div style="font-family: var(--mono); font-size: 11px; color: var(--text-faint); margin-top: 24px;">
+        几乎每天都出现 — 周二、周三略多
+      </div>
+    </div>
+
+  </div>
+
+  <div class="chart-card" style="margin-top: 24px;">
+    <div class="chart-title">每日骑行距离</div>
+    <div class="chart-sub">送外卖期(2026-04-25 → 2026-05-19)</div>
+    <svg class="daily-chart" id="dailyChart" viewBox="0 0 800 200" preserveAspectRatio="none"></svg>
+    <div style="font-family: var(--mono); font-size: 11px; color: var(--text-faint); margin-top: 16px; display: flex; justify-content: space-between;">
+      <span>4/25 开始</span>
+      <span>5/19 最后一天</span>
+    </div>
+  </div>
+
+  <div class="highlights" id="highlights"></div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">月度全景<em>·</em>Monthly Volume</div>
+  <div class="section-sub">从 2024-10 第一条记录,到 2026-05 高峰期 / Apple Health workouts</div>
+
+  <div class="chart-card">
+    <div class="monthly-tabs" id="monthlyTabs">
+      <button class="monthly-tab active" data-metric="distance_km">距离 km</button>
+      <button class="monthly-tab" data-metric="duration_min">时长 min</button>
+      <button class="monthly-tab" data-metric="rides">骑行次数</button>
+      <button class="monthly-tab" data-metric="kcal">活动卡路里</button>
+      <button class="monthly-tab" data-metric="elev_gain_m">爬升 m</button>
+    </div>
+    <div id="monthlyChart"></div>
+  </div>
+
+  <div class="metric-grid" style="margin-top: 24px;">
+    <div class="metric-card">
+      <div class="metric-label">Active Days</div>
+      <div class="metric-value" id="mActiveDays">—</div>
+      <div class="metric-sub">有骑行记录的天数</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Longest Streak</div>
+      <div class="metric-value" id="mStreak">—<small>天</small></div>
+      <div class="metric-sub">连续骑行最长跨度</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Total kcal</div>
+      <div class="metric-value" id="mKcal">—</div>
+      <div class="metric-sub">累计活动消耗 / Apple Watch</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Total Climb</div>
+      <div class="metric-value" id="mClimb">—<small>m</small></div>
+      <div class="metric-sub">累计爬升 / GPX 高程</div>
+    </div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">出发热力图<em>·</em>Departure Heatmap</div>
+  <div class="section-sub">星期 × 出发小时 · 颜色越亮越频繁 · 揭示送外卖班次的双峰节律</div>
+  <div class="chart-card">
+    <div class="heatmap-wrap">
+      <div class="heatmap" id="hourHeatmap"></div>
+    </div>
+    <div class="heatmap-legend">
+      <span>少</span><span class="grad"></span><span>多</span>
+      <span style="margin-left:auto;" id="hmFoot">—</span>
+    </div>
+    <div class="heatmap-stats" id="hmStats"></div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">活动日历<em>·</em>Activity Calendar</div>
+  <div class="section-sub">19 个月,每一格是一天的总骑行距离 / GitHub-style heatmap</div>
+
+  <div class="chart-card">
+    <div class="cal-wrap">
+      <div class="cal-months" id="calMonths"></div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+    <div class="cal-legend">
+      <span>Less</span>
+      <span class="sw cal-cell"></span>
+      <span class="sw cal-cell l1"></span>
+      <span class="sw cal-cell l2"></span>
+      <span class="sw cal-cell l3"></span>
+      <span class="sw cal-cell l4"></span>
+      <span>More</span>
+      <span style="margin-left: auto;">单元越亮 = 当日骑行距离越多</span>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div id="footerGen">导出于 — · Apple Health Export</div>
+  <div style="display: flex; gap: 24px;">
+    <span>55 GPX tracks</span>
+    <span id="footerDays">— days monitored</span>
+    <span>Joey's data</span>
+  </div>
+</footer>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""></script>
+<script src="assets/routes.js"></script>
+<script src="assets/health-data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

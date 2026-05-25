@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>总览 · Cycling Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,700&family=JetBrains+Mono:wght@300;400;500&family=Noto+Serif+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""/>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="overview">
+
+<nav id="topNav" class="top-nav" aria-label="主导航"></nav>
+
+<section class="hero">
+  <div class="hero-meta"><span id="heroMetaText">总览 · Overview</span><span class="hero-fresh" id="heroFresh"></span></div>
+  <h1 id="heroH1">在路上<br><em>夜色与坐垫</em></h1>
+  <p class="hero-sub" id="heroSub">19 个月,55 条 GPS 轨迹,4 个城市。这是你在悉尼下午到深夜骑出的城市,也是早期在宁波、上海、河南留下的零星记号。每一条线,都是一次出门。</p>
+</section>
+
+<div class="stats-bar">
+  <div class="stat">
+    <div class="stat-label">Total Distance</div>
+    <div class="stat-value"><span id="statTotalDistance">—</span><span class="stat-unit">km</span></div>
+    <div class="stat-foot" id="statTotalDistanceFoot">累计 GPS 距离</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Sydney Volume</div>
+    <div class="stat-value"><span id="statSydneyDistance">—</span><span class="stat-unit">km</span></div>
+    <div class="stat-foot" id="statSydneyShare">送餐期 — 占比</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Ride Time</div>
+    <div class="stat-value"><span id="statRideTime">—</span><span class="stat-unit">小时</span></div>
+    <div class="stat-foot">坐在车上的时长</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Routes</div>
+    <div class="stat-value" id="statRoutes">—</div>
+    <div class="stat-foot">条独立轨迹</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Climb Total</div>
+    <div class="stat-value"><span id="statClimb">—</span><span class="stat-unit">m</span></div>
+    <div class="stat-foot">累计爬升 / 约 <span id="statClimbE">—</span> 个珠峰</div>
+  </div>
+</div>
+
+<section class="latest-band" id="latestBand">
+  <div class="latest-grid">
+    <div class="latest-cell">
+      <div class="lc-tag">最近一次骑行 · Latest Ride</div>
+      <div class="lc-headline" id="latestHeadline">—</div>
+      <div class="lc-when" id="latestWhen">—</div>
+      <div class="lc-stats" id="latestStats"></div>
+      <div class="latest-elev" id="latestElev"></div>
+    </div>
+    <div class="latest-cell">
+      <div class="lc-tag cool">恢复状态 · Recovery <span class="recovery-status" id="recoveryStatus">—</span></div>
+      <div class="recovery-rows" id="recoveryRows"></div>
+      <div class="recovery-readout" id="recoveryReadout">—</div>
+    </div>
+    <div class="latest-cell">
+      <div class="lc-tag cool">本周节奏 · This Week</div>
+      <div class="recovery-rows" id="weekRows"></div>
+      <div class="recovery-readout" id="weekReadout">—</div>
+    </div>
+  </div>
+</section>
+
+
+<main class="main">
+<section class="map-section">
+  <div class="section-title">轨迹地图<em>·</em>Cycling Map</div>
+  <div class="section-sub">点击任一条路线 / 列表项查看细节</div>
+
+  <div class="city-tabs" id="cityTabs">
+    <button class="city-tab active" data-city="Sydney">悉尼 <span class="count" data-city-count="Sydney">—</span></button>
+    <button class="city-tab" data-city="Shanghai">上海 <span class="count" data-city-count="Shanghai">—</span></button>
+    <button class="city-tab" data-city="Ningbo">宁波 <span class="count" data-city-count="Ningbo">—</span></button>
+    <button class="city-tab" data-city="Henan">华北 <span class="count" data-city-count="Henan">—</span></button>
+    <button class="city-tab" data-city="all">全部 <span class="count" data-city-count="all">—</span></button>
+  </div>
+
+  <div class="map-grid">
+    <div id="map"></div>
+
+    <div class="route-panel">
+      <div class="panel-header">
+        <span id="panelTitle">悉尼路线</span>
+        <span id="panelCount" style="color: var(--amber);">34</span>
+      </div>
+      <div id="routeList"></div>
+    </div>
+  </div>
+
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-header">
+      <div>
+        <div class="detail-title" id="detailTitle"></div>
+        <div class="detail-time" id="detailTime"></div>
+      </div>
+      <button class="detail-close" onclick="closeDetail()">×</button>
+    </div>
+    <div class="detail-stats" id="detailStats"></div>
+    <div class="detail-elev empty" id="detailElev">
+      <div class="detail-elev-head">
+        <span>Elevation Profile · 海拔曲线</span>
+        <span class="endpoints" id="detailElevEnds"></span>
+      </div>
+      <svg id="detailElevSvg" viewBox="0 0 800 70" preserveAspectRatio="none"></svg>
+    </div>
+  </div>
+
+  <div class="city-info-box" id="cityInfo"></div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">最佳成绩<em>·</em>Personal Records</div>
+  <div class="section-sub">34 次有 Apple Watch 记录的骑行 · 自动从原始数据中提取</div>
+  <div class="pr-grid" id="prGrid"></div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">城市分布<em>·</em>City Atlas</div>
+  <div class="section-sub">55 条 GPS 轨迹横跨 4 座城市 · 配送期 Sydney 占绝对主导</div>
+  <div class="chart-card" style="padding: 0;">
+    <div class="city-atlas" id="cityAtlas"></div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">累计旅程<em>·</em>Cumulative Journey</div>
+  <div class="section-sub">19 个月一笔笔加起来 · 把 km 数字对照成真实的距离</div>
+  <div class="chart-card">
+    <svg class="journey-chart" id="journeyChart" viewBox="0 0 900 320" preserveAspectRatio="none"></svg>
+    <div class="journey-grid">
+      <div id="journeyMilestones"></div>
+      <div class="journey-side">
+        <div class="journey-context">
+          <div class="journey-context-title">真实距离对照 · Real-world equivalents</div>
+          <div class="journey-context-body" id="journeyContextBody">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div id="footerGen">导出于 — · Apple Health Export</div>
+  <div style="display: flex; gap: 24px;">
+    <span>55 GPX tracks</span>
+    <span id="footerDays">— days monitored</span>
+    <span>Joey's data</span>
+  </div>
+</footer>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""></script>
+<script src="assets/routes.js"></script>
+<script src="assets/health-data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
