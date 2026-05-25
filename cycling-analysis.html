@@ -2126,6 +2126,561 @@
     letter-spacing: 0.08em;
   }
 
+  /* ===== Fitness & Form (CTL / ATL / TSB) ===== */
+  .ff-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-bottom: 18px;
+  }
+  .ff-kpi {
+    background: var(--surface);
+    padding: 18px 20px;
+    position: relative;
+  }
+  .ff-kpi-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ff-kpi-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .ff-kpi-dot.ctl { background: var(--amber); box-shadow: 0 0 6px rgba(232,183,109,0.4); }
+  .ff-kpi-dot.atl { background: var(--cyan); box-shadow: 0 0 6px rgba(108,196,217,0.4); }
+  .ff-kpi-dot.tsb { background: #88b66a; box-shadow: 0 0 6px rgba(136,182,106,0.4); }
+  .ff-kpi-dot.tsb.neg { background: var(--rose); box-shadow: 0 0 6px rgba(217,122,138,0.4); }
+  .ff-kpi-value {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 30px;
+    line-height: 1;
+    color: var(--text);
+  }
+  .ff-kpi-value small {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-left: 4px;
+  }
+  .ff-kpi-foot {
+    margin-top: 8px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+  }
+  .ff-kpi-foot strong {
+    font-weight: 500;
+    color: var(--text-dim);
+  }
+  .ff-state-pill {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border: 1px solid currentColor;
+    color: var(--amber);
+    margin-top: 8px;
+  }
+  .ff-state-pill.fresh   { color: #88b66a; }
+  .ff-state-pill.optimal { color: var(--amber); }
+  .ff-state-pill.heavy   { color: var(--rose); }
+  .ff-state-pill.detrain { color: var(--text-dim); }
+
+  .ff-legend {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    align-items: center;
+  }
+  .ff-legend .swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 6px;
+    vertical-align: -1px;
+  }
+
+  /* Rides-table elevation sparkline cell */
+  .rides-table td.col-elev {
+    min-width: 88px;
+    padding-right: 6px;
+  }
+  .rides-table td.col-elev svg {
+    display: block;
+    width: 80px;
+    height: 22px;
+  }
+  .elev-spark-fill { fill: rgba(232, 183, 109, 0.18); }
+  .elev-spark-line { stroke: var(--amber); stroke-width: 1; fill: none; }
+  .elev-spark-none {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+  }
+
+  /* ===== 2026-05-25 三次迭代 ===== */
+
+  /* 心率范围 / HR Range bars */
+  .hr-range-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .hr-range-foot {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    align-items: center;
+  }
+  .hr-range-foot .swatch {
+    display: inline-block;
+    width: 22px;
+    height: 4px;
+    margin-right: 6px;
+    vertical-align: 2px;
+    background: linear-gradient(90deg, rgba(108,196,217,0.35), rgba(232,183,109,0.85));
+    border-radius: 2px;
+  }
+  .hr-range-foot .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--amber-bright);
+    margin-right: 6px;
+    vertical-align: 0;
+  }
+
+  /* 能量构成 / Energy Composition */
+  .energy-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .energy-legend {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    align-items: center;
+  }
+  .energy-legend .swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 6px;
+    vertical-align: -1px;
+  }
+  .energy-stats {
+    margin-top: 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+  .energy-stat {
+    background: var(--surface-2);
+    padding: 18px 20px;
+  }
+  .energy-stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+  }
+  .energy-stat-value {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 28px;
+    color: var(--text);
+    line-height: 1;
+  }
+  .energy-stat-value small {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-left: 4px;
+  }
+  .energy-stat-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+
+  /* 气候散点 / Climate Scatter */
+  .climate-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .climate-legend {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    align-items: center;
+  }
+  .climate-legend .grad {
+    display: inline-block;
+    width: 80px;
+    height: 8px;
+    background: linear-gradient(90deg, #6cc4d9, #ffd897, #d97a8a);
+    margin: 0 8px;
+    vertical-align: middle;
+    border-radius: 2px;
+  }
+
+  /* 日常活动 / Daily Steps + Flights */
+  .daily-life-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .daily-life-legend {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    align-items: center;
+  }
+  .daily-life-legend .swatch {
+    display: inline-block;
+    width: 12px;
+    height: 4px;
+    margin-right: 6px;
+    vertical-align: 2px;
+    border-radius: 2px;
+  }
+  .daily-life-stats {
+    margin-top: 22px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+  .dl-stat {
+    background: var(--surface-2);
+    padding: 16px 18px;
+  }
+  .dl-stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 6px;
+  }
+  .dl-stat-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .dl-stat-base {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .dl-stat-arrow {
+    color: var(--text-faint);
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .dl-stat-now {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 22px;
+    color: var(--text);
+  }
+  .dl-stat-delta {
+    display: inline-block;
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 2px 8px;
+    border: 1px solid var(--border-bright);
+    border-radius: 999px;
+  }
+  .dl-stat-delta.up { color: var(--amber); border-color: rgba(232,183,109,0.4); }
+  .dl-stat-delta.down { color: var(--cyan); border-color: rgba(108,196,217,0.4); }
+
+  /* 爬升画像 / Elevation Profile Gallery */
+  .elev-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+  .elev-card {
+    background: var(--surface-2);
+    padding: 16px 18px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .elev-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .elev-card-date {
+    color: var(--text);
+    letter-spacing: 0.04em;
+  }
+  .elev-card-gain {
+    color: var(--amber-bright);
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight: 300;
+    line-height: 1;
+  }
+  .elev-card-gain small {
+    color: var(--text-faint);
+    font-family: var(--mono);
+    font-size: 10px;
+    margin-left: 3px;
+  }
+  .elev-card svg {
+    width: 100%;
+    height: 70px;
+    display: block;
+  }
+  .elev-card-meta {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+  }
+  .elev-card-meta b {
+    color: var(--text-dim);
+    font-weight: 500;
+    margin-right: 4px;
+  }
+  .elev-summary {
+    margin-top: 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+  }
+  .elev-summary b {
+    color: var(--amber);
+    font-weight: 500;
+  }
+
+  /* 代谢强度 / METS Intensity */
+  .mets-chart {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .mets-bands {
+    margin-top: 22px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+  .mets-band {
+    background: var(--surface-2);
+    padding: 14px 16px;
+  }
+  .mets-band-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 6px;
+  }
+  .mets-band-range {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+  }
+  .mets-band-count {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 22px;
+    color: var(--text);
+    line-height: 1;
+  }
+  .mets-band-count small {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-left: 4px;
+  }
+  .mets-band-bar {
+    margin-top: 8px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.04);
+    overflow: hidden;
+  }
+  .mets-band-bar > span {
+    display: block;
+    height: 100%;
+    border-radius: 2px;
+  }
+  .mets-legend {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    align-items: center;
+  }
+
+  /* 出发热力图 / Departure Heatmap */
+  .heatmap-wrap {
+    overflow-x: auto;
+  }
+  .heatmap {
+    display: grid;
+    grid-template-columns: 36px repeat(24, minmax(22px, 1fr));
+    gap: 2px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-faint);
+    min-width: 640px;
+  }
+  .heatmap .hm-corner,
+  .heatmap .hm-hour,
+  .heatmap .hm-wd {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 22px;
+    color: var(--text-faint);
+  }
+  .heatmap .hm-hour {
+    letter-spacing: 0.04em;
+  }
+  .heatmap .hm-wd {
+    justify-content: flex-end;
+    padding-right: 8px;
+    color: var(--text-dim);
+    font-size: 10px;
+  }
+  .heatmap .hm-cell {
+    position: relative;
+    min-height: 22px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.03);
+  }
+  .heatmap .hm-cell.has {
+    border-color: rgba(232,183,109,0.18);
+  }
+  .heatmap .hm-cell .hm-dot {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0a0a0c;
+    font-weight: 600;
+    font-size: 9px;
+  }
+  .heatmap-legend {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .heatmap-legend .grad {
+    display: inline-block;
+    width: 120px;
+    height: 8px;
+    background: linear-gradient(90deg, rgba(232,183,109,0.10), rgba(232,183,109,0.45), #ffd897);
+    border-radius: 2px;
+  }
+  .heatmap-stats {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+  .hm-stat {
+    background: var(--surface-2);
+    padding: 14px 16px;
+  }
+  .hm-stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 6px;
+  }
+  .hm-stat-value {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 22px;
+    color: var(--text);
+    line-height: 1;
+  }
+  .hm-stat-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+
 </style>
 </head>
 <body>
@@ -2506,6 +3061,117 @@
 </section>
 
 <section class="analysis-section">
+  <div class="section-title">训练负荷与状态<em>·</em>Fitness &amp; Form</div>
+  <div class="section-sub">基于 Banister 模型 · 日负荷 = 活动 kcal/10 · CTL τ=42 天 (体能) · ATL τ=7 天 (疲劳) · TSB = CTL − ATL (状态)</div>
+
+  <div class="ff-kpis" id="ffKpis"></div>
+
+  <div class="chart-card">
+    <svg class="ff-chart" id="ffChart" viewBox="0 0 900 320" preserveAspectRatio="none" style="width:100%;height:auto;display:block;"></svg>
+    <div class="ff-legend">
+      <span><span class="swatch" style="background: linear-gradient(180deg, rgba(232,183,109,0.55), rgba(232,183,109,0.04));"></span>CTL · 长期体能 (42d)</span>
+      <span><span class="swatch" style="background: var(--cyan); border-radius: 50%; width: 10px; height: 10px;"></span>ATL · 短期疲劳 (7d)</span>
+      <span><span class="swatch" style="background: linear-gradient(90deg, #88b66a, var(--rose));"></span>TSB · 状态曲线 (副轴)</span>
+      <span style="margin-left: auto;" id="ffFoot">—</span>
+    </div>
+  </div>
+</section>
+
+<section class="analysis-section">
+  <div class="section-title">心率范围<em>·</em>Heart Rate Range</div>
+  <div class="section-sub">每一根横条 = 一次骑行的 min – avg – max 心率 · 圆点 = 平均值 · 颜色越暖越接近平均区间</div>
+  <div class="chart-card">
+    <svg class="hr-range-chart" id="hrRangeChart" viewBox="0 0 900 520" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="hr-range-foot">
+      <span><span class="swatch"></span>min – max 心率区间</span>
+      <span><span class="dot"></span>平均心率</span>
+      <span style="margin-left:auto;" id="hrRangeFoot">—</span>
+    </div>
+  </div>
+</section>
+
+<section class="analysis-section">
+  <div class="section-title">能量构成<em>·</em>Energy Composition</div>
+  <div class="section-sub">每次骑行的能量账单 · 主动消耗 (active kJ) + 基础代谢 (basal kJ) · Apple Watch 估算</div>
+  <div class="chart-card">
+    <svg class="energy-chart" id="energyChart" viewBox="0 0 900 320" preserveAspectRatio="none"></svg>
+    <div class="energy-legend">
+      <span><span class="swatch" style="background: var(--amber);"></span>Active kJ · 主动消耗</span>
+      <span><span class="swatch" style="background: rgba(108,196,217,0.45);"></span>Basal kJ · 基础代谢</span>
+      <span><span class="swatch" style="background: var(--rose); border-radius: 50%; width: 8px; height: 8px;"></span>每公里活动 kcal · 副轴</span>
+      <span style="margin-left:auto;" id="energyFoot">—</span>
+    </div>
+  </div>
+  <div class="energy-stats" id="energyStats"></div>
+</section>
+
+<section class="analysis-section">
+  <div class="section-title">气候画像<em>·</em>Climate Profile</div>
+  <div class="section-sub">悉尼下半年配送期 · 湿度 × 温度 · 圆面积 ∝ 距离 · 颜色 = 平均心率</div>
+  <div class="chart-card">
+    <svg class="climate-chart" id="climateChart" viewBox="0 0 900 360" preserveAspectRatio="none"></svg>
+    <div class="climate-legend">
+      <span>HR 低 <span class="grad"></span> HR 高</span>
+      <span style="margin-left:auto;" id="climateFoot">—</span>
+    </div>
+  </div>
+</section>
+
+<section class="analysis-section">
+  <div class="section-title">日常脉搏<em>·</em>Daily Life Pulse</div>
+  <div class="section-sub">19 个月的步数与爬楼层 · 骑行之外的整体活动 · 配送期一目了然</div>
+  <div class="chart-card">
+    <svg class="daily-life-chart" id="dailyLifeChart" viewBox="0 0 900 280" preserveAspectRatio="none"></svg>
+    <div class="daily-life-legend">
+      <span><span class="swatch" style="background: var(--amber); height: 8px;"></span>每日步数</span>
+      <span><span class="swatch" style="background: var(--cyan); height: 8px;"></span>每日爬楼层</span>
+      <span style="margin-left:auto;">配送期 (04-25 → 05-19) 由阴影标出</span>
+    </div>
+    <div class="daily-life-stats" id="dailyLifeStats"></div>
+  </div>
+</section>
+
+<section class="analysis-section">
+  <div class="section-title">爬升画像<em>·</em>Elevation Profile Gallery</div>
+  <div class="section-sub">爬升 Top 8 · 每条骑行的 60 点海拔曲线 · 起点 ▸ 终点 · 主动消耗的山脊纹理</div>
+  <div class="chart-card">
+    <div class="elev-gallery" id="elevGallery"></div>
+    <div class="elev-summary" id="elevSummary"></div>
+  </div>
+</section>
+
+<section class="analysis-section">
+  <div class="section-title">代谢强度<em>·</em>Metabolic Intensity</div>
+  <div class="section-sub">每次骑行的 METS 等级 · 分级直方图 + 距离/METS 散点 · 来自 Apple Watch 自动估算</div>
+  <div class="chart-card">
+    <svg class="mets-chart" id="metsChart" viewBox="0 0 900 300" preserveAspectRatio="none"></svg>
+    <div class="mets-legend" id="metsLegend">
+      <span><span style="display:inline-block;width:12px;height:12px;background:#7aa0a8;margin-right:6px;vertical-align:-1px;"></span>轻 Light 2–3</span>
+      <span><span style="display:inline-block;width:12px;height:12px;background:#6cc4d9;margin-right:6px;vertical-align:-1px;"></span>中 Moderate 3–6</span>
+      <span><span style="display:inline-block;width:12px;height:12px;background:#e8b76d;margin-right:6px;vertical-align:-1px;"></span>剧烈 Vigorous 6–9</span>
+      <span><span style="display:inline-block;width:12px;height:12px;background:#d97a8a;margin-right:6px;vertical-align:-1px;"></span>极限 Max 9+</span>
+      <span style="margin-left:auto;" id="metsFoot">—</span>
+    </div>
+    <div class="mets-bands" id="metsBands"></div>
+  </div>
+</section>
+
+<section class="analysis-section">
+  <div class="section-title">出发热力图<em>·</em>Departure Heatmap</div>
+  <div class="section-sub">星期 × 出发小时 · 颜色越亮越频繁 · 揭示送外卖班次的双峰节律</div>
+  <div class="chart-card">
+    <div class="heatmap-wrap">
+      <div class="heatmap" id="hourHeatmap"></div>
+    </div>
+    <div class="heatmap-legend">
+      <span>少</span><span class="grad"></span><span>多</span>
+      <span style="margin-left:auto;" id="hmFoot">—</span>
+    </div>
+    <div class="heatmap-stats" id="hmStats"></div>
+  </div>
+</section>
+
+<section class="analysis-section">
   <div class="section-title">全部骑行明细<em>·</em>All Rides</div>
   <div class="section-sub">34 次有 Apple Watch 记录的骑行 · 点击列头排序 · 点击行查看在地图上的位置</div>
   <div class="chart-card" style="padding: 0;">
@@ -2514,6 +3180,7 @@
         <thead><tr>
           <th data-sort="date" data-dir="desc" class="sorted">日期</th>
           <th data-sort="distance_km" data-dir="desc">距离 km</th>
+          <th data-sort="elev_gain_m" data-dir="desc">海拔剖面</th>
           <th data-sort="duration_min" data-dir="desc">时长 min</th>
           <th data-sort="avg_speed_kmh" data-dir="desc">均速 km/h</th>
           <th data-sort="hr_avg" data-dir="desc">均心率 bpm</th>
@@ -3997,6 +4664,30 @@ function renderRidesTable() {
   const maxKm = Math.max(...w.map(r => r.distance_km || 0), 1);
   const fmt = (v, d = 1) => v == null ? '—' : v.toFixed(d);
 
+  const elevSpark = (series, gain) => {
+    if (!series || series.length < 2) {
+      return `<span class="elev-spark-none">—</span>`;
+    }
+    const W = 80, H = 22;
+    const mn = Math.min(...series), mx = Math.max(...series);
+    const span = (mx - mn) || 1;
+    const stepX = W / (series.length - 1);
+    let path = '';
+    let area = `M 0 ${H} `;
+    series.forEach((v, i) => {
+      const x = +(i * stepX).toFixed(2);
+      const y = +((H - 2) - ((v - mn) / span) * (H - 4)).toFixed(2);
+      path += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+      area += ` L ${x} ${y}`;
+    });
+    area += ` L ${W} ${H} Z`;
+    const gainTxt = gain != null ? `↗ ${Math.round(gain)} m` : '';
+    return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-label="${gainTxt}">
+      <path d="${area}" class="elev-spark-fill"/>
+      <path d="${path}" class="elev-spark-line"/>
+    </svg>`;
+  };
+
   const html = sorted.map(r => {
     const km = r.distance_km || 0;
     const barW = (km / maxKm) * 60;
@@ -4005,6 +4696,7 @@ function renderRidesTable() {
     return `<tr data-route="${routeName}">
       <td class="col-date">${r.date}</td>
       <td class="col-distance">${fmt(r.distance_km, 2)}<span class="bar-cell"><span class="bar-fill" style="width:${barW}px"></span></span></td>
+      <td class="col-elev">${elevSpark(r.elev_series, r.elev_gain_m)}</td>
       <td>${fmt(r.duration_min, 1)}</td>
       <td>${fmt(r.avg_speed_kmh, 1)}</td>
       <td class="col-hr">${r.hr_avg ? Math.round(r.hr_avg) : '—'}</td>
@@ -4645,6 +5337,1049 @@ function renderEffortQuadrant() {
     `<div class="eq-tag costly"><strong>心率代价大</strong><span class="eq-count">${q.costly} 次</span><br>心率高但速度低 — 爬坡、疲劳或大热天的提示。</div>`;
 }
 
+// ============ Fitness & Form (CTL / ATL / TSB) ============
+function renderFitnessForm() {
+  const H = window.HEALTH_DATA;
+  if (!H || !H.workouts || !H.workouts.length) return;
+
+  // Aggregate active_kcal per date from workouts.
+  const loadByDate = {};
+  H.workouts.forEach(w => {
+    if (!w.date) return;
+    loadByDate[w.date] = (loadByDate[w.date] || 0) + (w.active_kcal || 0);
+  });
+
+  // Build continuous daily timeline from first ride - 14 days to last ride + 7 days
+  // so the curve has visible lead-in and tail-off context.
+  const dStr = s => new Date(s + 'T00:00:00Z');
+  const allDates = Object.keys(loadByDate).sort();
+  const first = dStr(allDates[0]);
+  first.setUTCDate(first.getUTCDate() - 14);
+  const last = dStr(allDates[allDates.length - 1]);
+  last.setUTCDate(last.getUTCDate() + 7);
+
+  // Cap "last" at today if today is earlier (no future projection).
+  const today = new Date(); today.setUTCHours(0,0,0,0);
+  const endDate = today < last ? today : last;
+
+  const series = [];
+  let ctl = 0, atl = 0;
+  const tauCtl = 42, tauAtl = 7;
+  // TRIMP-like daily load: kcal/10 → roughly comparable to TSS scale.
+  const cur = new Date(first);
+  while (cur <= endDate) {
+    const ds = cur.toISOString().slice(0, 10);
+    const load = (loadByDate[ds] || 0) / 10;
+    ctl = ctl + (load - ctl) / tauCtl;
+    atl = atl + (load - atl) / tauAtl;
+    series.push({ date: ds, load, ctl, atl, tsb: ctl - atl });
+    cur.setUTCDate(cur.getUTCDate() + 1);
+  }
+
+  if (series.length < 2) return;
+
+  // ---- Chart geometry ----
+  const W = 900, Hh = 320;
+  const padL = 50, padR = 56, padT = 22, padB = 38;
+  const chartW = W - padL - padR;
+  const chartH = Hh - padT - padB;
+
+  const maxCtl = Math.max(...series.map(p => p.ctl), 5);
+  const maxAtl = Math.max(...series.map(p => p.atl), maxCtl);
+  const yMax = Math.max(maxCtl, maxAtl) * 1.08;
+
+  // TSB scale lives on right axis; symmetric around 0.
+  const tsbAbs = Math.max(8, ...series.map(p => Math.abs(p.tsb)));
+
+  const x = i => padL + (i / (series.length - 1)) * chartW;
+  const y = v => padT + chartH - (v / yMax) * chartH;
+  const yT = v => padT + chartH/2 - (v / tsbAbs) * (chartH/2);
+
+  let svg = '';
+
+  // Gradients
+  svg += `<defs>
+    <linearGradient id="ctlGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e8b76d" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#e8b76d" stop-opacity="0.03"/>
+    </linearGradient>
+    <linearGradient id="tsbGradPos" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#88b66a" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#88b66a" stop-opacity="0.0"/>
+    </linearGradient>
+    <linearGradient id="tsbGradNeg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#d97a8a" stop-opacity="0.0"/>
+      <stop offset="100%" stop-color="#d97a8a" stop-opacity="0.35"/>
+    </linearGradient>
+  </defs>`;
+
+  // y-axis grid (left, load scale)
+  const ticks = 4;
+  for (let i = 0; i <= ticks; i++) {
+    const v = (yMax / ticks) * i;
+    const yy = y(v);
+    svg += `<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="#2a2c35" stroke-width="0.5" stroke-dasharray="2 4"/>`;
+    svg += `<text x="${padL-6}" y="${yy+3}" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${v.toFixed(0)}</text>`;
+  }
+  // axis labels
+  svg += `<text x="${padL-32}" y="${padT+chartH/2}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#908d85" transform="rotate(-90 ${padL-32} ${padT+chartH/2})">CTL / ATL · 负荷单位</text>`;
+
+  // TSB right axis ticks
+  [-tsbAbs, -tsbAbs/2, 0, tsbAbs/2, tsbAbs].forEach(v => {
+    const yy = yT(v);
+    svg += `<text x="${W-padR+6}" y="${yy+3}" text-anchor="start" font-family="JetBrains Mono" font-size="9" fill="${v >= 0 ? '#88b66a' : '#d97a8a'}">${v > 0 ? '+'+v.toFixed(0) : v.toFixed(0)}</text>`;
+  });
+  svg += `<text x="${W-padR+38}" y="${padT+chartH/2}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#908d85" transform="rotate(90 ${W-padR+38} ${padT+chartH/2})">TSB · 状态</text>`;
+  // zero line for TSB
+  svg += `<line x1="${padL}" y1="${yT(0)}" x2="${W-padR}" y2="${yT(0)}" stroke="#3a3d48" stroke-width="0.6"/>`;
+
+  // Delivery period highlight (2026-04-25 → 2026-05-19)
+  const dStart = series.findIndex(p => p.date >= '2026-04-25');
+  const dEnd = series.findIndex(p => p.date >= '2026-05-19');
+  if (dStart >= 0 && dEnd >= 0 && dEnd > dStart) {
+    const dx1 = x(dStart), dx2 = x(dEnd);
+    svg += `<rect x="${dx1}" y="${padT}" width="${dx2-dx1}" height="${chartH}" fill="#e8b76d" fill-opacity="0.05" stroke="#a87f3e" stroke-opacity="0.35" stroke-width="0.5" stroke-dasharray="3 3"/>`;
+    svg += `<text x="${(dx1+dx2)/2}" y="${padT+11}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#a87f3e" letter-spacing="0.12em">DELIVERY · 4/25 → 5/19</text>`;
+  }
+
+  // TSB shaded area split by sign (band centered at right-axis zero)
+  let posArea = '';
+  let negArea = '';
+  series.forEach((p, i) => {
+    const xx = x(i);
+    const yt = yT(p.tsb);
+    const y0 = yT(0);
+    if (p.tsb >= 0) {
+      posArea += (i === 0 ? `M ${xx} ${y0} ` : ` L ${xx} ${y0} `) + ` L ${xx} ${yt} `;
+    }
+  });
+  // Build proper polyline for TSB and use clipPaths? Simpler: thin TSB line, color shifts by sign via stroke segments.
+  let tsbLine = '';
+  series.forEach((p, i) => {
+    tsbLine += (i === 0 ? 'M ' : 'L ') + `${x(i)} ${yT(p.tsb)} `;
+  });
+
+  // CTL filled area
+  let ctlArea = `M ${x(0)} ${padT+chartH} `;
+  series.forEach((p, i) => { ctlArea += `L ${x(i)} ${y(p.ctl)} `; });
+  ctlArea += `L ${x(series.length-1)} ${padT+chartH} Z`;
+  svg += `<path d="${ctlArea}" fill="url(#ctlGrad)" stroke="#e8b76d" stroke-width="1.4"/>`;
+
+  // ATL line
+  let atlLine = '';
+  series.forEach((p, i) => { atlLine += (i === 0 ? 'M ' : 'L ') + `${x(i)} ${y(p.atl)} `; });
+  svg += `<path d="${atlLine}" fill="none" stroke="#6cc4d9" stroke-width="1.3" stroke-opacity="0.9"/>`;
+
+  // Daily load impulses (tiny vertical ticks at the bottom for ride days)
+  series.forEach((p, i) => {
+    if (p.load > 0) {
+      const xx = x(i);
+      const h = Math.min(28, Math.max(3, p.load * 0.6));
+      svg += `<line x1="${xx}" y1="${padT+chartH}" x2="${xx}" y2="${padT+chartH-h}" stroke="#a87f3e" stroke-width="1" stroke-opacity="0.45"/>`;
+    }
+  });
+
+  // TSB line — render in two passes (positive vs negative), using stroke
+  svg += `<g opacity="0.95">`;
+  // To color-shift TSB, draw small segments
+  for (let i = 1; i < series.length; i++) {
+    const a = series[i-1], b = series[i];
+    const col = (a.tsb + b.tsb) / 2 >= 0 ? '#88b66a' : '#d97a8a';
+    svg += `<line x1="${x(i-1)}" y1="${yT(a.tsb)}" x2="${x(i)}" y2="${yT(b.tsb)}" stroke="${col}" stroke-width="1.4" stroke-opacity="0.85"/>`;
+  }
+  svg += `</g>`;
+
+  // x labels — sample monthly
+  const seen = new Set();
+  series.forEach((p, i) => {
+    const ym = p.date.slice(0, 7);
+    if (!seen.has(ym) && (i === 0 || i % 30 === 0 || i === series.length - 1)) {
+      seen.add(ym);
+      svg += `<text x="${x(i)}" y="${Hh - 14}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${ym}</text>`;
+    }
+  });
+
+  // Peak CTL marker
+  const peakCtl = series.reduce((a, b) => b.ctl > a.ctl ? b : a, series[0]);
+  const peakIdx = series.indexOf(peakCtl);
+  svg += `<circle cx="${x(peakIdx)}" cy="${y(peakCtl.ctl)}" r="4" fill="#ffd897" stroke="#0a0a0c" stroke-width="1.2"/>`;
+  svg += `<text x="${x(peakIdx)}" y="${y(peakCtl.ctl) - 9}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#ffd897">PEAK ${peakCtl.ctl.toFixed(1)}</text>`;
+
+  // Current marker
+  const cur2 = series[series.length - 1];
+  svg += `<circle cx="${x(series.length-1)}" cy="${y(cur2.ctl)}" r="3" fill="#e8b76d"/>`;
+  svg += `<circle cx="${x(series.length-1)}" cy="${y(cur2.atl)}" r="3" fill="#6cc4d9"/>`;
+
+  document.getElementById('ffChart').innerHTML = svg;
+
+  // ---- KPI cards ----
+  const lastP = series[series.length - 1];
+  const stateOf = tsb => {
+    if (tsb >= 15)   return { cls: 'detrain', label: '过度休息 · 体能下降' };
+    if (tsb >= 5)    return { cls: 'fresh',   label: '充分恢复 · 状态新鲜' };
+    if (tsb >= -10)  return { cls: 'optimal', label: '巡航区间 · 适合发力' };
+    if (tsb >= -30)  return { cls: 'heavy',   label: '负荷较重 · 仍可坚持' };
+    return                  { cls: 'heavy',   label: '深度疲劳 · 注意恢复' };
+  };
+  const st = stateOf(lastP.tsb);
+  const tsbCls = lastP.tsb >= 0 ? '' : 'neg';
+  const tsbSign = lastP.tsb >= 0 ? '+' : '';
+
+  // 7-day delta
+  const past = series[Math.max(0, series.length - 8)];
+  const dCtl = lastP.ctl - past.ctl;
+  const dAtl = lastP.atl - past.atl;
+  const arrow = v => v > 0.05 ? '↗' : v < -0.05 ? '↘' : '→';
+
+  const kpisHtml = `
+    <div class="ff-kpi">
+      <div class="ff-kpi-label"><span class="ff-kpi-dot ctl"></span>体能 · CTL</div>
+      <div class="ff-kpi-value">${lastP.ctl.toFixed(1)}<small>负荷单位</small></div>
+      <div class="ff-kpi-foot">7 天 ${arrow(dCtl)} ${(dCtl>=0?'+':'')}${dCtl.toFixed(1)} · 峰值 <strong>${peakCtl.ctl.toFixed(1)}</strong></div>
+    </div>
+    <div class="ff-kpi">
+      <div class="ff-kpi-label"><span class="ff-kpi-dot atl"></span>疲劳 · ATL</div>
+      <div class="ff-kpi-value">${lastP.atl.toFixed(1)}<small>负荷单位</small></div>
+      <div class="ff-kpi-foot">7 天 ${arrow(dAtl)} ${(dAtl>=0?'+':'')}${dAtl.toFixed(1)} · 含 ${Object.keys(loadByDate).length} 天有效骑行</div>
+    </div>
+    <div class="ff-kpi">
+      <div class="ff-kpi-label"><span class="ff-kpi-dot tsb ${tsbCls}"></span>状态 · TSB</div>
+      <div class="ff-kpi-value" style="color: ${lastP.tsb >= 0 ? '#88b66a' : 'var(--rose)'}">${tsbSign}${lastP.tsb.toFixed(1)}</div>
+      <div class="ff-kpi-foot"><span class="ff-state-pill ${st.cls}">${st.label}</span></div>
+    </div>
+  `;
+  document.getElementById('ffKpis').innerHTML = kpisHtml;
+
+  // Footnote
+  const totalLoad = series.reduce((a, p) => a + p.load, 0);
+  document.getElementById('ffFoot').textContent =
+    `累计 ${totalLoad.toFixed(0)} 负荷单位 · ${series.length} 天窗口 · 截止 ${lastP.date}`;
+}
+
+// ============ 心率范围 / HR Range Bars ============
+function renderHrRangeChart() {
+  const H = window.HEALTH_DATA;
+  if (!H || !H.workouts) return;
+  const rides = H.workouts
+    .filter(w => w.hr_avg && w.hr_min && w.hr_max && w.hr_max > w.hr_min)
+    .sort((a, b) => new Date(a.start_iso) - new Date(b.start_iso));
+  if (!rides.length) return;
+
+  const W = 900, Ht = Math.max(220, 90 + rides.length * 12);
+  const padL = 100, padR = 80, padT = 30, padB = 38;
+  const chartW = W - padL - padR;
+  const chartH = Ht - padT - padB;
+
+  const allHr = rides.flatMap(r => [r.hr_min, r.hr_max]);
+  const xMin = Math.max(50, Math.floor(Math.min(...allHr) / 10) * 10 - 5);
+  const xMax = Math.ceil(Math.max(...allHr) / 10) * 10 + 5;
+  const X = v => padL + ((v - xMin) / (xMax - xMin)) * chartW;
+  const rowH = chartH / rides.length;
+
+  let html = '';
+  // viewBox dynamic
+  document.getElementById('hrRangeChart').setAttribute('viewBox', `0 0 ${W} ${Ht}`);
+
+  // grid + x labels
+  for (let v = xMin; v <= xMax; v += 10) {
+    const xx = X(v);
+    html += `<line x1="${xx}" y1="${padT}" x2="${xx}" y2="${padT+chartH}" stroke="#2a2c35" stroke-width="0.5" stroke-dasharray="2 4"/>`;
+    html += `<text x="${xx}" y="${padT-8}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${v}</text>`;
+    html += `<text x="${xx}" y="${padT+chartH+18}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${v}</text>`;
+  }
+  html += `<text x="${padL+chartW/2}" y="14" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#908d85" letter-spacing="1">bpm · Heart Rate</text>`;
+
+  // HR zone shading (background)
+  const zones = [
+    { from: 100, to: 120, color: 'rgba(108,196,217,0.04)' },
+    { from: 120, to: 140, color: 'rgba(232,183,109,0.05)' },
+    { from: 140, to: 160, color: 'rgba(217,122,138,0.06)' },
+  ];
+  zones.forEach(z => {
+    if (z.from < xMax && z.to > xMin) {
+      const x1 = X(Math.max(z.from, xMin));
+      const x2 = X(Math.min(z.to, xMax));
+      html += `<rect x="${x1}" y="${padT}" width="${x2-x1}" height="${chartH}" fill="${z.color}"/>`;
+    }
+  });
+
+  // bars
+  rides.forEach((r, i) => {
+    const cy = padT + i * rowH + rowH / 2;
+    const x1 = X(r.hr_min), x2 = X(r.hr_max), xa = X(r.hr_avg);
+    const range = r.hr_max - r.hr_min;
+    // color: warmer when avg is in middle/high zone, cooler when low
+    const norm = Math.max(0, Math.min(1, (r.hr_avg - 70) / 50));
+    const fill = `rgba(${Math.round(108 + norm*124)}, ${Math.round(196 - norm*13)}, ${Math.round(217 - norm*108)}, 0.45)`;
+
+    // bar
+    html += `<rect x="${x1}" y="${cy-2}" width="${Math.max(2, x2-x1)}" height="4" rx="1.5" fill="${fill}" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>`;
+    // avg dot
+    html += `<circle cx="${xa}" cy="${cy}" r="3.2" fill="#ffd897" stroke="#0a0a0c" stroke-width="0.8">
+      <title>${r.date} · ${r.distance_km.toFixed(1)} km · HR ${Math.round(r.hr_min)} – ${Math.round(r.hr_avg)} – ${Math.round(r.hr_max)} bpm · 范围 ${range.toFixed(0)} bpm</title>
+    </circle>`;
+
+    // date label every Nth row
+    const showDate = (i % Math.max(1, Math.ceil(rides.length / 14)) === 0) || i === rides.length - 1;
+    if (showDate) {
+      const md = r.date.slice(5);
+      html += `<text x="${padL-12}" y="${cy+3}" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#908d85">${md}</text>`;
+    }
+    // distance label on right
+    if (i % Math.max(1, Math.ceil(rides.length / 14)) === 0 || i === rides.length - 1) {
+      html += `<text x="${W-padR+8}" y="${cy+3}" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${r.distance_km.toFixed(1)} km</text>`;
+    }
+  });
+
+  // Highlight max HR ride and max range ride
+  let maxHrIdx = 0, maxRangeIdx = 0;
+  rides.forEach((r, i) => {
+    if (r.hr_max > rides[maxHrIdx].hr_max) maxHrIdx = i;
+    if ((r.hr_max - r.hr_min) > (rides[maxRangeIdx].hr_max - rides[maxRangeIdx].hr_min)) maxRangeIdx = i;
+  });
+  const annotate = (i, label, color) => {
+    const r = rides[i];
+    const cy = padT + i * rowH + rowH / 2;
+    const xx = X(r.hr_max) + 14;
+    html += `<line x1="${X(r.hr_max)+3}" y1="${cy}" x2="${xx}" y2="${cy}" stroke="${color}" stroke-width="0.8" stroke-dasharray="2 2"/>`;
+    html += `<text x="${xx+4}" y="${cy+3}" font-family="JetBrains Mono" font-size="9" fill="${color}">${label}</text>`;
+  };
+
+  document.getElementById('hrRangeChart').innerHTML = html;
+
+  // foot summary
+  const avgHr = rides.reduce((s, r) => s + r.hr_avg, 0) / rides.length;
+  const avgRange = rides.reduce((s, r) => s + (r.hr_max - r.hr_min), 0) / rides.length;
+  const maxHr = Math.max(...rides.map(r => r.hr_max));
+  document.getElementById('hrRangeFoot').innerHTML =
+    `${rides.length} 次记录 · 平均 HR <strong style="color:var(--text)">${Math.round(avgHr)}</strong> · 平均跨度 <strong style="color:var(--text)">${Math.round(avgRange)}</strong> bpm · 峰值 <strong style="color:var(--amber)">${Math.round(maxHr)}</strong> bpm`;
+}
+
+// ============ 能量构成 / Energy Composition ============
+function renderEnergyComposition() {
+  const H = window.HEALTH_DATA;
+  if (!H || !H.workouts) return;
+  const rides = H.workouts
+    .filter(w => (w.active_kj || 0) > 0)
+    .sort((a, b) => new Date(a.start_iso) - new Date(b.start_iso));
+  if (!rides.length) return;
+
+  const W = 900, Ht = 320;
+  const padL = 56, padR = 50, padT = 24, padB = 56;
+  const chartW = W - padL - padR;
+  const chartH = Ht - padT - padB;
+
+  const totals = rides.map(r => (r.active_kj || 0) + (r.basal_kj || 0));
+  const yMax = Math.ceil(Math.max(...totals) / 1000) * 1000;
+  const barW = chartW / rides.length * 0.7;
+  const gap = chartW / rides.length * 0.3;
+  const xStep = chartW / rides.length;
+
+  // efficiency: active_kcal per km
+  const effRides = rides.filter(r => r.distance_km > 0.3 && r.active_kcal > 0);
+  const effs = rides.map(r => (r.distance_km > 0.3 && r.active_kcal > 0) ? r.active_kcal / r.distance_km : null);
+  const validEffs = effs.filter(v => v !== null);
+  const effMin = Math.floor(Math.min(...validEffs) / 5) * 5;
+  const effMax = Math.ceil(Math.max(...validEffs) / 5) * 5;
+
+  const X = i => padL + i * xStep + xStep/2;
+  const Y = v => padT + chartH - (v / yMax) * chartH;
+  const Yeff = v => padT + chartH - ((v - effMin) / Math.max(1, effMax - effMin)) * chartH;
+
+  let html = '';
+  // grid
+  for (let v = 0; v <= yMax; v += yMax / 5) {
+    const yy = Y(v);
+    html += `<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="#2a2c35" stroke-width="0.5" stroke-dasharray="2 4"/>`;
+    html += `<text x="${padL-6}" y="${yy+3}" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${Math.round(v)}</text>`;
+  }
+  html += `<text x="14" y="${padT+chartH/2}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#908d85" transform="rotate(-90 14 ${padT+chartH/2})">总能量 kJ</text>`;
+  html += `<text x="${W-12}" y="${padT+chartH/2}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#d97a8a" transform="rotate(-90 ${W-12} ${padT+chartH/2})">kcal / km</text>`;
+
+  // right axis
+  for (let v = effMin; v <= effMax; v += Math.max(1, Math.round((effMax-effMin)/4))) {
+    const yy = Yeff(v);
+    html += `<text x="${W-padR+6}" y="${yy+3}" font-family="JetBrains Mono" font-size="9" fill="#a05a6a">${v}</text>`;
+  }
+
+  // bars + month labels
+  let lastMonth = '';
+  rides.forEach((r, i) => {
+    const x = padL + i * xStep + gap/2;
+    const active = r.active_kj || 0;
+    const basal = r.basal_kj || 0;
+    const total = active + basal;
+    // basal at bottom (full height segment near baseline)
+    const basalH = (basal / yMax) * chartH;
+    const activeH = (active / yMax) * chartH;
+    const yBasal = padT + chartH - basalH;
+    const yActive = yBasal - activeH;
+    html += `<rect x="${x}" y="${yBasal}" width="${barW}" height="${basalH}" fill="rgba(108,196,217,0.45)" stroke="rgba(108,196,217,0.7)" stroke-width="0.3">
+      <title>${r.date} · 基础 ${Math.round(basal)} kJ</title>
+    </rect>`;
+    html += `<rect x="${x}" y="${yActive}" width="${barW}" height="${activeH}" fill="rgba(232,183,109,0.78)" stroke="#ffd897" stroke-width="0.3">
+      <title>${r.date} · 主动 ${Math.round(active)} kJ · ${r.distance_km.toFixed(1)} km</title>
+    </rect>`;
+
+    // month tick
+    const m = r.date.slice(0, 7);
+    if (m !== lastMonth) {
+      lastMonth = m;
+      html += `<text x="${x + barW/2}" y="${Ht-30}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${m.slice(2)}</text>`;
+      html += `<line x1="${x + barW/2}" y1="${padT+chartH}" x2="${x + barW/2}" y2="${padT+chartH+4}" stroke="#3a3d48" stroke-width="0.5"/>`;
+    }
+  });
+
+  // efficiency line
+  let pathStarted = false;
+  let linePath = '';
+  rides.forEach((r, i) => {
+    if (effs[i] === null) return;
+    const cx = X(i), cy = Yeff(effs[i]);
+    linePath += `${pathStarted ? 'L' : 'M'} ${cx.toFixed(2)} ${cy.toFixed(2)} `;
+    pathStarted = true;
+  });
+  html += `<path d="${linePath}" fill="none" stroke="#d97a8a" stroke-width="1.4" stroke-opacity="0.85"/>`;
+  rides.forEach((r, i) => {
+    if (effs[i] === null) return;
+    const cx = X(i), cy = Yeff(effs[i]);
+    html += `<circle cx="${cx}" cy="${cy}" r="2.4" fill="#d97a8a" fill-opacity="0.9" stroke="#0a0a0c" stroke-width="0.6">
+      <title>${r.date} · ${effs[i].toFixed(1)} kcal/km</title>
+    </circle>`;
+  });
+
+  document.getElementById('energyChart').innerHTML = html;
+
+  // foot
+  const totalActive = rides.reduce((s, r) => s + (r.active_kj || 0), 0);
+  const totalBasal = rides.reduce((s, r) => s + (r.basal_kj || 0), 0);
+  const totalKj = totalActive + totalBasal;
+  const activeShare = totalActive / totalKj * 100;
+  document.getElementById('energyFoot').textContent =
+    `主动消耗占比 ${activeShare.toFixed(0)}%`;
+
+  // stats panel
+  const totalKcal = rides.reduce((s, r) => s + (r.active_kcal || 0), 0);
+  const longest = rides.reduce((a, r) => (r.active_kj || 0) > (a.active_kj || 0) ? r : a, rides[0]);
+  const avgKcalPerKm = validEffs.reduce((a,b)=>a+b,0) / validEffs.length;
+  const totalDistance = rides.reduce((s, r) => s + r.distance_km, 0);
+  // 1 banana ≈ 105 kcal, 1 big mac ≈ 540 kcal
+  const bigMacs = totalKcal / 540;
+
+  document.getElementById('energyStats').innerHTML = `
+    <div class="energy-stat">
+      <div class="energy-stat-label">Active Energy</div>
+      <div class="energy-stat-value">${(totalActive/1000).toFixed(1)}<small>MJ</small></div>
+      <div class="energy-stat-sub">主动消耗能量 / 总 ${rides.length} 次</div>
+    </div>
+    <div class="energy-stat">
+      <div class="energy-stat-label">Active vs Basal</div>
+      <div class="energy-stat-value">${activeShare.toFixed(0)}<small>%</small></div>
+      <div class="energy-stat-sub">主动消耗占总能量比</div>
+    </div>
+    <div class="energy-stat">
+      <div class="energy-stat-label">Avg Cost / km</div>
+      <div class="energy-stat-value">${avgKcalPerKm.toFixed(1)}<small>kcal/km</small></div>
+      <div class="energy-stat-sub">主动卡路里 / 距离</div>
+    </div>
+    <div class="energy-stat">
+      <div class="energy-stat-label">Big Mac Equivalent</div>
+      <div class="energy-stat-value">${bigMacs.toFixed(1)}<small>个</small></div>
+      <div class="energy-stat-sub">${Math.round(totalKcal)} kcal ≈ ${bigMacs.toFixed(1)} 个巨无霸</div>
+    </div>
+    <div class="energy-stat">
+      <div class="energy-stat-label">Top Single Ride</div>
+      <div class="energy-stat-value">${Math.round(longest.active_kj)}<small>kJ</small></div>
+      <div class="energy-stat-sub">${longest.date} · ${longest.distance_km.toFixed(1)} km</div>
+    </div>
+  `;
+}
+
+// ============ 气候画像 / Climate Profile ============
+function renderClimateProfile() {
+  const H = window.HEALTH_DATA;
+  if (!H || !H.workouts) return;
+  const rides = H.workouts.filter(w =>
+    typeof w.weather_temp_c === 'number' &&
+    typeof w.weather_humidity === 'number' &&
+    w.weather_humidity > 0
+  );
+  if (rides.length < 3) return;
+
+  const W = 900, Ht = 360;
+  const padL = 56, padR = 32, padT = 28, padB = 50;
+  const chartW = W - padL - padR;
+  const chartH = Ht - padT - padB;
+
+  const xs = rides.map(r => r.weather_humidity * 100);
+  const ys = rides.map(r => r.weather_temp_c);
+  const xMin = Math.max(0, Math.floor(Math.min(...xs) / 10) * 10);
+  const xMax = Math.min(100, Math.ceil(Math.max(...xs) / 10) * 10);
+  const yMin = Math.floor(Math.min(...ys));
+  const yMax = Math.ceil(Math.max(...ys));
+  const X = v => padL + ((v - xMin) / (xMax - xMin || 1)) * chartW;
+  const Y = v => padT + chartH - ((v - yMin) / (yMax - yMin || 1)) * chartH;
+
+  const maxKm = Math.max(...rides.map(r => r.distance_km));
+  const hrs = rides.map(r => r.hr_avg).filter(v => typeof v === 'number');
+  const hrMin = hrs.length ? Math.min(...hrs) : 70;
+  const hrMax = hrs.length ? Math.max(...hrs) : 100;
+
+  // color mapping: cyan (low HR) -> amber -> rose (high HR)
+  const colorFor = hr => {
+    if (typeof hr !== 'number') return 'rgba(144,141,133,0.5)';
+    const t = (hr - hrMin) / Math.max(1, hrMax - hrMin);
+    if (t < 0.5) {
+      const k = t * 2;
+      const r = Math.round(108 + k*(255-108));
+      const g = Math.round(196 + k*(216-196));
+      const b = Math.round(217 + k*(151-217));
+      return `rgba(${r},${g},${b},0.78)`;
+    } else {
+      const k = (t - 0.5) * 2;
+      const r = Math.round(255 + k*(217-255));
+      const g = Math.round(216 + k*(122-216));
+      const b = Math.round(151 + k*(138-151));
+      return `rgba(${r},${g},${b},0.78)`;
+    }
+  };
+
+  let html = '';
+
+  // grid + axes
+  for (let v = xMin; v <= xMax; v += 10) {
+    const xx = X(v);
+    html += `<line x1="${xx}" y1="${padT}" x2="${xx}" y2="${padT+chartH}" stroke="#2a2c35" stroke-width="0.5" stroke-dasharray="2 4"/>`;
+    html += `<text x="${xx}" y="${padT+chartH+18}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${v}%</text>`;
+  }
+  const yStep = Math.max(2, Math.round((yMax - yMin) / 5));
+  for (let v = yMin; v <= yMax; v += yStep) {
+    const yy = Y(v);
+    html += `<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="#2a2c35" stroke-width="0.5" stroke-dasharray="2 4"/>`;
+    html += `<text x="${padL-6}" y="${yy+3}" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${v}°</text>`;
+  }
+  html += `<text x="${padL + chartW/2}" y="${Ht - 18}" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#908d85" letter-spacing="1">Humidity %</text>`;
+  html += `<text x="14" y="${padT+chartH/2}" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#908d85" transform="rotate(-90 14 ${padT+chartH/2})">Temp °C</text>`;
+
+  // comfort zone shading (typical "good cycling weather" ~ 15-22°C, 40-60% humidity)
+  const cz_x1 = X(Math.max(xMin, 40));
+  const cz_x2 = X(Math.min(xMax, 70));
+  const cz_y1 = Y(Math.min(yMax, 22));
+  const cz_y2 = Y(Math.max(yMin, 15));
+  html += `<rect x="${cz_x1}" y="${cz_y1}" width="${cz_x2-cz_x1}" height="${cz_y2-cz_y1}" fill="rgba(232,183,109,0.04)" stroke="rgba(232,183,109,0.18)" stroke-width="0.5" stroke-dasharray="3 3"/>`;
+  html += `<text x="${(cz_x1+cz_x2)/2}" y="${cz_y1 - 4}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="rgba(232,183,109,0.55)">舒适带 · comfort</text>`;
+
+  // bubbles
+  rides.forEach(r => {
+    const cx = X(r.weather_humidity * 100);
+    const cy = Y(r.weather_temp_c);
+    const radius = 3 + (r.distance_km / maxKm) * 14;
+    html += `<circle cx="${cx}" cy="${cy}" r="${radius.toFixed(2)}" fill="${colorFor(r.hr_avg)}" stroke="rgba(255,255,255,0.12)" stroke-width="0.6">
+      <title>${r.date} · ${r.distance_km.toFixed(1)} km · ${r.weather_temp_c.toFixed(1)}°C · ${Math.round(r.weather_humidity*100)}% RH${r.hr_avg ? ' · '+Math.round(r.hr_avg)+' bpm' : ''}</title>
+    </circle>`;
+  });
+
+  document.getElementById('climateChart').innerHTML = html;
+
+  // foot
+  const avgT = ys.reduce((a,b)=>a+b,0) / ys.length;
+  const avgH = xs.reduce((a,b)=>a+b,0) / xs.length;
+  const humidShare = (xs.filter(v => v > 70).length / xs.length) * 100;
+  document.getElementById('climateFoot').innerHTML =
+    `${rides.length} 次有气象记录 · 平均 <strong style="color:var(--text)">${avgT.toFixed(1)}°C</strong> · 平均湿度 <strong style="color:var(--text)">${avgH.toFixed(0)}%</strong> · 高湿(>70%)占 <strong style="color:var(--amber)">${humidShare.toFixed(0)}%</strong>`;
+}
+
+// ============ 日常脉搏 / Daily Steps + Flights ============
+function renderDailyLife() {
+  const H = window.HEALTH_DATA;
+  if (!H || !H.daily) return;
+  const days = H.daily.filter(d => typeof d.steps === 'number' || typeof d.flights === 'number');
+  if (!days.length) return;
+
+  const W = 900, Ht = 280;
+  const padL = 56, padR = 56, padT = 24, padB = 50;
+  const chartW = W - padL - padR;
+  const chartH = Ht - padT - padB;
+
+  const stepsRow = { y0: padT, y1: padT + chartH * 0.55 };
+  const flightsRow = { y0: padT + chartH * 0.62, y1: padT + chartH };
+
+  const ts = d => new Date(d.date).getTime();
+  const tMin = ts(days[0]);
+  const tMax = ts(days[days.length - 1]);
+  const X = t => padL + ((t - tMin) / (tMax - tMin || 1)) * chartW;
+
+  const stepsMax = Math.max(...days.map(d => d.steps || 0));
+  const flightsMax = Math.max(...days.map(d => d.flights || 0));
+  const Ys = v => stepsRow.y1 - (v / stepsMax) * (stepsRow.y1 - stepsRow.y0);
+  const Yf = v => flightsRow.y1 - (v / flightsMax) * (flightsRow.y1 - flightsRow.y0);
+
+  let html = '';
+
+  // delivery period shading
+  const dpStart = new Date('2026-04-25').getTime();
+  const dpEnd = new Date('2026-05-19').getTime();
+  if (dpEnd > tMin && dpStart < tMax) {
+    const x1 = X(Math.max(dpStart, tMin));
+    const x2 = X(Math.min(dpEnd, tMax));
+    html += `<rect x="${x1}" y="${padT}" width="${x2-x1}" height="${chartH}" fill="rgba(232,183,109,0.06)" stroke="rgba(232,183,109,0.2)" stroke-width="0.5" stroke-dasharray="3 3"/>`;
+    html += `<text x="${(x1+x2)/2}" y="${padT+11}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="rgba(232,183,109,0.7)">送外卖期</text>`;
+  }
+
+  // row labels
+  html += `<text x="${padL-8}" y="${stepsRow.y0+4}" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${(stepsMax/1000).toFixed(0)}k</text>`;
+  html += `<text x="${padL-8}" y="${stepsRow.y1+4}" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">0</text>`;
+  html += `<text x="14" y="${(stepsRow.y0+stepsRow.y1)/2}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#e8b76d" transform="rotate(-90 14 ${(stepsRow.y0+stepsRow.y1)/2})">Steps</text>`;
+  html += `<text x="${padL-8}" y="${flightsRow.y0+4}" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${Math.round(flightsMax)}</text>`;
+  html += `<text x="${padL-8}" y="${flightsRow.y1+4}" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">0</text>`;
+  html += `<text x="14" y="${(flightsRow.y0+flightsRow.y1)/2}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6cc4d9" transform="rotate(-90 14 ${(flightsRow.y0+flightsRow.y1)/2})">Flights</text>`;
+
+  // steps: rolling 7-day mean line (area + line) + raw light dots
+  const valid = days.map(d => ({ t: ts(d), steps: d.steps || 0, flights: d.flights || 0 }));
+  const win = 7;
+  const rollSteps = valid.map((d, i) => {
+    const s = valid.slice(Math.max(0, i - win + 1), i + 1);
+    const vs = s.filter(x => x.steps > 0);
+    if (!vs.length) return null;
+    return vs.reduce((a, b) => a + b.steps, 0) / vs.length;
+  });
+
+  // raw step dots (faint)
+  valid.forEach(d => {
+    if (d.steps > 0) {
+      html += `<circle cx="${X(d.t)}" cy="${Ys(d.steps)}" r="0.7" fill="rgba(232,183,109,0.28)"/>`;
+    }
+  });
+  // smoothed area
+  let areaPath = '';
+  let firstX = null;
+  valid.forEach((d, i) => {
+    if (rollSteps[i] === null) return;
+    const x = X(d.t), y = Ys(rollSteps[i]);
+    if (firstX === null) { areaPath += `M ${x.toFixed(2)} ${stepsRow.y1} L ${x.toFixed(2)} ${y.toFixed(2)}`; firstX = x; }
+    else { areaPath += ` L ${x.toFixed(2)} ${y.toFixed(2)}`; }
+  });
+  // close
+  let lastX = padL + chartW;
+  for (let i = valid.length - 1; i >= 0; i--) { if (rollSteps[i] !== null) { lastX = X(valid[i].t); break; } }
+  areaPath += ` L ${lastX.toFixed(2)} ${stepsRow.y1} Z`;
+  html += `<path d="${areaPath}" fill="rgba(232,183,109,0.14)"/>`;
+
+  // smoothed line
+  let linePath = '';
+  let started = false;
+  valid.forEach((d, i) => {
+    if (rollSteps[i] === null) return;
+    const x = X(d.t), y = Ys(rollSteps[i]);
+    linePath += `${started ? 'L' : 'M'} ${x.toFixed(2)} ${y.toFixed(2)} `;
+    started = true;
+  });
+  html += `<path d="${linePath}" fill="none" stroke="#e8b76d" stroke-width="1.4" stroke-opacity="0.95"/>`;
+
+  // flights bars
+  valid.forEach(d => {
+    if (d.flights > 0) {
+      const xx = X(d.t);
+      const yy = Yf(d.flights);
+      html += `<line x1="${xx}" y1="${flightsRow.y1}" x2="${xx}" y2="${yy}" stroke="rgba(108,196,217,0.55)" stroke-width="0.8" stroke-linecap="round"/>`;
+    }
+  });
+
+  // baseline
+  html += `<line x1="${padL}" y1="${stepsRow.y1}" x2="${W-padR}" y2="${stepsRow.y1}" stroke="#2a2c35" stroke-width="0.5"/>`;
+  html += `<line x1="${padL}" y1="${flightsRow.y1}" x2="${W-padR}" y2="${flightsRow.y1}" stroke="#2a2c35" stroke-width="0.5"/>`;
+
+  // month ticks
+  const months = new Set();
+  valid.forEach(d => {
+    const ds = new Date(d.t);
+    const k = ds.getFullYear() + '-' + String(ds.getMonth()+1).padStart(2,'0');
+    if (!months.has(k)) {
+      months.add(k);
+      const xx = X(d.t);
+      html += `<line x1="${xx}" y1="${padT+chartH}" x2="${xx}" y2="${padT+chartH+4}" stroke="#3a3d48" stroke-width="0.5"/>`;
+      // only label every 2nd month
+      if (months.size % 2 === 1) {
+        html += `<text x="${xx}" y="${padT+chartH+18}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${k.slice(2)}</text>`;
+      }
+    }
+  });
+
+  document.getElementById('dailyLifeChart').innerHTML = html;
+
+  // stats: baseline (Oct 2024 - Mar 2026) vs delivery period
+  const deliveryStart = new Date('2026-04-25').getTime();
+  const deliveryEnd = new Date('2026-05-19').getTime();
+  const baselineEnd = deliveryStart;
+
+  const baseline = valid.filter(d => d.t < baselineEnd && (d.steps > 0 || d.flights > 0));
+  const delivery = valid.filter(d => d.t >= deliveryStart && d.t <= deliveryEnd);
+
+  const mean = (arr, k) => {
+    const v = arr.filter(x => x[k] > 0);
+    return v.length ? v.reduce((a, b) => a + b[k], 0) / v.length : 0;
+  };
+  const baseSteps = mean(baseline, 'steps');
+  const baseFlights = mean(baseline, 'flights');
+  const delSteps = mean(delivery, 'steps');
+  const delFlights = mean(delivery, 'flights');
+
+  const peakSteps = valid.reduce((a, d) => d.steps > a.steps ? d : a, valid[0]);
+  const peakFlights = valid.reduce((a, d) => d.flights > a.flights ? d : a, valid[0]);
+
+  const deltaClass = (cur, base) => cur >= base ? 'up' : 'down';
+  const deltaSign = (cur, base) => cur >= base ? '+' : '';
+  const pct = (cur, base) => base ? ((cur - base) / base * 100).toFixed(0) : '—';
+
+  document.getElementById('dailyLifeStats').innerHTML = `
+    <div class="dl-stat">
+      <div class="dl-stat-label">Avg Steps · Baseline</div>
+      <div class="dl-stat-row">
+        <span class="dl-stat-base">${Math.round(baseSteps).toLocaleString()}</span>
+        <span class="dl-stat-arrow">→</span>
+        <span class="dl-stat-now">${Math.round(delSteps).toLocaleString()}</span>
+      </div>
+      <span class="dl-stat-delta ${deltaClass(delSteps, baseSteps)}">${deltaSign(delSteps, baseSteps)}${pct(delSteps, baseSteps)}% · 配送期</span>
+    </div>
+    <div class="dl-stat">
+      <div class="dl-stat-label">Avg Flights · Baseline</div>
+      <div class="dl-stat-row">
+        <span class="dl-stat-base">${baseFlights.toFixed(1)}</span>
+        <span class="dl-stat-arrow">→</span>
+        <span class="dl-stat-now">${delFlights.toFixed(1)}</span>
+      </div>
+      <span class="dl-stat-delta ${deltaClass(delFlights, baseFlights)}">${deltaSign(delFlights, baseFlights)}${pct(delFlights, baseFlights)}% · 配送期</span>
+    </div>
+    <div class="dl-stat">
+      <div class="dl-stat-label">Peak Day · Steps</div>
+      <div class="dl-stat-row">
+        <span class="dl-stat-now">${Math.round(peakSteps.steps).toLocaleString()}</span>
+      </div>
+      <span class="dl-stat-delta">${new Date(peakSteps.t).toISOString().slice(0,10)}</span>
+    </div>
+    <div class="dl-stat">
+      <div class="dl-stat-label">Peak Day · Flights</div>
+      <div class="dl-stat-row">
+        <span class="dl-stat-now">${Math.round(peakFlights.flights)} 层</span>
+      </div>
+      <span class="dl-stat-delta">${new Date(peakFlights.t).toISOString().slice(0,10)}</span>
+    </div>
+  `;
+}
+
+// ============ 爬升画像 / Elevation Profile Gallery ============
+function renderElevGallery() {
+  const H = window.HEALTH_DATA;
+  if (!H || !H.workouts) return;
+  const rides = H.workouts.filter(w => (w.elev_series || []).length > 10 && (w.elev_gain_m || 0) >= 50);
+  if (!rides.length) return;
+  const top = [...rides].sort((a, b) => (b.elev_gain_m || 0) - (a.elev_gain_m || 0)).slice(0, 8);
+
+  const cardW = 260, cardH = 70;
+  const cards = top.map(r => {
+    const es = r.elev_series;
+    const eMin = Math.min(...es);
+    const eMax = Math.max(...es);
+    const range = Math.max(1, eMax - eMin);
+    const xStep = cardW / (es.length - 1);
+    const Y = v => 6 + (1 - (v - eMin) / range) * (cardH - 14);
+    let path = '';
+    let area = `M 0 ${cardH - 2} `;
+    es.forEach((v, i) => {
+      const x = i * xStep;
+      const y = Y(v);
+      path += `${i === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)} `;
+      area += `L ${x.toFixed(2)} ${y.toFixed(2)} `;
+    });
+    area += `L ${cardW} ${cardH - 2} Z`;
+
+    const start = es[0], end = es[es.length - 1];
+    const xS = 0, yS = Y(start);
+    const xE = cardW, yE = Y(end);
+
+    const svg = `
+      <svg viewBox="0 0 ${cardW} ${cardH}" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="elevGrad_${r.id || r.date}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="rgba(232,183,109,0.30)"/>
+            <stop offset="100%" stop-color="rgba(232,183,109,0.02)"/>
+          </linearGradient>
+        </defs>
+        <path d="${area}" fill="url(#elevGrad_${r.id || r.date})"/>
+        <path d="${path}" fill="none" stroke="#ffd897" stroke-width="1.2" stroke-linejoin="round"/>
+        <circle cx="${xS}" cy="${yS}" r="2.6" fill="#6cc4d9" stroke="#0a0a0c" stroke-width="0.6"/>
+        <circle cx="${xE-1}" cy="${yE}" r="2.6" fill="#d97a8a" stroke="#0a0a0c" stroke-width="0.6"/>
+        <text x="4" y="${cardH-3}" font-family="JetBrains Mono" font-size="8" fill="#5d5b55">${Math.round(eMin)}m</text>
+        <text x="${cardW-4}" y="11" text-anchor="end" font-family="JetBrains Mono" font-size="8" fill="#5d5b55">${Math.round(eMax)}m</text>
+      </svg>`;
+
+    const loss = r.elev_loss_m || 0;
+    const net = (r.elev_gain_m || 0) - loss;
+    return `
+      <div class="elev-card">
+        <div class="elev-card-head">
+          <span class="elev-card-date">${r.date}</span>
+          <span class="elev-card-gain">${Math.round(r.elev_gain_m || 0)}<small>m ↑</small></span>
+        </div>
+        ${svg}
+        <div class="elev-card-meta">
+          <span><b>距离</b>${(r.distance_km || 0).toFixed(1)} km</span>
+          <span><b>下降</b>${Math.round(loss)} m</span>
+          <span><b>净</b>${net >= 0 ? '+' : ''}${Math.round(net)} m</span>
+          <span><b>HR</b>${r.hr_avg ? Math.round(r.hr_avg) : '—'}</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('elevGallery').innerHTML = cards;
+
+  // summary line
+  const totalGain = rides.reduce((s, r) => s + (r.elev_gain_m || 0), 0);
+  const totalLoss = rides.reduce((s, r) => s + (r.elev_loss_m || 0), 0);
+  const peakGain = Math.max(...rides.map(r => r.elev_gain_m || 0));
+  const everest = (totalGain / 8848 * 100);
+  document.getElementById('elevSummary').innerHTML = `
+    <span><b>累计爬升</b> ${Math.round(totalGain).toLocaleString()} m</span>
+    <span><b>累计下降</b> ${Math.round(totalLoss).toLocaleString()} m</span>
+    <span><b>单次最高</b> ${Math.round(peakGain)} m</span>
+    <span><b>≈ 珠峰</b> ${everest.toFixed(1)}%</span>
+    <span style="color: var(--text-faint);">起点 <span style="color:#6cc4d9;">●</span> · 终点 <span style="color:#d97a8a;">●</span></span>
+  `;
+}
+
+// ============ 代谢强度 / METS Intensity ============
+function renderMetsIntensity() {
+  const H = window.HEALTH_DATA;
+  if (!H || !H.workouts) return;
+  const rides = H.workouts.filter(w => w.mets != null);
+  if (!rides.length) return;
+
+  const bands = [
+    { key: 'light',   label: '轻 Light',     min: 2, max: 3, color: '#7aa0a8' },
+    { key: 'mod',     label: '中 Moderate',  min: 3, max: 6, color: '#6cc4d9' },
+    { key: 'vig',     label: '剧烈 Vigorous', min: 6, max: 9, color: '#e8b76d' },
+    { key: 'max',     label: '极限 Max',     min: 9, max: 20, color: '#d97a8a' },
+  ];
+  const bandOf = m => bands.find(b => m >= b.min && m < b.max) || bands[bands.length - 1];
+  rides.forEach(r => { r._band = bandOf(r.mets); });
+
+  // ---- SVG: distribution bars (left) + scatter (right)
+  const W = 900, Ht = 300;
+  const padL = 50, padR = 30, padT = 22, padB = 50;
+  const split = 0.34; // bars take 34% width
+  const innerW = W - padL - padR;
+  const barsW = innerW * split - 18;
+  const scatterW = innerW * (1 - split) - 18;
+  const scatterX0 = padL + innerW * split + 18;
+
+  const counts = bands.map(b => rides.filter(r => r._band.key === b.key).length);
+  const maxCount = Math.max(...counts, 1);
+
+  const chartH = Ht - padT - padB;
+  let svg = '';
+
+  // bars area background
+  svg += `<text x="${padL}" y="${padT-6}" font-family="JetBrains Mono" font-size="10" fill="#908d85">骑行次数 / Count</text>`;
+
+  // y-grid for bars
+  for (let i = 0; i <= 4; i++) {
+    const v = Math.ceil(maxCount * i / 4);
+    const yy = padT + chartH - (i / 4) * chartH;
+    svg += `<line x1="${padL}" y1="${yy}" x2="${padL + barsW}" y2="${yy}" stroke="#2a2c35" stroke-width="0.5" stroke-dasharray="2 4"/>`;
+    svg += `<text x="${padL-6}" y="${yy+3}" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${v}</text>`;
+  }
+
+  const barWidth = barsW / bands.length * 0.62;
+  const barGap = barsW / bands.length;
+  bands.forEach((b, i) => {
+    const c = counts[i];
+    const h = (c / maxCount) * chartH;
+    const x = padL + i * barGap + (barGap - barWidth) / 2;
+    const y = padT + chartH - h;
+    svg += `<rect x="${x}" y="${y}" width="${barWidth}" height="${h}" fill="${b.color}" fill-opacity="0.78" stroke="${b.color}" stroke-width="0.5"/>`;
+    svg += `<text x="${x + barWidth/2}" y="${y - 6}" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#ebe8e1">${c}</text>`;
+    svg += `<text x="${x + barWidth/2}" y="${padT + chartH + 14}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#908d85">${b.label.split(' ')[0]}</text>`;
+    svg += `<text x="${x + barWidth/2}" y="${padT + chartH + 26}" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#5d5b55">${b.min}–${b.max === 20 ? '+' : b.max}</text>`;
+  });
+
+  // ---- scatter: distance (x) vs METS (y), color by HR
+  svg += `<text x="${scatterX0}" y="${padT-6}" font-family="JetBrains Mono" font-size="10" fill="#908d85">距离 km × METS · 圆色 = HR</text>`;
+
+  const sRides = rides.filter(r => r.distance_km > 0);
+  const distMax = Math.ceil(Math.max(...sRides.map(r => r.distance_km)) / 10) * 10;
+  const metsMin = 2, metsMax = Math.ceil(Math.max(...sRides.map(r => r.mets)));
+  const sX = v => scatterX0 + (v / distMax) * scatterW;
+  const sY = v => padT + chartH - ((v - metsMin) / Math.max(1, metsMax - metsMin)) * chartH;
+
+  // grid
+  for (let i = 0; i <= 4; i++) {
+    const yy = padT + chartH - (i / 4) * chartH;
+    svg += `<line x1="${scatterX0}" y1="${yy}" x2="${scatterX0 + scatterW}" y2="${yy}" stroke="#2a2c35" stroke-width="0.5" stroke-dasharray="2 4"/>`;
+    const mv = metsMin + (metsMax - metsMin) * i / 4;
+    svg += `<text x="${scatterX0 - 6}" y="${yy + 3}" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${mv.toFixed(0)}</text>`;
+  }
+  for (let i = 0; i <= 4; i++) {
+    const xx = scatterX0 + (i / 4) * scatterW;
+    const dv = Math.round(distMax * i / 4);
+    svg += `<text x="${xx}" y="${padT + chartH + 14}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${dv}</text>`;
+  }
+  svg += `<text x="${scatterX0 + scatterW/2}" y="${padT + chartH + 30}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#908d85">distance km</text>`;
+
+  // HR color ramp
+  const hrs = sRides.map(r => r.hr_avg).filter(Boolean);
+  const hrMin = Math.min(...hrs), hrMax = Math.max(...hrs);
+  const hrColor = hr => {
+    if (hr == null) return '#5d5b55';
+    const t = (hr - hrMin) / Math.max(1, hrMax - hrMin);
+    // cyan -> amber -> rose
+    const a = { r: 108, g: 196, b: 217 };
+    const b = { r: 255, g: 216, b: 151 };
+    const c = { r: 217, g: 122, b: 138 };
+    let r, g, bl;
+    if (t < 0.5) {
+      const k = t / 0.5;
+      r = a.r + (b.r - a.r) * k; g = a.g + (b.g - a.g) * k; bl = a.b + (b.b - a.b) * k;
+    } else {
+      const k = (t - 0.5) / 0.5;
+      r = b.r + (c.r - b.r) * k; g = b.g + (c.g - b.g) * k; bl = b.b + (c.b - b.b) * k;
+    }
+    return `rgb(${r|0},${g|0},${bl|0})`;
+  };
+
+  sRides.forEach(r => {
+    const cx = sX(r.distance_km);
+    const cy = sY(r.mets);
+    const radius = Math.max(3, Math.sqrt((r.duration_min || 10)) * 0.8);
+    svg += `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${radius.toFixed(1)}" fill="${hrColor(r.hr_avg)}" fill-opacity="0.78" stroke="#0a0a0c" stroke-width="0.6">
+      <title>${r.date} · ${r.distance_km.toFixed(1)}km · METS ${r.mets.toFixed(1)} · HR ${r.hr_avg ? Math.round(r.hr_avg) : '—'}</title>
+    </circle>`;
+  });
+
+  document.getElementById('metsChart').innerHTML = svg;
+
+  // ---- bands grid
+  const totalCount = counts.reduce((a, b) => a + b, 0);
+  const bandsHTML = bands.map((b, i) => {
+    const c = counts[i];
+    const pct = totalCount ? (c / totalCount * 100) : 0;
+    return `
+      <div class="mets-band">
+        <div class="mets-band-label">${b.label}</div>
+        <div class="mets-band-range">METS ${b.min}–${b.max === 20 ? '+' : b.max}</div>
+        <div class="mets-band-count">${c}<small>次 · ${pct.toFixed(0)}%</small></div>
+        <div class="mets-band-bar"><span style="width:${pct.toFixed(1)}%;background:${b.color};"></span></div>
+      </div>`;
+  }).join('');
+  document.getElementById('metsBands').innerHTML = bandsHTML;
+
+  // foot: total MET-hours
+  const totalMetH = rides.reduce((s, r) => s + (r.mets * (r.duration_min || 0) / 60), 0);
+  const avgMets = rides.reduce((s, r) => s + r.mets, 0) / rides.length;
+  const peak = rides.reduce((a, r) => r.mets > a.mets ? r : a, rides[0]);
+  document.getElementById('metsFoot').textContent =
+    `Σ ${totalMetH.toFixed(0)} MET·h · 均值 ${avgMets.toFixed(1)} · 峰值 ${peak.mets.toFixed(1)} (${peak.date})`;
+}
+
+// ============ 出发热力图 / Departure Heatmap ============
+function renderDepartureHeatmap() {
+  const H = window.HEALTH_DATA;
+  if (!H || !H.workouts) return;
+  const rides = H.workouts.filter(w => w.hour != null && w.weekday != null);
+  if (!rides.length) return;
+
+  // grid[weekday 0..6][hour 0..23] = count
+  const grid = Array.from({ length: 7 }, () => Array(24).fill(0));
+  rides.forEach(r => {
+    const wd = ((r.weekday % 7) + 7) % 7;
+    const hr = Math.max(0, Math.min(23, Math.floor(r.hour)));
+    grid[wd][hr]++;
+  });
+  const flat = grid.flat();
+  const maxV = Math.max(...flat, 1);
+
+  // weekday labels: data uses 0=Mon..6=Sun (Python convention)
+  const wdLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  const colorFor = c => {
+    if (!c) return '';
+    const t = c / maxV;
+    const alpha = 0.15 + t * 0.80;
+    return `rgba(232,183,109,${alpha.toFixed(2)})`;
+  };
+
+  const cells = [];
+  // header row
+  cells.push(`<div class="hm-corner"></div>`);
+  for (let h = 0; h < 24; h++) {
+    cells.push(`<div class="hm-hour">${h % 3 === 0 ? String(h).padStart(2,'0') : ''}</div>`);
+  }
+  // body rows
+  for (let wd = 0; wd < 7; wd++) {
+    cells.push(`<div class="hm-wd">${wdLabels[wd]}</div>`);
+    for (let h = 0; h < 24; h++) {
+      const c = grid[wd][h];
+      const cls = 'hm-cell' + (c ? ' has' : '');
+      const bg = c ? `background:${colorFor(c)};` : '';
+      const showNum = c >= Math.max(2, Math.ceil(maxV * 0.5));
+      cells.push(`<div class="${cls}" style="${bg}" title="${wdLabels[wd]} ${String(h).padStart(2,'0')}:00 · ${c} 次">${showNum ? `<span class="hm-dot">${c}</span>` : ''}</div>`);
+    }
+  }
+  document.getElementById('hourHeatmap').innerHTML = cells.join('');
+
+  // stats
+  // peak slot
+  let peakWd = 0, peakHr = 0, peakC = 0;
+  for (let wd = 0; wd < 7; wd++) for (let h = 0; h < 24; h++) {
+    if (grid[wd][h] > peakC) { peakC = grid[wd][h]; peakWd = wd; peakHr = h; }
+  }
+  // peak hour overall
+  const hrTotals = Array(24).fill(0);
+  const wdTotals = Array(7).fill(0);
+  for (let wd = 0; wd < 7; wd++) for (let h = 0; h < 24; h++) {
+    hrTotals[h] += grid[wd][h];
+    wdTotals[wd] += grid[wd][h];
+  }
+  const peakHrOverall = hrTotals.indexOf(Math.max(...hrTotals));
+  const peakWdOverall = wdTotals.indexOf(Math.max(...wdTotals));
+
+  // morning vs afternoon vs evening split
+  const buckets = { '清晨 5–11': 0, '午后 11–17': 0, '黄昏 17–22': 0, '深夜 22–5': 0 };
+  rides.forEach(r => {
+    const h = Math.floor(r.hour);
+    if (h >= 5 && h < 11) buckets['清晨 5–11']++;
+    else if (h >= 11 && h < 17) buckets['午后 11–17']++;
+    else if (h >= 17 && h < 22) buckets['黄昏 17–22']++;
+    else buckets['深夜 22–5']++;
+  });
+  const dominant = Object.entries(buckets).sort((a, b) => b[1] - a[1])[0];
+
+  document.getElementById('hmFoot').textContent =
+    `${rides.length} 次出发 · 跨越 ${(new Set(rides.map(r => Math.floor(r.hour)))).size} 个不同小时`;
+
+  document.getElementById('hmStats').innerHTML = `
+    <div class="hm-stat">
+      <div class="hm-stat-label">Peak Slot</div>
+      <div class="hm-stat-value">${wdLabels[peakWd]} ${String(peakHr).padStart(2,'0')}:00</div>
+      <div class="hm-stat-sub">${peakC} 次出发 · 单格最高</div>
+    </div>
+    <div class="hm-stat">
+      <div class="hm-stat-label">Peak Hour</div>
+      <div class="hm-stat-value">${String(peakHrOverall).padStart(2,'0')}:00</div>
+      <div class="hm-stat-sub">${hrTotals[peakHrOverall]} 次 · 跨所有星期</div>
+    </div>
+    <div class="hm-stat">
+      <div class="hm-stat-label">Peak Day</div>
+      <div class="hm-stat-value">${wdLabels[peakWdOverall]}</div>
+      <div class="hm-stat-sub">${wdTotals[peakWdOverall]} 次 · 跨所有时段</div>
+    </div>
+    <div class="hm-stat">
+      <div class="hm-stat-label">Dominant Window</div>
+      <div class="hm-stat-value" style="font-size: 18px;">${dominant[0]}</div>
+      <div class="hm-stat-sub">${dominant[1]} 次 · 占 ${(dominant[1]/rides.length*100).toFixed(0)}%</div>
+    </div>
+  `;
+}
+
 // ============ Floating Side Navigator ============
 function buildSideNav() {
   const sections = [...document.querySelectorAll('main > section')];
@@ -4731,6 +6466,17 @@ window.addEventListener('DOMContentLoaded', () => {
   renderCityAtlas();
   renderJourney();
   renderEffortQuadrant();
+  // 2026-05-25 二次迭代: 训练负荷与状态 (CTL / ATL / TSB)
+  renderFitnessForm();
+  // 2026-05-25 三次迭代: 心率范围 / 能量构成 / 气候画像 / 日常脉搏
+  renderHrRangeChart();
+  renderEnergyComposition();
+  renderClimateProfile();
+  renderDailyLife();
+  // 2026-05-25 四次迭代: 爬升画像 / 代谢强度 / 出发热力图
+  renderElevGallery();
+  renderMetsIntensity();
+  renderDepartureHeatmap();
   buildSideNav();
   // Footer dynamic
   const s = window.HEALTH_DATA && window.HEALTH_DATA.summary;
