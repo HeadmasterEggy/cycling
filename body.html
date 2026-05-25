@@ -22,7 +22,22 @@
   <p class="hero-sub" id="heroSub">34 次骑行的心率、VO₂max 的爬升、体重的浮动、湿度温度对心率的拉拽。骑行不是一组数字 —— 是身体在被改写。</p>
 </section>
 
-
+<div class="range-filter" id="rangeFilter">
+  <span class="range-filter-label">时间范围 · Time Range</span>
+  <div class="range-filter-presets">
+    <button class="range-preset" data-preset="sydney">悉尼期</button>
+    <button class="range-preset" data-preset="30d">近 30 天</button>
+    <button class="range-preset" data-preset="90d">近 90 天</button>
+    <button class="range-preset" data-preset="year">近 1 年</button>
+    <button class="range-preset" data-preset="all">全部</button>
+  </div>
+  <div class="range-filter-inputs">
+    <input type="date" id="rangeFrom">
+    <span class="range-filter-sep">→</span>
+    <input type="date" id="rangeTo">
+  </div>
+  <div class="range-filter-summary" id="rangeFilterSummary">全部数据</div>
+</div>
 
 <main class="main">
 <section class="analysis-section">

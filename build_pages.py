@@ -85,6 +85,25 @@ SECTIONS = {
 }
 
 # -- 3. page assembly -------------------------------------------------------
+RANGE_FILTER_HTML = """
+<div class="range-filter" id="rangeFilter">
+  <span class="range-filter-label">时间范围 · Time Range</span>
+  <div class="range-filter-presets">
+    <button class="range-preset" data-preset="sydney">悉尼期</button>
+    <button class="range-preset" data-preset="30d">近 30 天</button>
+    <button class="range-preset" data-preset="90d">近 90 天</button>
+    <button class="range-preset" data-preset="year">近 1 年</button>
+    <button class="range-preset" data-preset="all">全部</button>
+  </div>
+  <div class="range-filter-inputs">
+    <input type="date" id="rangeFrom">
+    <span class="range-filter-sep">→</span>
+    <input type="date" id="rangeTo">
+  </div>
+  <div class="range-filter-summary" id="rangeFilterSummary">全部数据</div>
+</div>
+"""
+
 PAGE_TEMPLATE = """<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -105,6 +124,7 @@ PAGE_TEMPLATE = """<!DOCTYPE html>
 
 {hero_block}
 {intro_block}
+{range_filter_block}
 
 <main class="main">
 {body_html}
@@ -158,6 +178,7 @@ PAGES = [
             custom_meta='总览 · Overview'),
         'intro': stats_bar + "\n" + latest_band,
         'sections': ['map', 'records', 'cities', 'journey'],
+        'has_filter': False,
     },
     {
         'file': 'patterns.html',
@@ -169,6 +190,7 @@ PAGES = [
             custom_meta='节律 · Patterns'),
         'intro': '',
         'sections': ['temporal', 'monthly', 'departure', 'calendar'],
+        'has_filter': True,
     },
     {
         'file': 'body.html',
@@ -180,6 +202,7 @@ PAGES = [
             custom_meta='身体 · Body Signals'),
         'intro': '',
         'sections': ['hr_zones', 'hr_range', 'climate', 'body', 'daily_pulse'],
+        'has_filter': True,
     },
     {
         'file': 'training.html',
@@ -192,6 +215,7 @@ PAGES = [
         'intro': '',
         'sections': ['load', 'fitness_form', 'efficiency', 'quadrant',
                      'climb', 'mets', 'daily_stack'],
+        'has_filter': True,
     },
     {
         'file': 'rides.html',
@@ -203,6 +227,7 @@ PAGES = [
             custom_meta='骑行 · Rides'),
         'intro': '',
         'sections': ['energy', 'elev_gallery', 'rides_table'],
+        'has_filter': True,
     },
 ]
 
@@ -213,6 +238,7 @@ for p in PAGES:
         page_key=p['page_key'],
         hero_block=p['hero'],
         intro_block=p['intro'],
+        range_filter_block=RANGE_FILTER_HTML if p.get('has_filter') else '',
         body_html=body_html,
     )
     (ROOT / p['file']).write_text(out, encoding="utf-8")
@@ -232,6 +258,7 @@ all_html = PAGE_TEMPLATE.format(
     page_key='all',
     hero_block=hero,
     intro_block=stats_bar + "\n" + latest_band,
+    range_filter_block=RANGE_FILTER_HTML,
     body_html=all_body,
 )
 (ROOT / 'cycling-analysis.html').write_text(all_html, encoding="utf-8")

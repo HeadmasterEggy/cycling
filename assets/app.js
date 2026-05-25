@@ -391,23 +391,46 @@ function renderWeekday() {
 
 // ============ 每日柱状图 ============
 function renderDailyChart() {
-  // 仅取 4/25-5/19 的悉尼路线
-  const sydneyRoutes = window.ROUTES_DATA.filter(r => r.city === "Sydney");
-  const daily = {};
-  sydneyRoutes.forEach(r => {
-    const d = r.start_date;
-    if (d >= "2026-04-25" && d <= "2026-05-19") {
-      daily[d] = (daily[d] || 0) + r.distance_km;
+  // Range-aware: when active range is set, use that window over H.daily;
+  // otherwise fall back to the original 2026-04-25→2026-05-19 Sydney window.
+  const r = window.getActiveRange && window.getActiveRange();
+  const HD = window.HEALTH_DATA;
+  let startDate, endDate, dailyFromHealth = null;
+  if (r && r.from && r.to) {
+    startDate = new Date(r.from);
+    endDate = new Date(r.to);
+    if (HD && HD.daily) {
+      dailyFromHealth = {};
+      HD.daily.forEach(d => { dailyFromHealth[d.date] = (d.distance_km || 0); });
     }
-  });
+  } else {
+    startDate = new Date("2026-04-25");
+    endDate = new Date("2026-05-19");
+  }
+
+  // Build per-day km map. Prefer ROUTES_DATA (Sydney GPS) for the default
+  // window, otherwise fall back to H.daily aggregates.
+  const daily = {};
+  if (dailyFromHealth) {
+    Object.assign(daily, dailyFromHealth);
+  } else {
+    window.ROUTES_DATA.filter(rt => rt.city === "Sydney").forEach(rt => {
+      const d = rt.start_date;
+      if (d >= startDate.toISOString().slice(0,10) && d <= endDate.toISOString().slice(0,10)) {
+        daily[d] = (daily[d] || 0) + rt.distance_km;
+      }
+    });
+  }
 
   // 生成完整日期序列
-  const startDate = new Date("2026-04-25");
-  const endDate = new Date("2026-05-19");
   const days = [];
   for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
     const ds = d.toISOString().slice(0, 10);
     days.push({ date: ds, km: daily[ds] || 0, dayObj: new Date(d) });
+  }
+  if (!days.length) {
+    document.getElementById('dailyChart').innerHTML = '';
+    return;
   }
 
   const W = 800, H = 200;
@@ -2334,7 +2357,12 @@ function renderHrRangeChart() {
   const rides = H.workouts
     .filter(w => w.hr_avg && w.hr_min && w.hr_max && w.hr_max > w.hr_min)
     .sort((a, b) => new Date(a.start_iso) - new Date(b.start_iso));
-  if (!rides.length) return;
+  if (!rides.length) {
+    const c = document.getElementById('hrRangeChart');
+    if (c) c.innerHTML = '<text x="50%" y="50%" text-anchor="middle" fill="#5d5b55" font-family="JetBrains Mono" font-size="12">这个时间段没有心率数据</text>';
+    const f = document.getElementById('hrRangeFoot'); if (f) f.textContent = '—';
+    return;
+  }
 
   const W = 900, Ht = Math.max(220, 90 + rides.length * 12);
   const padL = 100, padR = 80, padT = 30, padB = 38;
@@ -2433,7 +2461,13 @@ function renderEnergyComposition() {
   const rides = H.workouts
     .filter(w => (w.active_kj || 0) > 0)
     .sort((a, b) => new Date(a.start_iso) - new Date(b.start_iso));
-  if (!rides.length) return;
+  if (!rides.length) {
+    const c = document.getElementById('energyChart');
+    if (c) c.innerHTML = '<text x="50%" y="50%" text-anchor="middle" fill="#5d5b55" font-family="JetBrains Mono" font-size="12">这个时间段没有能量数据</text>';
+    const f = document.getElementById('energyFoot'); if (f) f.textContent = '—';
+    const s = document.getElementById('energyStats'); if (s) s.innerHTML = '';
+    return;
+  }
 
   const W = 900, Ht = 320;
   const padL = 56, padR = 50, padT = 24, padB = 56;
@@ -2575,7 +2609,12 @@ function renderClimateProfile() {
     typeof w.weather_humidity === 'number' &&
     w.weather_humidity > 0
   );
-  if (rides.length < 3) return;
+  if (rides.length < 3) {
+    const c = document.getElementById('climateChart');
+    if (c) c.innerHTML = '<text x="50%" y="50%" text-anchor="middle" fill="#5d5b55" font-family="JetBrains Mono" font-size="12">这个时间段的气象样本太少 (< 3)</text>';
+    const f = document.getElementById('climateFoot'); if (f) f.textContent = '—';
+    return;
+  }
 
   const W = 900, Ht = 360;
   const padL = 56, padR = 32, padT = 28, padB = 50;
@@ -2843,7 +2882,12 @@ function renderElevGallery() {
   const H = window.HEALTH_DATA;
   if (!H || !H.workouts) return;
   const rides = H.workouts.filter(w => (w.elev_series || []).length > 10 && (w.elev_gain_m || 0) >= 50);
-  if (!rides.length) return;
+  if (!rides.length) {
+    const g = document.getElementById('elevGallery');
+    if (g) g.innerHTML = '<div class="empty-range">这个时间段没有显著爬升的骑行</div>';
+    const s = document.getElementById('elevSummary'); if (s) s.textContent = '—';
+    return;
+  }
   const top = [...rides].sort((a, b) => (b.elev_gain_m || 0) - (a.elev_gain_m || 0)).slice(0, 8);
 
   const cardW = 260, cardH = 70;
@@ -2923,7 +2967,13 @@ function renderMetsIntensity() {
   const H = window.HEALTH_DATA;
   if (!H || !H.workouts) return;
   const rides = H.workouts.filter(w => w.mets != null);
-  if (!rides.length) return;
+  if (!rides.length) {
+    const c = document.getElementById('metsChart');
+    if (c) c.innerHTML = '<text x="50%" y="50%" text-anchor="middle" fill="#5d5b55" font-family="JetBrains Mono" font-size="12">这个时间段没有 METS 数据</text>';
+    const b = document.getElementById('metsBands'); if (b) b.innerHTML = '';
+    const f = document.getElementById('metsFoot'); if (f) f.textContent = '—';
+    return;
+  }
 
   const bands = [
     { key: 'light',   label: '轻 Light',     min: 2, max: 3, color: '#7aa0a8' },
@@ -3056,7 +3106,13 @@ function renderDepartureHeatmap() {
   const H = window.HEALTH_DATA;
   if (!H || !H.workouts) return;
   const rides = H.workouts.filter(w => w.hour != null && w.weekday != null);
-  if (!rides.length) return;
+  if (!rides.length) {
+    const tgt = document.getElementById('hourHeatmap');
+    if (tgt) tgt.innerHTML = '<div class="empty-range">这个时间段没有出发记录</div>';
+    const stats = document.getElementById('hmStats'); if (stats) stats.innerHTML = '';
+    const foot = document.getElementById('hmFoot'); if (foot) foot.textContent = '—';
+    return;
+  }
 
   // grid[weekday 0..6][hour 0..23] = count
   const grid = Array.from({ length: 7 }, () => Array(24).fill(0));
@@ -3197,13 +3253,213 @@ function buildSideNav() {
   update();
 }
 
+// ============ 时间范围筛选 / Time-range filter ============
+// withRange() temporarily swaps HEALTH_DATA.daily and HEALTH_DATA.workouts
+// for filtered subsets, runs fn, then restores. Render functions need no
+// changes — they keep reading from H.daily / H.workouts as before.
+
+(function rangeFilterSetup() {
+  function loadActive() {
+    if (window.activeRange === undefined) {
+      try {
+        const raw = localStorage.getItem('cyclingActiveRange');
+        if (raw) {
+          const p = JSON.parse(raw);
+          window.activeRange = {
+            from: new Date(p.from),
+            to: new Date(p.to),
+            label: p.label || '自定义',
+          };
+        } else {
+          window.activeRange = null;
+        }
+      } catch (_) { window.activeRange = null; }
+    }
+    return window.activeRange;
+  }
+
+  function inRange(dateStr, r) {
+    if (!dateStr) return false;
+    const t = new Date(dateStr).getTime();
+    if (Number.isNaN(t)) return false;
+    return t >= r.from.getTime() && t <= (r.to.getTime() + 86399999);
+  }
+
+  window.getActiveRange = loadActive;
+
+  window.filterDailyByRange = function (arr) {
+    const r = loadActive();
+    if (!r) return arr;
+    return arr.filter(d => inRange(d.date, r));
+  };
+
+  window.filterWorkoutsByRange = function (arr) {
+    const r = loadActive();
+    if (!r) return arr;
+    return arr.filter(w => inRange(w.date || (w.start_iso || '').slice(0, 10), r));
+  };
+
+  window.withRange = function (fn) {
+    const H = window.HEALTH_DATA;
+    if (!H) { fn(); return; }
+    if (!window._origHealthDaily) window._origHealthDaily = H.daily;
+    if (!window._origHealthWorkouts) window._origHealthWorkouts = H.workouts;
+    const od = H.daily, ow = H.workouts;
+    H.daily = window.filterDailyByRange(window._origHealthDaily);
+    H.workouts = window.filterWorkoutsByRange(window._origHealthWorkouts);
+    try { fn(); }
+    finally { H.daily = od; H.workouts = ow; }
+  };
+
+  window.setActiveRange = function (from, to, label) {
+    if (!from || !to) {
+      window.activeRange = null;
+      try { localStorage.removeItem('cyclingActiveRange'); } catch (_) {}
+    } else {
+      window.activeRange = { from, to, label: label || '自定义' };
+      try {
+        localStorage.setItem('cyclingActiveRange', JSON.stringify({
+          from: from.toISOString(), to: to.toISOString(), label: label || '自定义',
+        }));
+      } catch (_) {}
+    }
+    if (typeof window.__rerunRanged === 'function') window.__rerunRanged();
+    if (typeof window.__updateRangeSummary === 'function') window.__updateRangeSummary();
+  };
+})();
+
+// Which renders should re-run when the time range changes. These are the
+// "dense" data sections — anything that draws a timeline, calendar, or
+// per-ride scatter benefits from filtering.
+function isRanged(fn) {
+  if (!window._RANGED_RENDERS) {
+    window._RANGED_RENDERS = new Set([
+      typeof renderDailyChart === 'function' ? renderDailyChart : null,
+      typeof renderCalendar === 'function' ? renderCalendar : null,
+      typeof renderLoadChart === 'function' ? renderLoadChart : null,
+      typeof renderJourney === 'function' ? renderJourney : null,
+      typeof renderFitnessForm === 'function' ? renderFitnessForm : null,
+      typeof renderDailyLife === 'function' ? renderDailyLife : null,
+      typeof renderDepartureHeatmap === 'function' ? renderDepartureHeatmap : null,
+      typeof renderClimateProfile === 'function' ? renderClimateProfile : null,
+      typeof renderEffortQuadrant === 'function' ? renderEffortQuadrant : null,
+      typeof renderEnergyComposition === 'function' ? renderEnergyComposition : null,
+      typeof renderHrRangeChart === 'function' ? renderHrRangeChart : null,
+      typeof renderMetsIntensity === 'function' ? renderMetsIntensity : null,
+      typeof renderHrZones === 'function' ? renderHrZones : null,
+      typeof renderWeatherScatter === 'function' ? renderWeatherScatter : null,
+      typeof renderClimbChart === 'function' ? renderClimbChart : null,
+      typeof renderSpeedDist === 'function' ? renderSpeedDist : null,
+      typeof renderMonthlyChart === 'function' ? renderMonthlyChart : null,
+      typeof renderEfficiencyChart === 'function' ? renderEfficiencyChart : null,
+      typeof renderHero === 'function' ? renderHero : null,
+    ].filter(Boolean));
+  }
+  return window._RANGED_RENDERS.has(fn);
+}
+
+// Range-filter UI binding. The widget is HTML markup in the page;
+// this function only wires up the listeners.
+function bindRangeFilter() {
+  const host = document.getElementById('rangeFilter');
+  if (!host) return;
+  const H = window.HEALTH_DATA;
+  if (!H || !H.daily || !H.daily.length) return;
+
+  const minDate = (window._origHealthDaily || H.daily)[0].date;
+  const maxDate = (window._origHealthDaily || H.daily).slice(-1)[0].date;
+  const fromInp = document.getElementById('rangeFrom');
+  const toInp = document.getElementById('rangeTo');
+  const summary = document.getElementById('rangeFilterSummary');
+  if (!fromInp || !toInp || !summary) return;
+
+  fromInp.min = toInp.min = minDate;
+  fromInp.max = toInp.max = maxDate;
+
+  function presetRange(p) {
+    const last = new Date(maxDate);
+    const first = new Date(minDate);
+    if (p === 'all') return null;
+    if (p === 'sydney') return { from: new Date('2026-04-25'), to: last };
+    const days = p === '30d' ? 30 : p === '90d' ? 90 : 365;
+    const from = new Date(last); from.setDate(from.getDate() - days + 1);
+    return { from: from < first ? first : from, to: last };
+  }
+
+  function applyPreset(p, label) {
+    const r = presetRange(p);
+    [...host.querySelectorAll('.range-preset')].forEach(b =>
+      b.classList.toggle('range-preset--active', b.dataset.preset === p));
+    if (r) {
+      fromInp.value = r.from.toISOString().slice(0, 10);
+      toInp.value = r.to.toISOString().slice(0, 10);
+      window.setActiveRange(r.from, r.to, label || p);
+    } else {
+      window.setActiveRange(null, null, null);
+      fromInp.value = minDate;
+      toInp.value = maxDate;
+    }
+  }
+
+  function updateSummary() {
+    const r = window.getActiveRange();
+    if (!r) {
+      summary.innerHTML = `<strong>全部数据</strong> · ${minDate} → ${maxDate}`;
+      return;
+    }
+    const days = Math.round((r.to - r.from) / 86400000) + 1;
+    const f = r.from.toISOString().slice(0, 10);
+    const t = r.to.toISOString().slice(0, 10);
+    const rides = window.filterWorkoutsByRange(window._origHealthWorkouts || []).length;
+    summary.innerHTML = `<strong>${r.label || '自定义'}</strong> · ${f} → ${t} · ${days} 天 · ${rides} 次骑行`;
+  }
+  window.__updateRangeSummary = updateSummary;
+
+  [...host.querySelectorAll('.range-preset')].forEach(btn => {
+    btn.addEventListener('click', () => applyPreset(btn.dataset.preset, btn.textContent));
+  });
+
+  function applyCustomFromInputs() {
+    if (!fromInp.value || !toInp.value) return;
+    const f = new Date(fromInp.value);
+    const t = new Date(toInp.value);
+    if (f > t) return;
+    [...host.querySelectorAll('.range-preset')].forEach(b => b.classList.remove('range-preset--active'));
+    window.setActiveRange(f, t, '自定义');
+  }
+  fromInp.addEventListener('change', applyCustomFromInputs);
+  toInp.addEventListener('change', applyCustomFromInputs);
+
+  // Restore persisted selection
+  const saved = window.getActiveRange();
+  if (saved && saved.from && saved.to) {
+    fromInp.value = saved.from.toISOString().slice(0, 10);
+    toInp.value = saved.to.toISOString().slice(0, 10);
+    if (saved.label === '近 30 天' || saved.label === '30d') applyPreset('30d', '近 30 天');
+    else if (saved.label === '近 90 天' || saved.label === '90d') applyPreset('90d', '近 90 天');
+    else if (saved.label === '近 1 年' || saved.label === 'year') applyPreset('year', '近 1 年');
+    else if (saved.label === '悉尼期' || saved.label === 'sydney') applyPreset('sydney', '悉尼期');
+    else {
+      [...host.querySelectorAll('.range-preset')].forEach(b => b.classList.remove('range-preset--active'));
+    }
+  } else {
+    fromInp.value = minDate;
+    toInp.value = maxDate;
+    host.querySelector('.range-preset[data-preset="all"]')?.classList.add('range-preset--active');
+  }
+  updateSummary();
+}
+
 // ============ 初始化 ============
 // Page-aware boot. Each render is wrapped in a guard so pages that omit
 // a section still load cleanly — the missing-id throw is swallowed.
 window.addEventListener('DOMContentLoaded', () => {
   const safe = (fn, ...args) => {
-    try { if (typeof fn === 'function') fn(...args); }
-    catch (_) { /* section not present on this page */ }
+    try {
+      if (typeof fn !== 'function') return;
+      if (isRanged(fn)) window.withRange(() => fn(...args));
+      else fn(...args);
+    } catch (_) { /* section not present on this page */ }
   };
 
   const PAGE_RENDERS = {
@@ -3243,6 +3499,14 @@ window.addEventListener('DOMContentLoaded', () => {
   const pageKey = (document.body.dataset.page || 'all').toLowerCase();
   const plan = PAGE_RENDERS[pageKey];
 
+  // Save plan so the range-filter can re-run only the ranged renders later.
+  window.__rerunRanged = function () {
+    const targetPlan = plan || [];
+    targetPlan.forEach(([fn, ...args]) => {
+      if (isRanged(fn)) safe(fn, ...args);
+    });
+  };
+
   if (plan) {
     plan.forEach(([fn, ...args]) => safe(fn, ...args));
   } else {
@@ -3265,6 +3529,7 @@ window.addEventListener('DOMContentLoaded', () => {
     ].forEach(([fn, ...args]) => safe(fn, ...args));
   }
 
+  bindRangeFilter();
   safe(buildSideNav);
   safe(buildTopNav);
   safe(renderFooter);
