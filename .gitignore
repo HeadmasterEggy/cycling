@@ -1,2 +1,7 @@
 .claude/
 .DS_Store
+
+# Apple Health raw export — multi-hundred-MB XML, not committed.
+# Page consumes the derived health_data.json (inlined into the HTML by parse_health.py).
+data/
+health_data/
