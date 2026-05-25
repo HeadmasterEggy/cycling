@@ -1948,6 +1948,184 @@
     font-weight: 500;
   }
 
+  /* ===== City Atlas ===== */
+  .city-atlas {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-top: 16px;
+  }
+  .city-row {
+    display: grid;
+    grid-template-columns: 1.4fr 1.4fr 1fr 0.6fr;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 20px;
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+    transition: background 0.15s ease;
+  }
+  .city-row:hover { background: var(--surface-2); }
+  .city-row .cr-bar {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: linear-gradient(90deg, rgba(232,183,109,0.10) 0%, rgba(232,183,109,0.01) 100%);
+    transition: width 0.8s cubic-bezier(.2,.7,.2,1);
+    pointer-events: none;
+  }
+  .city-row > *:not(.cr-bar) { position: relative; z-index: 1; }
+  .city-row .cr-name {
+    font-family: var(--serif);
+    font-size: 18px;
+    color: var(--text);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+  .city-row .cr-name small {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.08em;
+    margin-top: 3px;
+    text-transform: uppercase;
+  }
+  .city-row .cr-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+  }
+  .city-row .cr-meta small {
+    display: block;
+    font-size: 10px;
+    color: var(--text-faint);
+    margin-top: 4px;
+    letter-spacing: 0.03em;
+  }
+  .city-row .cr-km {
+    font-family: var(--serif);
+    font-size: 22px;
+    color: var(--amber);
+    text-align: right;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+  }
+  .city-row .cr-km small {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    margin-left: 4px;
+    font-weight: 400;
+  }
+  .city-row .cr-share {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: right;
+    letter-spacing: 0.05em;
+  }
+  @media (max-width: 700px) {
+    .city-row { grid-template-columns: 1fr 0.8fr 0.7fr; padding: 14px; }
+    .city-row .cr-share { display: none; }
+  }
+
+  /* ===== Effort Quadrant ===== */
+  .effort-chart {
+    width: 100%;
+    height: 420px;
+    display: block;
+  }
+  .effort-chart circle { transition: opacity 0.15s ease; }
+  .effort-chart:hover circle { opacity: 0.45; }
+  .effort-chart:hover circle:hover { opacity: 1; }
+  .effort-legend {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  @media (max-width: 700px) { .effort-legend { grid-template-columns: 1fr; } }
+  .eq-tag {
+    font-family: var(--chinese);
+    font-size: 12.5px;
+    color: var(--text-dim);
+    padding: 12px 16px;
+    border-left: 2px solid var(--border);
+    background: var(--surface-2);
+    line-height: 1.5;
+  }
+  .eq-tag.eff { border-left-color: var(--cyan); }
+  .eq-tag.hard { border-left-color: var(--amber); }
+  .eq-tag.easy { border-left-color: var(--text-faint); }
+  .eq-tag.costly { border-left-color: var(--rose); }
+  .eq-tag strong {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 16px;
+    color: var(--text);
+    margin-right: 10px;
+    letter-spacing: -0.01em;
+  }
+  .eq-tag .eq-count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--amber);
+    margin-left: 6px;
+  }
+
+  /* ===== Floating Side Navigator ===== */
+  .side-nav {
+    position: fixed;
+    top: 50%;
+    right: 16px;
+    transform: translateY(-50%);
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 78vh;
+    overflow-y: auto;
+    padding: 10px 6px;
+    background: rgba(10, 10, 12, 0.78);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .side-nav::-webkit-scrollbar { width: 0; }
+  .side-nav-item {
+    padding: 6px 12px;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+    white-space: nowrap;
+    user-select: none;
+  }
+  .side-nav-item:hover { color: var(--text); background: var(--surface); }
+  .side-nav-item.active {
+    color: var(--amber);
+    border-left-color: var(--amber);
+    background: var(--surface);
+  }
+  @media (max-width: 1200px) { .side-nav { display: none; } }
+
+  /* ===== Effort Quadrant axis text helpers (overrides for SVG-injected text) ===== */
+  .eq-axis-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    fill: var(--text-dim);
+    letter-spacing: 0.08em;
+  }
+
 </style>
 </head>
 <body>
@@ -2064,6 +2242,14 @@
 </section>
 
 <section class="analysis-section">
+  <div class="section-title">城市分布<em>·</em>City Atlas</div>
+  <div class="section-sub">55 条 GPS 轨迹横跨 4 座城市 · 配送期 Sydney 占绝对主导</div>
+  <div class="chart-card" style="padding: 0;">
+    <div class="city-atlas" id="cityAtlas"></div>
+  </div>
+</section>
+
+<section class="analysis-section">
   <div class="section-title">时间画像<em>·</em>Temporal Patterns</div>
   <div class="section-sub">什么时候你在路上 / when you ride</div>
 
@@ -2137,6 +2323,23 @@
       <div class="metric-label">Total Climb</div>
       <div class="metric-value" id="mClimb">—<small>m</small></div>
       <div class="metric-sub">累计爬升 / GPX 高程</div>
+    </div>
+  </div>
+</section>
+
+<section class="analysis-section">
+  <div class="section-title">累计旅程<em>·</em>Cumulative Journey</div>
+  <div class="section-sub">19 个月一笔笔加起来 · 把 km 数字对照成真实的距离</div>
+  <div class="chart-card">
+    <svg class="journey-chart" id="journeyChart" viewBox="0 0 900 320" preserveAspectRatio="none"></svg>
+    <div class="journey-grid">
+      <div id="journeyMilestones"></div>
+      <div class="journey-side">
+        <div class="journey-context">
+          <div class="journey-context-title">真实距离对照 · Real-world equivalents</div>
+          <div class="journey-context-body" id="journeyContextBody">—</div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -2257,6 +2460,15 @@
       <span><span class="swatch dot" style="background: var(--cyan);"></span>早期骑行</span>
       <span style="margin-left: auto;" id="climbFoot">—</span>
     </div>
+  </div>
+</section>
+
+<section class="analysis-section">
+  <div class="section-title">强度象限<em>·</em>Effort Quadrant</div>
+  <div class="section-sub">把每次骑行画到「心率 × 速度」平面 · 中位线把图分成 4 个性格区</div>
+  <div class="chart-card">
+    <svg class="effort-chart" id="effortChart" viewBox="0 0 900 420" preserveAspectRatio="none"></svg>
+    <div class="effort-legend" id="effortLegend"></div>
   </div>
 </section>
 
@@ -4207,6 +4419,278 @@ function renderEfficiencyChart() {
     `共 <strong>${rides.length}</strong> 次有效骑行 · 起始平均 <strong>${Math.round(startMean)}</strong> beats/km · 最近 <strong>${Math.round(endMean)}</strong> beats/km · ${direction} (${delta >= 0 ? '+' : ''}${delta.toFixed(0)}, ${pct.toFixed(1)}%)`;
 }
 
+// ============ City Atlas ============
+function renderCityAtlas() {
+  const routes = window.ROUTES_DATA || [];
+  if (!routes.length) return;
+  const byCity = {};
+  for (const r of routes) {
+    const c = r.city || 'Other';
+    if (!byCity[c]) byCity[c] = { rides: 0, km: 0, durSec: 0, firstDate: null, lastDate: null };
+    byCity[c].rides += 1;
+    byCity[c].km += r.distance_km || 0;
+    byCity[c].durSec += r.duration_sec || 0;
+    if (r.start_date) {
+      if (!byCity[c].firstDate || r.start_date < byCity[c].firstDate) byCity[c].firstDate = r.start_date;
+      if (!byCity[c].lastDate || r.start_date > byCity[c].lastDate) byCity[c].lastDate = r.start_date;
+    }
+  }
+  const cn = { Sydney: '悉尼', Ningbo: '宁波', Shanghai: '上海', Henan: '河南' };
+  const totalKm = Object.values(byCity).reduce((a, b) => a + b.km, 0) || 1;
+  const ordered = Object.entries(byCity).sort((a, b) => b[1].km - a[1].km);
+  const maxKm = ordered[0][1].km;
+  const html = ordered.map(([city, s]) => {
+    const pct = s.km / totalKm * 100;
+    const barW = (s.km / maxKm) * 100;
+    const hours = Math.round(s.durSec / 360) / 10;
+    const range = s.firstDate && s.lastDate
+      ? (s.firstDate === s.lastDate
+          ? s.firstDate
+          : `${s.firstDate.slice(2, 10)} → ${s.lastDate.slice(2, 10)}`)
+      : '—';
+    return `<div class="city-row">
+      <div class="cr-bar" style="width:${barW}%"></div>
+      <div class="cr-name">${cn[city] || city}<small>${city}</small></div>
+      <div class="cr-meta">${s.rides} 次骑行 · ${hours} 小时<small>${range}</small></div>
+      <div class="cr-km">${s.km.toFixed(1)}<small>km</small></div>
+      <div class="cr-share">${pct.toFixed(1)}%</div>
+    </div>`;
+  }).join('');
+  document.getElementById('cityAtlas').innerHTML = html;
+}
+
+// ============ Cumulative Journey ============
+function renderJourney() {
+  const ws = (window.HEALTH_DATA && window.HEALTH_DATA.workouts) || [];
+  if (!ws.length) return;
+  const sorted = [...ws].sort((a, b) => (a.start_iso || a.date).localeCompare(b.start_iso || b.date));
+  let cum = 0;
+  const series = sorted.map(w => {
+    cum += w.distance_km || 0;
+    return { date: w.date, dateMs: new Date(w.date + 'T00:00:00').getTime(), cum, km: w.distance_km || 0 };
+  });
+  const final = series[series.length - 1].cum;
+
+  const svg = document.getElementById('journeyChart');
+  if (!svg) return;
+  const W = 900, H = 320, P = { l: 60, r: 30, t: 30, b: 40 };
+  const xMin = series[0].dateMs;
+  const xMax = Math.max(series[series.length - 1].dateMs, new Date().getTime());
+  const yMax = Math.max(1000, Math.ceil(final / 100) * 100);
+  const xs = ms => P.l + (ms - xMin) / (xMax - xMin) * (W - P.l - P.r);
+  const ys = v => H - P.b - v / yMax * (H - P.t - P.b);
+
+  let line = `M ${xs(xMin)} ${ys(0)} `;
+  series.forEach(s => { line += `L ${xs(s.dateMs)} ${ys(s.cum)} `; });
+  const lastX = xs(series[series.length - 1].dateMs);
+  const area = line + `L ${lastX} ${ys(0)} Z`;
+
+  const ticks = [0, yMax * 0.25, yMax * 0.5, yMax * 0.75, yMax];
+  const yAxis = ticks.map(t =>
+    `<line x1="${P.l}" x2="${W - P.r}" y1="${ys(t)}" y2="${ys(t)}" stroke="${t === 0 ? '#2a2c35' : '#1c1e25'}" stroke-width="1"/>` +
+    `<text x="${P.l - 8}" y="${ys(t) + 4}" text-anchor="end" fill="#5d5b55" font-family="JetBrains Mono" font-size="10">${Math.round(t)}</text>`
+  ).join('');
+
+  const monthSet = new Set();
+  series.forEach(s => monthSet.add(s.date.slice(0, 7)));
+  const months = [...monthSet];
+  const xAxis = months.map(m => {
+    const ms = new Date(m + '-01T00:00:00').getTime();
+    if (ms < xMin || ms > xMax) return '';
+    return `<text x="${xs(ms)}" y="${H - P.b + 18}" text-anchor="middle" fill="#5d5b55" font-family="JetBrains Mono" font-size="9">${m.slice(2)}</text>`;
+  }).join('');
+
+  const milestones = [100, 250, 500, 1000].filter(m => m <= yMax);
+  const milestoneMarks = milestones.map(m => {
+    const hit = series.find(s => s.cum >= m);
+    if (!hit) return '';
+    const reached = m <= final;
+    const color = reached ? '#e8b76d' : '#5d5b55';
+    return `<line x1="${xs(hit.dateMs)}" x2="${xs(hit.dateMs)}" y1="${ys(m)}" y2="${H - P.b}" stroke="${reached ? '#a87f3e' : '#2a2c35'}" stroke-width="1" stroke-dasharray="2 4" opacity="0.55"/>` +
+      `<circle cx="${xs(hit.dateMs)}" cy="${ys(m)}" r="3.5" fill="${color}"/>` +
+      `<text x="${xs(hit.dateMs) + 7}" y="${ys(m) - 5}" fill="${color}" font-family="JetBrains Mono" font-size="9.5">${m}km</text>`;
+  }).join('');
+
+  const endX = xs(series[series.length - 1].dateMs);
+  const endY = ys(final);
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="jGrad" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="#e8b76d" stop-opacity="0.42"/>
+        <stop offset="100%" stop-color="#e8b76d" stop-opacity="0.02"/>
+      </linearGradient>
+    </defs>
+    ${yAxis}
+    ${xAxis}
+    <path d="${area}" fill="url(#jGrad)" />
+    <path d="${line}" fill="none" stroke="#e8b76d" stroke-width="2" stroke-linejoin="round"/>
+    ${milestoneMarks}
+    <circle cx="${endX}" cy="${endY}" r="6" fill="#ffd897" stroke="#0a0a0c" stroke-width="2"/>
+    <text x="${endX - 8}" y="${endY - 10}" text-anchor="end" fill="#ffd897" font-family="Fraunces" font-style="italic" font-size="15">${Math.round(final)} km</text>
+  `;
+
+  const msList = [
+    { km: 100, label: '一次百公里门槛', note: '上海到苏州' },
+    { km: 250, label: '六个全马累计', note: '上海到南京' },
+    { km: 500, label: '宁波到上海', note: '沿沪甬高速' },
+    { km: 838, label: '当前累计里程', note: '今天的位置' },
+    { km: 1000, label: '四位数门槛', note: '即将解锁' }
+  ];
+  const msHtml = msList.map(m => {
+    const hit = series.find(s => s.cum >= m.km);
+    if (hit) {
+      const days = Math.round((hit.dateMs - series[0].dateMs) / 86400000);
+      return `<div class="milestone achieved">
+        <div class="ms-km">${m.km}<small>km</small></div>
+        <div class="ms-when"><strong>${hit.date}</strong> · ${m.label}${m.note ? ` · <span style="color:var(--text-faint)">${m.note}</span>` : ''}</div>
+        <div class="ms-days">D+${days}</div>
+      </div>`;
+    } else {
+      const remaining = m.km - final;
+      return `<div class="milestone">
+        <div class="ms-km">${m.km}<small>km</small></div>
+        <div class="ms-when">还差 ${remaining.toFixed(1)} km · ${m.label}${m.note ? ` · <span style="color:var(--text-faint)">${m.note}</span>` : ''}</div>
+        <div class="ms-days">未达成</div>
+      </div>`;
+    }
+  }).join('');
+  document.getElementById('journeyMilestones').innerHTML = msHtml;
+
+  const climb = (window.HEALTH_DATA.summary && window.HEALTH_DATA.summary.total_elev_gain_m) || 0;
+  const everests = (climb / 8848);
+  const marathons = (final / 42.195);
+  const sydMel = (final / 878) * 100;
+  document.getElementById('journeyContextBody').innerHTML =
+    `把 <strong>${Math.round(final)} km</strong> 摊开看 ──` +
+    ` 相当于骑了 <strong>${marathons.toFixed(1)}</strong> 个全程马拉松，` +
+    ` 或悉尼到墨尔本公路距离的 <strong>${sydMel.toFixed(0)}%</strong>。` +
+    ` 一路上累计爬升 <strong>${Math.round(climb).toLocaleString()} m</strong>，` +
+    ` 这些坡叠起来是 <strong>${everests.toFixed(2)}</strong> 座珠穆朗玛峰。` +
+    `<br><br>19 个月、${series.length} 次启程、4 座城市，一格一格往上加。`;
+}
+
+// ============ Effort Quadrant ============
+function renderEffortQuadrant() {
+  const ws = (window.HEALTH_DATA && window.HEALTH_DATA.workouts) || [];
+  const data = ws.filter(w => w.hr_avg != null && w.avg_speed_kmh != null && w.distance_km > 0);
+  if (!data.length) return;
+  const svg = document.getElementById('effortChart');
+  if (!svg) return;
+  const W = 900, H = 420, P = { l: 60, r: 30, t: 36, b: 50 };
+
+  const hrs = data.map(d => d.hr_avg);
+  const sps = data.map(d => d.avg_speed_kmh);
+  const hrMin = Math.floor(Math.min(...hrs) - 3);
+  const hrMax = Math.ceil(Math.max(...hrs) + 3);
+  const spMin = Math.max(0, Math.floor(Math.min(...sps) - 1));
+  const spMax = Math.ceil(Math.max(...sps) + 1);
+
+  const median = arr => {
+    const s = [...arr].sort((a, b) => a - b);
+    return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
+  };
+  const hrMed = median(hrs);
+  const spMed = median(sps);
+
+  const xs = v => P.l + (v - hrMin) / (hrMax - hrMin) * (W - P.l - P.r);
+  const ys = v => H - P.b - (v - spMin) / (spMax - spMin) * (H - P.t - P.b);
+
+  const ticksHr = [hrMin, Math.round((hrMin + hrMed) / 2), Math.round(hrMed), Math.round((hrMed + hrMax) / 2), hrMax];
+  const ticksSp = [spMin, Math.round((spMin + spMed) / 2 * 10) / 10, Math.round(spMed * 10) / 10, Math.round((spMed + spMax) / 2 * 10) / 10, spMax];
+
+  const grid =
+    ticksHr.map(t => `<line x1="${xs(t)}" x2="${xs(t)}" y1="${P.t}" y2="${H - P.b}" stroke="#1c1e25" stroke-width="1"/>` +
+      `<text x="${xs(t)}" y="${H - P.b + 18}" text-anchor="middle" fill="#5d5b55" font-family="JetBrains Mono" font-size="10">${t}</text>`).join('') +
+    ticksSp.map(t => `<line x1="${P.l}" x2="${W - P.r}" y1="${ys(t)}" y2="${ys(t)}" stroke="#1c1e25" stroke-width="1"/>` +
+      `<text x="${P.l - 8}" y="${ys(t) + 4}" text-anchor="end" fill="#5d5b55" font-family="JetBrains Mono" font-size="10">${t}</text>`).join('');
+
+  const cross =
+    `<line x1="${xs(hrMed)}" x2="${xs(hrMed)}" y1="${P.t}" y2="${H - P.b}" stroke="#3a3d48" stroke-width="1" stroke-dasharray="4 4"/>` +
+    `<line x1="${P.l}" x2="${W - P.r}" y1="${ys(spMed)}" y2="${ys(spMed)}" stroke="#3a3d48" stroke-width="1" stroke-dasharray="4 4"/>` +
+    `<text x="${xs(hrMed) + 5}" y="${P.t + 12}" fill="#908d85" font-family="JetBrains Mono" font-size="9.5">中位 ${hrMed.toFixed(0)} bpm</text>` +
+    `<text x="${W - P.r - 4}" y="${ys(spMed) - 5}" text-anchor="end" fill="#908d85" font-family="JetBrains Mono" font-size="9.5">中位 ${spMed.toFixed(1)} km/h</text>`;
+
+  const labels =
+    `<text x="${xs(hrMin) + 10}" y="${ys(spMax) + 18}" fill="#6cc4d9" font-family="JetBrains Mono" font-size="10" letter-spacing="0.1em">高 效 · EFFICIENT</text>` +
+    `<text x="${xs(hrMax) - 10}" y="${ys(spMax) + 18}" text-anchor="end" fill="#e8b76d" font-family="JetBrains Mono" font-size="10" letter-spacing="0.1em">硬 拉 · HARD</text>` +
+    `<text x="${xs(hrMin) + 10}" y="${ys(spMin) - 10}" fill="#908d85" font-family="JetBrains Mono" font-size="10" letter-spacing="0.1em">散 步 · EASY</text>` +
+    `<text x="${xs(hrMax) - 10}" y="${ys(spMin) - 10}" text-anchor="end" fill="#d97a8a" font-family="JetBrains Mono" font-size="10" letter-spacing="0.1em">代 价 大 · COSTLY</text>`;
+
+  const distMax = Math.max(...data.map(d => d.distance_km));
+  const points = data.map(d => {
+    const r = 4 + Math.sqrt(d.distance_km / distMax) * 14;
+    const isLate = d.date >= '2026-04-01';
+    const color = isLate ? '#e8b76d' : '#6cc4d9';
+    return `<circle cx="${xs(d.hr_avg)}" cy="${ys(d.avg_speed_kmh)}" r="${r}" fill="${color}" fill-opacity="0.32" stroke="${color}" stroke-width="1.2"><title>${d.date} · ${d.distance_km.toFixed(1)} km · ${d.hr_avg.toFixed(0)} bpm · ${d.avg_speed_kmh.toFixed(1)} km/h</title></circle>`;
+  }).join('');
+
+  const titles =
+    `<text x="${W / 2}" y="${H - 8}" text-anchor="middle" class="eq-axis-title">平均心率 (bpm)</text>` +
+    `<text x="18" y="${H / 2}" text-anchor="middle" class="eq-axis-title" transform="rotate(-90 18 ${H / 2})">平均速度 (km/h)</text>`;
+
+  svg.innerHTML = grid + cross + labels + points + titles;
+
+  let q = { eff: 0, hard: 0, easy: 0, costly: 0 };
+  data.forEach(d => {
+    if (d.hr_avg <= hrMed && d.avg_speed_kmh > spMed) q.eff++;
+    else if (d.hr_avg > hrMed && d.avg_speed_kmh > spMed) q.hard++;
+    else if (d.hr_avg <= hrMed && d.avg_speed_kmh <= spMed) q.easy++;
+    else q.costly++;
+  });
+  document.getElementById('effortLegend').innerHTML =
+    `<div class="eq-tag eff"><strong>高效巡航</strong><span class="eq-count">${q.eff} 次</span><br>低心率、高速度 — 心肺最舒服的状态，配送早期常出现。</div>` +
+    `<div class="eq-tag hard"><strong>硬拉训练</strong><span class="eq-count">${q.hard} 次</span><br>高心率、高速度 — 真正发力的几次冲刺与长距离骑行。</div>` +
+    `<div class="eq-tag easy"><strong>慢速散步</strong><span class="eq-count">${q.easy} 次</span><br>低心率、低速度 — 短程或起步，几乎没出力。</div>` +
+    `<div class="eq-tag costly"><strong>心率代价大</strong><span class="eq-count">${q.costly} 次</span><br>心率高但速度低 — 爬坡、疲劳或大热天的提示。</div>`;
+}
+
+// ============ Floating Side Navigator ============
+function buildSideNav() {
+  const sections = [...document.querySelectorAll('main > section')];
+  const items = sections.map((s, i) => {
+    let label = '';
+    const titleEl = s.querySelector('.section-title');
+    if (titleEl && titleEl.firstChild) {
+      label = (titleEl.firstChild.textContent || '').trim();
+    } else if (s.classList.contains('hero')) {
+      label = '开篇';
+    } else if (s.classList.contains('latest-band')) {
+      label = '最近一次';
+    } else if (s.classList.contains('map-section')) {
+      label = '轨迹地图';
+    }
+    if (!label) return null;
+    if (!s.id) s.id = 'sec-' + i;
+    return { id: s.id, label };
+  }).filter(Boolean);
+  if (!items.length) return;
+  const nav = document.createElement('div');
+  nav.className = 'side-nav';
+  nav.id = 'sideNav';
+  nav.innerHTML = items.map(it => `<div class="side-nav-item" data-target="${it.id}">${it.label}</div>`).join('');
+  document.body.appendChild(nav);
+  nav.addEventListener('click', e => {
+    const item = e.target.closest('.side-nav-item');
+    if (!item) return;
+    const el = document.getElementById(item.dataset.target);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  const update = () => {
+    const probe = window.scrollY + 140;
+    let active = items[0];
+    for (const it of items) {
+      const el = document.getElementById(it.id);
+      if (!el) continue;
+      const absTop = el.getBoundingClientRect().top + window.scrollY;
+      if (absTop <= probe) active = it;
+    }
+    document.querySelectorAll('.side-nav-item').forEach(i => i.classList.toggle('active', i.dataset.target === active.id));
+  };
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+}
+
 // ============ 初始化 ============
 window.addEventListener('DOMContentLoaded', () => {
   initMap();
@@ -4243,6 +4727,11 @@ window.addEventListener('DOMContentLoaded', () => {
   // 新增 · 最近骑行 + 恢复 + 训练效率
   renderLatestBand();
   renderEfficiencyChart();
+  // 2026-05-25 迭代: 城市分布 / 累计旅程 / 强度象限 / 浮动导航
+  renderCityAtlas();
+  renderJourney();
+  renderEffortQuadrant();
+  buildSideNav();
   // Footer dynamic
   const s = window.HEALTH_DATA && window.HEALTH_DATA.summary;
   if (s) {
