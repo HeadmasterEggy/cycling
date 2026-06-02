@@ -500,6 +500,102 @@
 
 
 <section class="analysis-section">
+  <div class="section-title">HRV 复元<em>·</em>HRV &amp; Recovery</div>
+  <div class="section-sub">心率变异性 · 神经系统的恢复读数 · 健康区间 40–60ms · 拖动选区可看子区间统计 · 顶部琥珀短线为骑行日</div>
+  <div class="chart-card">
+    <svg class="recovery-chart" id="hrvChart" viewBox="0 0 900 300" preserveAspectRatio="none"></svg>
+    <div class="recovery-legend">
+      <span><span class="swatch" style="background: var(--cyan);"></span>HRV 每日 + 7 天滚动</span>
+      <span><span class="swatch" style="background: rgba(108,196,217,0.2);"></span>健康区间 40–60ms</span>
+      <span><span class="swatch" style="background: var(--amber);"></span>骑行日</span>
+    </div>
+    <div class="recovery-brush-summary" id="hrvBrushSummary">拖动选区查看子区间统计 · drag to brush a window</div>
+    <div class="recovery-stats" id="hrvStats"></div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">静息心率<em>·</em>Resting Heart Rate</div>
+  <div class="section-sub">每天的静息心率 · 7 天滚动平均 · 初期 14 天 vs 近期 14 天对比 · 训练效果直接写在自主神经里</div>
+  <div class="chart-card">
+    <svg class="recovery-chart" id="rhrChart" viewBox="0 0 900 260" preserveAspectRatio="none"></svg>
+    <div class="recovery-legend">
+      <span><span class="swatch" style="background: var(--rose);"></span>静息心率 + 7 天滚动</span>
+      <span style="margin-left:auto;">下降通常意味着心肺更强、副交感更高</span>
+    </div>
+    <div class="recovery-stats" id="rhrStats"></div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">呼吸节律<em>·</em>Respiration &amp; SpO₂</div>
+  <div class="section-sub">每日呼吸频率 + 血氧饱和度 · 上为呼吸 (次/分)、下为血氧 (%) · 低于 95% 的天数会被标红</div>
+  <div class="chart-card">
+    <svg class="recovery-chart" id="respChart" viewBox="0 0 900 280" preserveAspectRatio="none"></svg>
+    <div class="recovery-legend">
+      <span><span class="swatch" style="background: var(--amber);"></span>Resp /min · 7d roll</span>
+      <span><span class="swatch" style="background: var(--cyan);"></span>SpO₂ ≥ 95%</span>
+      <span><span class="swatch" style="background: var(--rose);"></span>SpO₂ &lt; 95%</span>
+    </div>
+    <div class="recovery-stats" id="respStats"></div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">睡眠时长<em>·</em>Sleep</div>
+  <div class="section-sub">每日睡眠时长 · 7–9h 建议区间 · 直方图分布 · 骑行日 vs 非骑行日 · 拖动选区可看子区间</div>
+  <div class="chart-card">
+    <div class="recovery-grid-2">
+      <div>
+        <svg class="recovery-chart" id="sleepChart" viewBox="0 0 900 300" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="recovery-dist-card">
+        <div class="recovery-dist-title">分布 · Distribution</div>
+        <div id="sleepDist"></div>
+      </div>
+    </div>
+    <div class="recovery-legend">
+      <span><span class="swatch" style="background: var(--cyan);"></span>7–9h 充足</span>
+      <span><span class="swatch" style="background: var(--amber);"></span>边缘</span>
+      <span><span class="swatch" style="background: var(--rose);"></span>&lt; 6h 不足</span>
+    </div>
+    <div class="recovery-brush-summary" id="sleepBrushSummary">拖动选区查看子区间睡眠 · drag to brush a window</div>
+    <div class="recovery-stats" id="sleepStats"></div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">心率储备<em>·</em>Walking HR Reserve</div>
+  <div class="section-sub">日常步行心率 减 静息心率 = 心率储备 · 低值意味着身体很省力地完成日常活动 · 拖动选区可看子区间 · 顶部琥珀短线为骑行日</div>
+  <div class="chart-card">
+    <svg class="recovery-chart" id="walkingReserveChart" viewBox="0 0 900 280" preserveAspectRatio="none"></svg>
+    <div class="recovery-legend">
+      <span><span class="swatch" style="background: var(--cyan);"></span>步行心率 (bpm)</span>
+      <span><span class="swatch" style="background: var(--rose);"></span>静息心率 (bpm)</span>
+      <span><span class="swatch" style="background: rgba(168, 156, 107, 0.45);"></span>心率储备区</span>
+      <span><span class="swatch" style="background: var(--amber);"></span>骑行日</span>
+    </div>
+    <div class="recovery-brush-summary" id="walkingReserveBrush">拖动选区查看子区间心率储备 · drag to brush a window</div>
+    <div class="recovery-stats" id="walkingReserveStats"></div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">晨间生理<em>·</em>Morning Composite</div>
+  <div class="section-sub">HRV / 静息心率 / 呼吸 / 睡眠 四条 7 天滚动曲线垂直对齐 · 悬停同步读取四项 · 拖动选区可看子区间均值 · 哪一天身体在哪里,一眼可见</div>
+  <div class="chart-card">
+    <svg class="recovery-chart" id="recoveryComposite" viewBox="0 0 900 320" preserveAspectRatio="none"></svg>
+    <div class="recovery-readout" id="compositeReadout">悬停同步读取四项 · hover to read all four</div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
   <div class="section-title">爬升画像<em>·</em>Elevation Profile Gallery</div>
   <div class="section-sub">爬升 Top 8 · 每条骑行的 60 点海拔曲线 · 起点 ▸ 终点 · 主动消耗的山脊纹理</div>
   <div class="chart-card">
@@ -602,6 +698,7 @@
   crossorigin=""></script>
 <script src="assets/routes.js"></script>
 <script src="assets/health-data.js"></script>
+<script src="assets/recovery.js"></script>
 <script src="assets/app.js"></script>
 </body>
 </html>

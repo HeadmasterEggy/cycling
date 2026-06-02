@@ -84,6 +84,12 @@ SECTIONS = {
     'mets':         find_section_by_title('代谢强度'),
     'departure':    find_section_by_title('出发热力图'),
     'rides_table':  find_section_by_title('全部骑行明细'),
+    'hrv':          find_section_by_title('HRV 复元'),
+    'rhr':          find_section_by_title('静息心率'),
+    'resp':         find_section_by_title('呼吸节律'),
+    'sleep':        find_section_by_title('睡眠时长'),
+    'walking_reserve': find_section_by_title('心率储备'),
+    'recovery_composite': find_section_by_title('晨间生理'),
 }
 
 # -- 3. page assembly -------------------------------------------------------
@@ -148,6 +154,7 @@ PAGE_TEMPLATE = """<!DOCTYPE html>
   crossorigin=""></script>
 <script src="assets/routes.js"></script>
 <script src="assets/health-data.js"></script>
+<script src="assets/recovery.js"></script>
 <script src="assets/app.js"></script>
 </body>
 </html>
@@ -243,6 +250,18 @@ PAGES = [
         'sections': ['ride_explorer'],
         'has_filter': False,
     },
+    {
+        'file': 'recovery.html',
+        'page_key': 'recovery',
+        'title': '复元 · Recovery',
+        'hero': make_hero(
+            custom_h1='身体在恢复<br><em>HRV · 静息 · 睡眠</em>',
+            custom_sub='晨间的生理读数 —— 心率变异性、静息心率、呼吸频率、血氧、睡眠。骑行写下的力,身体在凌晨偷偷地还回去。拖动密集曲线可框选任一时间窗。',
+            custom_meta='复元 · Recovery'),
+        'intro': '',
+        'sections': ['hrv', 'rhr', 'resp', 'sleep', 'walking_reserve', 'recovery_composite'],
+        'has_filter': True,
+    },
 ]
 
 for p in PAGES:
@@ -263,7 +282,9 @@ ALL_TITLES_ORDER = [
     'map', 'records', 'cities', 'temporal', 'monthly', 'journey',
     'hr_zones', 'calendar', 'load', 'body', 'climb', 'quadrant',
     'daily_stack', 'efficiency', 'fitness_form', 'hr_range', 'energy',
-    'climate', 'daily_pulse', 'elev_gallery', 'ascent_descent',
+    'climate', 'daily_pulse',
+    'hrv', 'rhr', 'resp', 'sleep', 'walking_reserve', 'recovery_composite',
+    'elev_gallery', 'ascent_descent',
     'ride_explorer', 'mets', 'departure', 'rides_table',
 ]
 all_body = "\n\n".join(SECTIONS[s] for s in ALL_TITLES_ORDER)

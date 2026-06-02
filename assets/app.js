@@ -3355,6 +3355,12 @@ function isRanged(fn) {
       typeof renderHero === 'function' ? renderHero : null,
       typeof renderAscentDescent === 'function' ? renderAscentDescent : null,
       typeof renderElevGallery === 'function' ? renderElevGallery : null,
+      typeof renderHrvRecovery === 'function' ? renderHrvRecovery : null,
+      typeof renderRestingHrTrend === 'function' ? renderRestingHrTrend : null,
+      typeof renderRespRateBand === 'function' ? renderRespRateBand : null,
+      typeof renderSleepStory === 'function' ? renderSleepStory : null,
+      typeof renderWalkingReserve === 'function' ? renderWalkingReserve : null,
+      typeof renderRecoveryComposite === 'function' ? renderRecoveryComposite : null,
     ].filter(Boolean));
   }
   return window._RANGED_RENDERS.has(fn);
@@ -3499,6 +3505,11 @@ window.addEventListener('DOMContentLoaded', () => {
       [renderHero],
       [renderRideExplorer],
     ],
+    recovery: [
+      [renderHero],
+      [renderHrvRecovery], [renderRestingHrTrend], [renderRespRateBand],
+      [renderSleepStory], [renderWalkingReserve], [renderRecoveryComposite],
+    ],
     all: null,  // run everything (single-page archive)
   };
 
@@ -3530,7 +3541,14 @@ window.addEventListener('DOMContentLoaded', () => {
       [bindRidesTable], [renderLatestBand], [renderEfficiencyChart],
       [renderCityAtlas], [renderJourney], [renderEffortQuadrant],
       [renderFitnessForm], [renderHrRangeChart], [renderEnergyComposition],
-      [renderClimateProfile], [renderDailyLife], [renderElevGallery],
+      [renderClimateProfile], [renderDailyLife],
+      [typeof renderHrvRecovery === 'function' ? renderHrvRecovery : null],
+      [typeof renderRestingHrTrend === 'function' ? renderRestingHrTrend : null],
+      [typeof renderRespRateBand === 'function' ? renderRespRateBand : null],
+      [typeof renderSleepStory === 'function' ? renderSleepStory : null],
+      [typeof renderWalkingReserve === 'function' ? renderWalkingReserve : null],
+      [typeof renderRecoveryComposite === 'function' ? renderRecoveryComposite : null],
+      [renderElevGallery],
       [renderMetsIntensity], [renderDepartureHeatmap],
     ].forEach(([fn, ...args]) => safe(fn, ...args));
   }
@@ -3566,6 +3584,7 @@ function buildTopNav() {
     { key: 'body',     href: 'body.html',     cn: '身体',   en: 'Body' },
     { key: 'training', href: 'training.html', cn: '训练',   en: 'Training' },
     { key: 'rides',    href: 'rides.html',    cn: '骑行',   en: 'Rides' },
+    { key: 'recovery', href: 'recovery.html', cn: '复元',   en: 'Recovery' },
     { key: 'explorer', href: 'explorer.html', cn: '逐次',   en: 'Explorer' },
     { key: 'all',      href: 'cycling-analysis.html', cn: '全景', en: 'All' },
   ];

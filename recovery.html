@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>复元 · Recovery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,700&family=JetBrains+Mono:wght@300;400;500&family=Noto+Serif+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""/>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="recovery">
+
+<nav id="topNav" class="top-nav" aria-label="主导航"></nav>
+
+<section class="hero">
+  <div class="hero-meta"><span id="heroMetaText">复元 · Recovery</span><span class="hero-fresh" id="heroFresh"></span></div>
+  <h1 id="heroH1">身体在恢复<br><em>HRV · 静息 · 睡眠</em></h1>
+  <p class="hero-sub" id="heroSub">晨间的生理读数 —— 心率变异性、静息心率、呼吸频率、血氧、睡眠。骑行写下的力,身体在凌晨偷偷地还回去。拖动密集曲线可框选任一时间窗。</p>
+</section>
+
+
+
+<div class="range-filter" id="rangeFilter">
+  <span class="range-filter-label">时间范围 · Time Range</span>
+  <div class="range-filter-presets">
+    <button class="range-preset" data-preset="sydney">悉尼期</button>
+    <button class="range-preset" data-preset="30d">近 30 天</button>
+    <button class="range-preset" data-preset="90d">近 90 天</button>
+    <button class="range-preset" data-preset="year">近 1 年</button>
+    <button class="range-preset" data-preset="all">全部</button>
+  </div>
+  <div class="range-filter-inputs">
+    <input type="date" id="rangeFrom">
+    <span class="range-filter-sep">→</span>
+    <input type="date" id="rangeTo">
+  </div>
+  <div class="range-filter-summary" id="rangeFilterSummary">全部数据</div>
+</div>
+
+
+<main class="main">
+<section class="analysis-section">
+  <div class="section-title">HRV 复元<em>·</em>HRV &amp; Recovery</div>
+  <div class="section-sub">心率变异性 · 神经系统的恢复读数 · 健康区间 40–60ms · 拖动选区可看子区间统计 · 顶部琥珀短线为骑行日</div>
+  <div class="chart-card">
+    <svg class="recovery-chart" id="hrvChart" viewBox="0 0 900 300" preserveAspectRatio="none"></svg>
+    <div class="recovery-legend">
+      <span><span class="swatch" style="background: var(--cyan);"></span>HRV 每日 + 7 天滚动</span>
+      <span><span class="swatch" style="background: rgba(108,196,217,0.2);"></span>健康区间 40–60ms</span>
+      <span><span class="swatch" style="background: var(--amber);"></span>骑行日</span>
+    </div>
+    <div class="recovery-brush-summary" id="hrvBrushSummary">拖动选区查看子区间统计 · drag to brush a window</div>
+    <div class="recovery-stats" id="hrvStats"></div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">静息心率<em>·</em>Resting Heart Rate</div>
+  <div class="section-sub">每天的静息心率 · 7 天滚动平均 · 初期 14 天 vs 近期 14 天对比 · 训练效果直接写在自主神经里</div>
+  <div class="chart-card">
+    <svg class="recovery-chart" id="rhrChart" viewBox="0 0 900 260" preserveAspectRatio="none"></svg>
+    <div class="recovery-legend">
+      <span><span class="swatch" style="background: var(--rose);"></span>静息心率 + 7 天滚动</span>
+      <span style="margin-left:auto;">下降通常意味着心肺更强、副交感更高</span>
+    </div>
+    <div class="recovery-stats" id="rhrStats"></div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">呼吸节律<em>·</em>Respiration &amp; SpO₂</div>
+  <div class="section-sub">每日呼吸频率 + 血氧饱和度 · 上为呼吸 (次/分)、下为血氧 (%) · 低于 95% 的天数会被标红</div>
+  <div class="chart-card">
+    <svg class="recovery-chart" id="respChart" viewBox="0 0 900 280" preserveAspectRatio="none"></svg>
+    <div class="recovery-legend">
+      <span><span class="swatch" style="background: var(--amber);"></span>Resp /min · 7d roll</span>
+      <span><span class="swatch" style="background: var(--cyan);"></span>SpO₂ ≥ 95%</span>
+      <span><span class="swatch" style="background: var(--rose);"></span>SpO₂ &lt; 95%</span>
+    </div>
+    <div class="recovery-stats" id="respStats"></div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">睡眠时长<em>·</em>Sleep</div>
+  <div class="section-sub">每日睡眠时长 · 7–9h 建议区间 · 直方图分布 · 骑行日 vs 非骑行日 · 拖动选区可看子区间</div>
+  <div class="chart-card">
+    <div class="recovery-grid-2">
+      <div>
+        <svg class="recovery-chart" id="sleepChart" viewBox="0 0 900 300" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="recovery-dist-card">
+        <div class="recovery-dist-title">分布 · Distribution</div>
+        <div id="sleepDist"></div>
+      </div>
+    </div>
+    <div class="recovery-legend">
+      <span><span class="swatch" style="background: var(--cyan);"></span>7–9h 充足</span>
+      <span><span class="swatch" style="background: var(--amber);"></span>边缘</span>
+      <span><span class="swatch" style="background: var(--rose);"></span>&lt; 6h 不足</span>
+    </div>
+    <div class="recovery-brush-summary" id="sleepBrushSummary">拖动选区查看子区间睡眠 · drag to brush a window</div>
+    <div class="recovery-stats" id="sleepStats"></div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">心率储备<em>·</em>Walking HR Reserve</div>
+  <div class="section-sub">日常步行心率 减 静息心率 = 心率储备 · 低值意味着身体很省力地完成日常活动 · 拖动选区可看子区间 · 顶部琥珀短线为骑行日</div>
+  <div class="chart-card">
+    <svg class="recovery-chart" id="walkingReserveChart" viewBox="0 0 900 280" preserveAspectRatio="none"></svg>
+    <div class="recovery-legend">
+      <span><span class="swatch" style="background: var(--cyan);"></span>步行心率 (bpm)</span>
+      <span><span class="swatch" style="background: var(--rose);"></span>静息心率 (bpm)</span>
+      <span><span class="swatch" style="background: rgba(168, 156, 107, 0.45);"></span>心率储备区</span>
+      <span><span class="swatch" style="background: var(--amber);"></span>骑行日</span>
+    </div>
+    <div class="recovery-brush-summary" id="walkingReserveBrush">拖动选区查看子区间心率储备 · drag to brush a window</div>
+    <div class="recovery-stats" id="walkingReserveStats"></div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">晨间生理<em>·</em>Morning Composite</div>
+  <div class="section-sub">HRV / 静息心率 / 呼吸 / 睡眠 四条 7 天滚动曲线垂直对齐 · 悬停同步读取四项 · 拖动选区可看子区间均值 · 哪一天身体在哪里,一眼可见</div>
+  <div class="chart-card">
+    <svg class="recovery-chart" id="recoveryComposite" viewBox="0 0 900 320" preserveAspectRatio="none"></svg>
+    <div class="recovery-readout" id="compositeReadout">悬停同步读取四项 · hover to read all four</div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div id="footerGen">导出于 — · Apple Health Export</div>
+  <div style="display: flex; gap: 24px;">
+    <span>55 GPX tracks</span>
+    <span id="footerDays">— days monitored</span>
+    <span>Joey's data</span>
+  </div>
+</footer>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""></script>
+<script src="assets/routes.js"></script>
+<script src="assets/health-data.js"></script>
+<script src="assets/recovery.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
