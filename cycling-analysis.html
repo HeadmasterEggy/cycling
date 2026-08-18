@@ -727,16 +727,34 @@
 
 <section class="analysis-section">
   <div class="section-title">热点地图<em>·</em>Order Hotspots</div>
-  <div class="section-sub">反复停车的点位 · 圈越大去得越多 —— 已排除每次出勤自己起点/终点 150 米内的停留</div>
-  <div class="dlv-layer-tabs" id="dlvLayerTabs">
-    <button class="dlv-tab active" data-layer="hotspots">停车热点</button>
-    <button class="dlv-tab" data-layer="zones">区域单量</button>
-    <button class="dlv-tab" data-layer="common">最常走</button>
-    <button class="dlv-tab" data-layer="hard">最难走</button>
+  <div class="section-sub">圈越大去得越多 · 图层可以叠 · 点某个区钻进去只看它 · 拖时间轴看某个时段 —— 已排除每次出勤自己起点/终点 150 米内的停留</div>
+  <div class="dlv-map-controls">
+    <div class="dlv-layer-chips" id="dlvLayerChips">
+      <button class="dlv-chip active" data-layer="hotspots"><i class="dlv-dot dot-hot"></i>停车热点</button>
+      <button class="dlv-chip active" data-layer="zones"><i class="dlv-dot dot-zone"></i>区域单量</button>
+      <button class="dlv-chip" data-layer="common"><i class="dlv-dot dot-common"></i>最常走</button>
+      <button class="dlv-chip" data-layer="hard"><i class="dlv-dot dot-hard"></i>最难走</button>
+      <button class="dlv-reset" id="dlvReset">回到全图</button>
+    </div>
+    <div class="dlv-time">
+      <button class="dlv-play" id="dlvPlay" aria-label="按时段播放">▶</button>
+      <input type="range" id="dlvHour" min="-1" max="23" step="1" value="-1" aria-label="时段">
+      <span class="dlv-time-label" id="dlvHourLabel">全天</span>
+      <span class="dlv-time-note">时段只筛热点与区域单量，路段是整班统计的</span>
+    </div>
   </div>
+
+  <div class="dlv-focus-bar" id="dlvFocusBar" hidden></div>
+
   <div class="map-grid">
     <div id="dlvMap"></div>
     <div class="route-panel">
+      <div class="dlv-panel-tabs" id="dlvPanelTabs">
+        <button class="dlv-ptab active" data-list="hotspots">热点</button>
+        <button class="dlv-ptab" data-list="zones">区域</button>
+        <button class="dlv-ptab" data-list="common">常走</button>
+        <button class="dlv-ptab" data-list="hard">难走</button>
+      </div>
       <div class="panel-header">
         <span id="dlvPanelTitle">停车热点</span>
         <span id="dlvPanelCount" style="color: var(--amber);">—</span>

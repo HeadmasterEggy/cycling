@@ -3185,25 +3185,150 @@ body[data-page]:not([data-page="all"]) .hero h1 {
   }
   .dlv-note strong { color: var(--amber); font-weight: 500; }
 
-  .dlv-layer-tabs {
+  /* map controls: layer chips, hour scrubber, focus bar */
+  .dlv-map-controls {
     display: flex;
-    gap: 0;
-    margin-bottom: 18px;
-    border-bottom: 1px solid var(--border);
     flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px 22px;
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border);
   }
-  .dlv-tab {
+  .dlv-layer-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .dlv-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-faint);
+    font-family: var(--chinese);
+    font-size: 12.5px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .dlv-chip:hover { color: var(--text); border-color: var(--border-bright); }
+  .dlv-chip.active { color: var(--text); border-color: var(--amber-dim); background: var(--surface-2); }
+  .dlv-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--text-faint);
+    opacity: 0.45;
+    transition: opacity 0.15s;
+  }
+  .dlv-chip.active .dlv-dot { opacity: 1; }
+  .dlv-dot.dot-hot { background: var(--amber-bright); }
+  .dlv-dot.dot-zone { background: var(--amber-dim); }
+  .dlv-dot.dot-common { background: var(--amber); }
+  .dlv-dot.dot-hard { background: var(--rose); }
+  .dlv-reset {
     background: none;
     border: none;
-    color: var(--text-dim);
-    font-family: var(--chinese);
-    font-size: 14px;
-    padding: 12px 20px;
+    color: var(--text-faint);
+    font-family: var(--mono);
+    font-size: 11px;
     cursor: pointer;
-    transition: color 0.2s;
+    padding: 6px 4px;
+    margin-left: 4px;
+    border-bottom: 1px solid transparent;
   }
-  .dlv-tab:hover { color: var(--text); }
-  .dlv-tab.active { color: var(--amber); }
+  .dlv-reset:hover { color: var(--amber); border-bottom-color: var(--amber-dim); }
+
+  .dlv-time { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .dlv-play {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--border-bright);
+    background: var(--surface);
+    color: var(--text-dim);
+    font-size: 10px;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .dlv-play:hover, .dlv-play.playing { color: var(--amber); border-color: var(--amber-dim); }
+  #dlvHour {
+    width: 190px;
+    accent-color: #e8b76d;
+    background: transparent;
+    cursor: pointer;
+  }
+  .dlv-time-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--amber);
+    min-width: 44px;
+  }
+  .dlv-time-note { font-size: 11px; color: var(--text-faint); }
+
+  .dlv-focus-bar[hidden] { display: none; }
+  .dlv-focus-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 20px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    background: var(--surface-2);
+    border-left: 2px solid var(--amber);
+  }
+  .dlv-focus-name { font-family: var(--serif); font-size: 19px; color: var(--amber); }
+  .dlv-focus-lga {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    margin-left: 10px;
+  }
+  .dlv-focus-stats { display: flex; flex-wrap: wrap; gap: 6px 20px; flex: 1; }
+  .dlv-focus-stats span { font-family: var(--mono); font-size: 12px; color: var(--text); }
+  .dlv-focus-stats em {
+    display: block;
+    font-style: normal;
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 2px;
+  }
+  .dlv-focus-exit {
+    background: none;
+    border: 1px solid var(--border-bright);
+    border-radius: 999px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 12px;
+    cursor: pointer;
+  }
+  .dlv-focus-exit:hover { color: var(--amber); border-color: var(--amber-dim); }
+
+  .dlv-panel-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    z-index: 2;
+  }
+  .dlv-ptab {
+    flex: 1;
+    background: none;
+    border: none;
+    border-bottom: 1px solid transparent;
+    color: var(--text-faint);
+    font-family: var(--chinese);
+    font-size: 12.5px;
+    padding: 10px 4px;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .dlv-ptab:hover { color: var(--text); }
+  .dlv-ptab.active { color: var(--amber); border-bottom-color: var(--amber); }
+
+  .dlv-pop-hint { color: #a87f3e; font-size: 11px; }
 
   #dlvMap {
     width: 100%;
@@ -3218,7 +3343,12 @@ body[data-page]:not([data-page="all"]) .hero h1 {
     cursor: pointer;
     transition: background 0.15s;
   }
-  .dlv-row:hover { background: var(--surface-2); }
+  .dlv-row:hover, .dlv-row.hover { background: var(--surface-2); }
+  .dlv-row.active {
+    background: var(--surface-2);
+    box-shadow: inset 2px 0 0 var(--amber);
+  }
+  .dlv-row.active .dlv-row-main { color: var(--amber); }
   .dlv-row-main {
     font-size: 13.5px;
     color: var(--text);
