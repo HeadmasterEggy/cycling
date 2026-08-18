@@ -337,7 +337,8 @@ function renderCityCounts() {
 // ============ 城市说明 ============
 function updateCityInfo(city) {
   const info = cityInfo(city);
-  document.getElementById('cityInfo').innerHTML = info.text;
+  const box = document.getElementById('cityInfo');
+  if (box) box.innerHTML = info.text;
 }
 
 // ============ 城市切换 ============
@@ -3560,6 +3561,17 @@ window.addEventListener('DOMContentLoaded', () => {
       [renderHero],
       [renderRideExplorer],
     ],
+    delivery: [
+      [renderHero],
+      [typeof renderDeliveryKpis === 'function' ? renderDeliveryKpis : null],
+      [typeof renderZoneQuadrant === 'function' ? renderZoneQuadrant : null],
+      [typeof renderZoneTable === 'function' ? renderZoneTable : null],
+      [typeof bindZoneTable === 'function' ? bindZoneTable : null],
+      [typeof renderDeliveryMap === 'function' ? renderDeliveryMap : null],
+      [typeof renderCorridors === 'function' ? renderCorridors : null],
+      [typeof renderHourBars === 'function' ? renderHourBars : null],
+      [typeof renderHourZone === 'function' ? renderHourZone : null],
+    ],
     recovery: [
       [renderHero],
       [renderHrvRecovery], [renderRestingHrTrend], [renderRespRateBand],
@@ -3605,6 +3617,14 @@ window.addEventListener('DOMContentLoaded', () => {
       [typeof renderRecoveryComposite === 'function' ? renderRecoveryComposite : null],
       [renderElevGallery],
       [renderMetsIntensity], [renderDepartureHeatmap],
+      [typeof renderDeliveryKpis === 'function' ? renderDeliveryKpis : null],
+      [typeof renderZoneQuadrant === 'function' ? renderZoneQuadrant : null],
+      [typeof renderZoneTable === 'function' ? renderZoneTable : null],
+      [typeof bindZoneTable === 'function' ? bindZoneTable : null],
+      [typeof renderDeliveryMap === 'function' ? renderDeliveryMap : null],
+      [typeof renderCorridors === 'function' ? renderCorridors : null],
+      [typeof renderHourBars === 'function' ? renderHourBars : null],
+      [typeof renderHourZone === 'function' ? renderHourZone : null],
     ].forEach(([fn, ...args]) => safe(fn, ...args));
   }
 
@@ -3644,6 +3664,7 @@ function buildTopNav() {
     { key: 'body',     href: 'body.html',     cn: '身体',   en: 'Body' },
     { key: 'training', href: 'training.html', cn: '训练',   en: 'Training' },
     { key: 'rides',    href: 'rides.html',    cn: '骑行',   en: 'Rides' },
+    { key: 'delivery', href: 'delivery.html', cn: '配送',   en: 'Delivery' },
     { key: 'recovery', href: 'recovery.html', cn: '复元',   en: 'Recovery' },
     { key: 'explorer', href: 'explorer.html', cn: '逐次',   en: 'Explorer' },
     { key: 'all',      href: 'cycling-analysis.html', cn: '全景', en: 'All' },

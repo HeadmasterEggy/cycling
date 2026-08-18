@@ -151,7 +151,19 @@ SECTIONS = {
     'sleep':        find_section_by_title('睡眠时长'),
     'walking_reserve': find_section_by_title('心率储备'),
     'recovery_composite': find_section_by_title('晨间生理'),
+    'dlv_kpis':     find_section_by_title('配送概览'),
+    'dlv_zones':    find_section_by_title('区域排行'),
+    'dlv_map':      find_section_by_title('热点地图'),
+    'dlv_roads':    find_section_by_title('路段好坏'),
+    'dlv_hours':    find_section_by_title('时段规律'),
 }
+
+# Sections that need the delivery dataset + renderer. Every page used to load
+# every asset; the delivery data is another ~150 KB, so pages that show none
+# of these sections do not get the tags at all.
+DELIVERY_SECTIONS = {'dlv_kpis', 'dlv_zones', 'dlv_map', 'dlv_roads', 'dlv_hours'}
+# Sections that draw a Leaflet map.
+MAP_SECTIONS = {'map', 'dlv_map'}
 
 # -- 3. page assembly -------------------------------------------------------
 RANGE_FILTER_HTML = """
@@ -182,6 +194,11 @@ LEAFLET_CSS = """<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/di
 LEAFLET_JS = """<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
   integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
   crossorigin=""></script>
+"""
+
+# app.js reads window.DELIVERY_DATA, so the data file has to come first.
+DELIVERY_JS = """<script src="assets/delivery-data.js"></script>
+<script src="assets/delivery.js"></script>
 """
 
 PAGE_TEMPLATE = """<!DOCTYPE html>
@@ -229,7 +246,7 @@ PAGE_TEMPLATE = """<!DOCTYPE html>
 {leaflet_js}<script src="assets/routes.js"></script>
 <script src="assets/health-data.js"></script>
 <script src="assets/recovery.js"></script>
-<script src="assets/app.js"></script>
+{delivery_js}<script src="assets/app.js"></script>
 </body>
 </html>
 """
@@ -331,6 +348,19 @@ PAGES = [
         'has_filter': False,
     },
     {
+        'file': 'delivery.html',
+        'description': '悉尼送外卖的效率地图 —— 区域单量排行、停车热点、最常走与最难走的路段，以及时段 × 区域的出单规律。',
+        'page_key': 'delivery',
+        'title': '配送 · Delivery',
+        'hero': make_hero(
+            custom_h1='哪儿的单好跑<br><em>区域与路段</em>',
+            custom_sub='从 GPS 轨迹反推出的接单节奏 —— 哪个区单最多、哪个区跑得动、哪几段路最费时间、几点该在哪儿。没有平台数据，全部是从停车与速度里读出来的。',
+            custom_meta='配送 · Delivery'),
+        'intro': '',
+        'sections': ['dlv_kpis', 'dlv_zones', 'dlv_map', 'dlv_roads', 'dlv_hours'],
+        'has_filter': False,
+    },
+    {
         'file': 'recovery.html',
         'description': '晨间生理读数 —— 心率变异性、静息心率、呼吸频率、血氧与睡眠的恢复曲线。',
         'page_key': 'recovery',
@@ -347,7 +377,8 @@ PAGES = [
 
 for p in PAGES:
     body_html = "\n\n".join(SECTIONS[s] for s in p['sections'])
-    has_map = 'map' in p['sections']
+    has_map = bool(MAP_SECTIONS & set(p['sections']))
+    has_delivery = bool(DELIVERY_SECTIONS & set(p['sections']))
     out = PAGE_TEMPLATE.format(
         title=p['title'],
         description=p['description'],
@@ -358,6 +389,7 @@ for p in PAGES:
         body_html=body_html,
         leaflet_css=LEAFLET_CSS if has_map else '',
         leaflet_js=LEAFLET_JS if has_map else '',
+        delivery_js=DELIVERY_JS if has_delivery else '',
     )
     (ROOT / p['file']).write_text(fill_stat_spans(out), encoding="utf-8")
     print(f"wrote {p['file']:18s} ({len(out)//1024} KB, {len(p['sections'])} sections)")
@@ -371,6 +403,7 @@ ALL_TITLES_ORDER = [
     'hrv', 'rhr', 'resp', 'sleep', 'walking_reserve', 'recovery_composite',
     'elev_gallery', 'ascent_descent',
     'ride_explorer', 'mets', 'departure', 'rides_table',
+    'dlv_kpis', 'dlv_zones', 'dlv_map', 'dlv_roads', 'dlv_hours',
 ]
 all_body = "\n\n".join(SECTIONS[s] for s in ALL_TITLES_ORDER)
 all_html = PAGE_TEMPLATE.format(
@@ -383,6 +416,7 @@ all_html = PAGE_TEMPLATE.format(
     body_html=all_body,
     leaflet_css=LEAFLET_CSS,
     leaflet_js=LEAFLET_JS,
+    delivery_js=DELIVERY_JS,
 )
 (ROOT / 'cycling-analysis.html').write_text(fill_stat_spans(all_html), encoding="utf-8")
 print(f"wrote cycling-analysis.html ({len(all_html)//1024} KB, all sections)")

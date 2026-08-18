@@ -688,6 +688,102 @@
   </div>
 </section>
 
+
+<section class="analysis-section">
+  <div class="section-title">配送概览<em>·</em>Shift Economics</div>
+  <div class="section-sub">从 GPS 停留反推的接单节奏 —— 没有平台数据，一次停车超过 <span id="dlvStopSec">90</span> 秒就算一单（取餐或送达），更短的停车归为红灯与路口</div>
+  <div class="dlv-kpis" id="dlvKpis"></div>
+  <div class="dlv-note" id="dlvMethod"></div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">区域排行<em>·</em>Zone Leaderboard</div>
+  <div class="section-sub">横轴单量、纵轴好跑指数 —— 右上角是「单多又好跑」的区，右下角是「单多但难跑」的区</div>
+  <div class="chart-card">
+    <svg id="zoneQuadrant" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="eq-legend" id="zoneQuadLegend"></div>
+  </div>
+  <div class="chart-card" style="padding: 0; margin-top: 20px;">
+    <div class="rides-table-wrap">
+      <table class="rides-table dlv-table" id="zoneTable">
+        <thead><tr>
+          <th data-sort="orders" data-dir="desc" class="sorted">区 Suburb</th>
+          <th data-sort="orders" data-dir="desc">单量</th>
+          <th data-sort="shifts" data-dir="desc">出现班次</th>
+          <th data-sort="orders_per_hour" data-dir="desc">单/小时</th>
+          <th data-sort="med_speed" data-dir="desc">中位速度</th>
+          <th data-sort="waits_per_km" data-dir="asc">红灯/km</th>
+          <th data-sort="climb_per_km" data-dir="asc">爬升 m/km</th>
+          <th data-sort="flow" data-dir="desc">好跑指数</th>
+          <th data-sort="worth" data-dir="desc">值得去</th>
+        </tr></thead>
+        <tbody id="zoneTbody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">热点地图<em>·</em>Order Hotspots</div>
+  <div class="section-sub">反复停车的点位 · 圈越大去得越多 —— 已排除每次出勤自己起点/终点 150 米内的停留</div>
+  <div class="dlv-layer-tabs" id="dlvLayerTabs">
+    <button class="dlv-tab active" data-layer="hotspots">停车热点</button>
+    <button class="dlv-tab" data-layer="zones">区域单量</button>
+    <button class="dlv-tab" data-layer="common">最常走</button>
+    <button class="dlv-tab" data-layer="hard">最难走</button>
+  </div>
+  <div class="map-grid">
+    <div id="dlvMap"></div>
+    <div class="route-panel">
+      <div class="panel-header">
+        <span id="dlvPanelTitle">停车热点</span>
+        <span id="dlvPanelCount" style="color: var(--amber);">—</span>
+      </div>
+      <div id="dlvList"></div>
+    </div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">路段好坏<em>·</em>Corridors</div>
+  <div class="section-sub">把常骑的 60 米格子连成街段 —— 左边是走得最多的，右边是最耗时间的。点一行在上方地图里定位</div>
+  <div class="analysis-grid dlv-corridor-grid">
+    <div class="chart-card">
+      <div class="chart-title">最常走的路段</div>
+      <div class="chart-sub">Most-ridden corridors · 按经过的班次数排序</div>
+      <div class="corridor-list" id="corridorTop"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">最难走的路段</div>
+      <div class="chart-sub">Slowest corridors · 相对 18 km/h 自由通行多花的时间</div>
+      <div class="corridor-list" id="corridorHard"></div>
+    </div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">时段规律<em>·</em>Hour × Zone</div>
+  <div class="section-sub">几点该在哪 —— 行是区，列是本地时间，颜色越亮那个时段该区的单越密</div>
+  <div class="chart-card">
+    <div class="chart-title">全天单量分布</div>
+    <div class="chart-sub">Orders by hour of day · 所有班次合计</div>
+    <svg id="hourBars" viewBox="0 0 900 180" preserveAspectRatio="xMidYMid meet"></svg>
+  </div>
+  <div class="chart-card" style="margin-top: 20px;">
+    <div class="chart-title">时段 × 区域</div>
+    <div class="chart-sub">Hour × zone heatmap · 只显示有单的时段</div>
+    <div class="hz-wrap"><div class="hz-grid" id="hourZoneHeat"></div></div>
+    <div class="heatmap-legend">
+      <span>少</span><span class="grad"></span><span>多</span>
+      <span style="margin-left:auto;" id="hzFoot">—</span>
+    </div>
+  </div>
+</section>
+
 </main>
 
 <footer>
@@ -707,6 +803,8 @@
 <script src="assets/routes.js"></script>
 <script src="assets/health-data.js"></script>
 <script src="assets/recovery.js"></script>
+<script src="assets/delivery-data.js"></script>
+<script src="assets/delivery.js"></script>
 <script src="assets/app.js"></script>
 </body>
 </html>

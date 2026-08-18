@@ -1,9 +1,14 @@
 # Build-time tooling — the generated HTML is committed, nothing runs on Vercel.
 build_pages.py
 parse_health.py
+analyze_delivery.py
 
-# Raw derived export; the site reads assets/health-data.js, not this file.
+# Raw derived exports; the site reads assets/*.js, not these files.
 health_data.json
+delivery_data.json
+
+# Build input for analyze_delivery.py — suburb polygons, never fetched at runtime.
+suburbs_sydney.json
 
 data/
 health_data/
