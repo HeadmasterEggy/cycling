@@ -41,10 +41,45 @@ function cityInfo(city) {
     };
     case 'all': return {
       title: '全部地点',
-      text: `<strong>${s.count} 条路线 · ${km} km</strong>。所有 GPS 轨迹合集，横跨中澳两国 4 个城市群。 <span style="color:var(--text-faint)">${range}</span>`
+      text: `<strong>${s.count} 条路线 · ${km} km</strong>。所有 GPS 轨迹合集，横跨 ${cityCount()} 个城市群。 <span style="color:var(--text-faint)">${range}</span>`
     };
     default: return { title: city, text: `${s.count} 条路线 · ${km} km` };
   }
+}
+
+// ============ 数据派生的统计量 ============
+// These used to be written into the copy by hand ("19 个月", "4 个城市",
+// "34 次正式骑行"), which meant every refreshed export left the prose
+// contradicting the numbers beside it. Derive them instead.
+
+// Calendar months from the first ride to the last, e.g. 2024-10 → 2026-08 = 22.
+function spanMonths() {
+  const s = window.HEALTH_DATA && window.HEALTH_DATA.summary;
+  if (!s || !s.first_ride || !s.last_ride) return 0;
+  const a = new Date(s.first_ride), b = new Date(s.last_ride);
+  return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+}
+
+// Distinct places in the GPS data.
+function cityCount() {
+  return new Set((window.ROUTES_DATA || []).map(r => r.city)).size;
+}
+
+// Fill every [data-stat] span from the data. The committed HTML carries the
+// last-built value as its text, so the page still reads correctly without JS
+// and for crawlers; this keeps it honest once the data moves.
+function renderDerivedStats() {
+  const s = (window.HEALTH_DATA && window.HEALTH_DATA.summary) || {};
+  const values = {
+    months: spanMonths(),
+    tracks: (window.ROUTES_DATA || []).length,
+    cities: cityCount(),
+    rides: s.ride_count,
+  };
+  document.querySelectorAll('[data-stat]').forEach(el => {
+    const v = values[el.dataset.stat];
+    if (v !== undefined && v !== null && v !== 0) el.textContent = v;
+  });
 }
 
 // ============ 工具函数 ============
@@ -55,10 +90,17 @@ function formatDuration(sec) {
   return `${m}m`;
 }
 
+// Only ever called with a route's start_local/end_local, which carry the
+// wall-clock time where the ride happened, tagged "+00:00" — a marker, not the
+// real offset. Formatting in UTC reads those digits straight back, so a ride
+// at 10:57pm in Sydney shows as 10:57pm everywhere. Without the timeZone the
+// browser re-renders them in the viewer's own zone and every time on the page
+// shifts by that offset.
 function formatTime(iso) {
   if (!iso) return "";
   const d = new Date(iso);
   return d.toLocaleString("zh-CN", {
+    timeZone: "UTC",
     month: "2-digit", day: "2-digit",
     hour: "2-digit", minute: "2-digit",
     hour12: false
@@ -1225,9 +1267,9 @@ function renderHero() {
                           .reduce((a, r) => a + (r.distance_km || 0), 0);
   const share = totalGpsKm > 0 ? (sydneyKm / totalGpsKm * 100) : 0;
 
-  // TOTAL = Apple Health workouts only (839 km). GPS-only tracks (walks / pre-watch /
-  // unpaired loops) appear as the larger 898 km figure in the foot label so the two
-  // numbers don't look contradictory.
+  // TOTAL is Apple Health workouts only. GPS-only tracks (walks / pre-watch /
+  // unpaired loops) push the raw GPS sum higher, so that larger figure goes in
+  // the foot label rather than the headline, and the two don't look contradictory.
   const workoutsKm = Math.round(s.total_distance_km || 0);
   const gpsKm = Math.round(totalGpsKm);
   const gpsExtra = Math.max(0, gpsKm - workoutsKm);
@@ -1236,9 +1278,9 @@ function renderHero() {
   el('statTotalDistance').textContent = workoutsKm;
   if (gpsExtra > 0) {
     el('statTotalDistanceFoot').innerHTML =
-      `34 次正式骑行 · GPS 全部 <span style="color:var(--text-dim)">${gpsKm} km</span>`;
+      `${s.ride_count} 次正式骑行 · GPS 全部 <span style="color:var(--text-dim)">${gpsKm} km</span>`;
   } else {
-    el('statTotalDistanceFoot').textContent = '34 次正式骑行';
+    el('statTotalDistanceFoot').textContent = `${s.ride_count} 次正式骑行`;
   }
   el('statSydneyDistance').textContent = Math.round(sydneyKm);
   el('statSydneyShare').textContent = `送餐期 ${share.toFixed(1)}% 占比`;
@@ -1252,7 +1294,7 @@ function renderHero() {
   el('heroH1').innerHTML = `${chineseDigit(Math.round(s.total_distance_km || 0))}公里的<br><em>夜色与坐垫</em>`;
 
   el('heroSub').innerHTML =
-    `19 个月，<strong>${routes.length}</strong> 条 GPS 轨迹，4 个城市。`
+    `${spanMonths()} 个月，<strong>${routes.length}</strong> 条 GPS 轨迹，${cityCount()} 个城市。`
     + ` Apple Health 记录 <strong>${s.ride_count}</strong> 次正式骑行，累计 ${Math.round(s.total_distance_km)} km、${Math.round(s.total_duration_h)} 小时、爬升 ${climb.toLocaleString()} m。`
     + ` 这是你在悉尼下午到深夜骑出的城市，也是早期在宁波、上海、河南留下的零星记号。每一条线，都是一次出门。`;
 
@@ -2066,7 +2108,7 @@ function renderJourney() {
     ` 或悉尼到墨尔本公路距离的 <strong>${sydMel.toFixed(0)}%</strong>。` +
     ` 一路上累计爬升 <strong>${Math.round(climb).toLocaleString()} m</strong>，` +
     ` 这些坡叠起来是 <strong>${everests.toFixed(2)}</strong> 座珠穆朗玛峰。` +
-    `<br><br>19 个月、${series.length} 次启程、4 座城市，一格一格往上加。`;
+    `<br><br>${spanMonths()} 个月、${series.length} 次启程、${cityCount()} 座城市，一格一格往上加。`;
 }
 
 // ============ Effort Quadrant ============
@@ -3569,6 +3611,7 @@ window.addEventListener('DOMContentLoaded', () => {
   bindRangeFilter();
   safe(buildSideNav);
   safe(buildTopNav);
+  safe(renderDerivedStats);
   safe(renderFooter);
 });
 

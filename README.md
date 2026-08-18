@@ -23,11 +23,11 @@ assets/
   styles.css       共享样式
   app.js           渲染逻辑(图表、地图、导航、页脚)
   recovery.js      恢复类图表
-  routes.js        window.ROUTES_DATA —— 55 条 GPX 轨迹
+  routes.js        window.ROUTES_DATA —— 逐条 GPS 轨迹(含简化后的折线)
   health-data.js   window.HEALTH_DATA —— Apple Health 派生数据
   favicon.svg
 build_pages.py     由 cycling-analysis.html 生成全部页面
-parse_health.py    由 Apple Health 导出生成 health-data.js / health_data.json
+parse_health.py    由 Apple Health 导出生成 health-data.js / health_data.json / routes.js
 health_data.json   与 health-data.js 同内容的可移植 JSON 导出
 ```
 
@@ -38,8 +38,9 @@ apple_health_export/export.xml + workout-routes/*.gpx
         │  parse_health.py
         ▼
 health_data.json  +  assets/health-data.js   (window.HEALTH_DATA)
+                  +  assets/routes.js        (window.ROUTES_DATA)
         │
-        ▼            assets/routes.js        (window.ROUTES_DATA)
+        ▼
    页面在浏览器端渲染
 ```
 
@@ -54,7 +55,27 @@ python3 parse_health.py --export-dir ~/Downloads/apple_health_export
 默认读取 `./data/apple_health_export`(该目录已 gitignore,原始导出有几百 MB),
 同时写出 `health_data.json` 和 `assets/health-data.js`。
 
-> 注:`assets/routes.js` 目前是既有产物,不由本仓库脚本生成 —— 若要重建 GPS 轨迹数据需另行处理 GPX。
+同一条命令也会由 `workout-routes/*.gpx` 重建 `assets/routes.js`(地图轨迹)。
+只有 GPX 变化时可以跳过 `export.xml`:
+
+```bash
+python3 parse_health.py --routes-only
+```
+
+轨迹折线用 Douglas-Peucker 简化,默认容差 12 米(`--rdp-epsilon` 可调),
+保证每个原始点到简化折线的偏离不超过该值。城市由坐标落在 `CITY_BOXES`
+的哪个框内判定;落在所有框之外的轨迹标为 `Unknown` 并在运行结束时列出,
+不会被硬塞进最近的城市。
+
+> 注:`assets/routes.js` 原先由一个已不在仓库中的脚本产出。现在的生成器是
+> 按那份输出的字段反推重写的,所以覆盖之前请先跑一次比对 —— 它只读不写,
+> 会逐字段报告能否复现:
+>
+> ```bash
+> python3 parse_health.py --check-routes
+> ```
+>
+> 折线本身(`track` / `num_simplified`)预期会变,因为原简化算法已无从考证。
 
 ### 重新生成页面
 
