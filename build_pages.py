@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """
-One-shot extractor: read the legacy single-page cycling-analysis.html,
-slice each section block by its title-text marker, and assemble the
-multi-page output files (index, patterns, body, training, rides).
+Site builder. Reads cycling-analysis.html, slices every <section> block by
+its visible title marker, and reassembles them into the per-topic pages
+(index, patterns, body, training, rides, explorer, recovery) plus the
+all-in-one cycling-analysis.html itself.
 
-After this script runs once, the multi-page files become the source of
-truth. The legacy file is rewritten to load the same shared assets so
-it still works as the "all-in-one" view.
+cycling-analysis.html is the section source of truth: edit a chart's markup
+there (or in assets/*.js) and re-run this script to propagate it. The run is
+idempotent — building twice in a row produces byte-identical output — so it
+is safe to re-run at any time.
+
+    python3 build_pages.py
 """
 import re
 from pathlib import Path
@@ -112,19 +116,35 @@ RANGE_FILTER_HTML = """
 </div>
 """
 
+# Leaflet is only pulled in by pages that actually render the map section.
+LEAFLET_CSS = """<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""/>
+"""
+
+LEAFLET_JS = """<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""></script>
+"""
+
 PAGE_TEMPLATE = """<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{title}</title>
+<meta name="description" content="{description}">
+<meta name="theme-color" content="#0f0e0c">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Cycling Atlas">
+<meta property="og:title" content="{title}">
+<meta property="og:description" content="{description}">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,700&family=JetBrains+Mono:wght@300;400;500&family=Noto+Serif+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-  crossorigin=""/>
-<link rel="stylesheet" href="assets/styles.css">
+{leaflet_css}<link rel="stylesheet" href="assets/styles.css">
 </head>
 <body data-page="{page_key}">
 
@@ -141,7 +161,7 @@ PAGE_TEMPLATE = """<!DOCTYPE html>
 <footer>
   <div id="footerGen">导出于 — · Apple Health Export</div>
   <div style="display: flex; gap: 24px;">
-    <span>55 GPX tracks</span>
+    <span id="footerTracks">— GPX tracks</span>
     <span id="footerDays">— days monitored</span>
     <span>Joey's data</span>
   </div>
@@ -149,10 +169,7 @@ PAGE_TEMPLATE = """<!DOCTYPE html>
 
 <div class="tooltip" id="tooltip"></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-  crossorigin=""></script>
-<script src="assets/routes.js"></script>
+{leaflet_js}<script src="assets/routes.js"></script>
 <script src="assets/health-data.js"></script>
 <script src="assets/recovery.js"></script>
 <script src="assets/app.js"></script>
@@ -179,6 +196,7 @@ def make_hero(custom_h1=None, custom_sub=None, custom_meta=None):
 PAGES = [
     {
         'file': 'index.html',
+        'description': '19 个月、55 条 GPS 轨迹、4 座城市的骑行总览 —— 轨迹地图、个人最佳、城市分布与累计旅程。',
         'page_key': 'overview',
         'title': '总览 · Cycling Atlas',
         'hero': make_hero(
@@ -191,6 +209,7 @@ PAGES = [
     },
     {
         'file': 'patterns.html',
+        'description': '出发时刻、星期与月份的节律画像 —— 时段时钟、月度全景、出发热力图与活动日历。',
         'page_key': 'patterns',
         'title': '节律 · Patterns',
         'hero': make_hero(
@@ -203,6 +222,7 @@ PAGES = [
     },
     {
         'file': 'body.html',
+        'description': '骑行写在身体上的痕迹 —— 心率区间、气候画像、VO₂max、体重与日常脉搏。',
         'page_key': 'body',
         'title': '身体 · Body Signals',
         'hero': make_hero(
@@ -215,6 +235,7 @@ PAGES = [
     },
     {
         'file': 'training.html',
+        'description': '训练负荷与状态 —— 7 天滚动负荷、Fitness/Form、训练效率、强度象限与爬升配速。',
         'page_key': 'training',
         'title': '训练 · Training Load',
         'hero': make_hero(
@@ -228,6 +249,7 @@ PAGES = [
     },
     {
         'file': 'rides.html',
+        'description': '逐条骑行的记录 —— 能量构成、海拔剖面画廊、爬升与下降,以及完整骑行明细表。',
         'page_key': 'rides',
         'title': '骑行 · Per-Ride Detail',
         'hero': make_hero(
@@ -240,6 +262,7 @@ PAGES = [
     },
     {
         'file': 'explorer.html',
+        'description': '挑一条骑行逐次放大 —— 海拔剖面、心率、消耗与路线,在历次骑行间穿梭。',
         'page_key': 'explorer',
         'title': '逐次 · Ride Explorer',
         'hero': make_hero(
@@ -252,6 +275,7 @@ PAGES = [
     },
     {
         'file': 'recovery.html',
+        'description': '晨间生理读数 —— 心率变异性、静息心率、呼吸频率、血氧与睡眠的恢复曲线。',
         'page_key': 'recovery',
         'title': '复元 · Recovery',
         'hero': make_hero(
@@ -266,13 +290,17 @@ PAGES = [
 
 for p in PAGES:
     body_html = "\n\n".join(SECTIONS[s] for s in p['sections'])
+    has_map = 'map' in p['sections']
     out = PAGE_TEMPLATE.format(
         title=p['title'],
+        description=p['description'],
         page_key=p['page_key'],
         hero_block=p['hero'],
         intro_block=p['intro'],
         range_filter_block=RANGE_FILTER_HTML if p.get('has_filter') else '',
         body_html=body_html,
+        leaflet_css=LEAFLET_CSS if has_map else '',
+        leaflet_js=LEAFLET_JS if has_map else '',
     )
     (ROOT / p['file']).write_text(out, encoding="utf-8")
     print(f"wrote {p['file']:18s} ({len(out)//1024} KB, {len(p['sections'])} sections)")
@@ -290,11 +318,14 @@ ALL_TITLES_ORDER = [
 all_body = "\n\n".join(SECTIONS[s] for s in ALL_TITLES_ORDER)
 all_html = PAGE_TEMPLATE.format(
     title='全景 · Cycling Atlas (single page)',
+    description='所有章节合并成一页的全景视图 —— 地图、节律、身体、训练、骑行、复元与逐次探索。',
     page_key='all',
     hero_block=hero,
     intro_block=stats_bar + "\n" + latest_band,
     range_filter_block=RANGE_FILTER_HTML,
     body_html=all_body,
+    leaflet_css=LEAFLET_CSS,
+    leaflet_js=LEAFLET_JS,
 )
 (ROOT / 'cycling-analysis.html').write_text(all_html, encoding="utf-8")
 print(f"wrote cycling-analysis.html ({len(all_html)//1024} KB, all sections)")
