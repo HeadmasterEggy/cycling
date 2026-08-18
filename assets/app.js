@@ -342,24 +342,53 @@ function updateCityInfo(city) {
 }
 
 // ============ 城市切换 ============
+// These tabs and the filter bar's chips are the same choice wearing two hats.
+// The tab only records the choice — setActiveCity re-runs renderCityMap along
+// with every other filtered section, and __syncCityUI moves the highlight. An
+// earlier version drew the map here first and only then set the filter, so any
+// throw inside Leaflet (a blocked CDN, say) silently skipped the sync and left
+// the tabs and the chips disagreeing.
 document.querySelectorAll('.city-tab').forEach(tab => {
   tab.addEventListener('click', () => {
-    document.querySelectorAll('.city-tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    currentCity = tab.dataset.city;
+    const city = tab.dataset.city;
     closeDetail();
-    renderRoutes(currentCity);
-    renderList(currentCity);
-    updateCityInfo(currentCity);
+    if (typeof window.setActiveCity === 'function') {
+      window.setActiveCity(city === 'all' ? null : city);
+    } else {
+      document.querySelectorAll('.city-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentCity = city;
+      renderRoutes(city);
+      renderList(city);
+      updateCityInfo(city);
+    }
   });
 });
+
+// The map's city, following the global selection. Defaults to every city so
+// the map agrees with the filter bar's "全部" rather than quietly showing
+// Sydney while the bar claims otherwise.
+function mapCity() {
+  return (typeof window.getActiveCity === 'function' && window.getActiveCity()) || 'all';
+}
+
+function renderCityMap() {
+  const c = mapCity();
+  currentCity = c;
+  renderList(c);
+  updateCityInfo(c);
+  renderRoutes(c);
+}
 
 // ============ 时段时钟 ============
 function renderHourClock() {
   const svg = document.getElementById('hourClock');
   const cx = 170, cy = 170, R = 130;
   
-  const sydneyRoutes = window.ROUTES_DATA.filter(r => r.city === "Sydney");
+  // ROUTES_DATA is already narrowed to the active city and date range by
+  // withRange, so this reads whatever the filter bar currently says. It used
+  // to hardcode Sydney, which quietly ignored two years of Chinese tracks.
+  const sydneyRoutes = window.ROUTES_DATA;
   const hourCounts = new Array(24).fill(0);
   sydneyRoutes.forEach(r => {
     hourCounts[Math.floor(r.start_hour)] += 1;
@@ -428,7 +457,8 @@ function renderHourClock() {
 // ============ 周分布 ============
 function renderWeekday() {
   const weekdayNames = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
-  const sydneyRoutes = window.ROUTES_DATA.filter(r => r.city === "Sydney");
+  // Same as the hour clock: ROUTES_DATA already reflects the filter bar.
+  const sydneyRoutes = window.ROUTES_DATA;
   const counts = new Array(7).fill(0);
   sydneyRoutes.forEach(r => counts[r.weekday] += 1);
   const maxCount = Math.max(...counts);
@@ -3341,30 +3371,158 @@ function buildSideNav() {
     return t >= r.from.getTime() && t <= (r.to.getTime() + 86399999);
   }
 
-  window.getActiveRange = loadActive;
+  // ---- city -----------------------------------------------------------
+  // Rides and GPX tracks carry a city; body metrics do not. parse_health.py
+  // turns the track timeline into `stays` — dated "he was here" windows — and
+  // anything without its own city tag is filtered through those instead.
+  // City filtering needs the stay windows parse_health.py derives. Against an
+  // older health-data.js they are absent, and a city left over in
+  // localStorage would then match nothing and blank every chart — so treat
+  // the filter as simply unavailable rather than empty.
+  function cityFilterReady() {
+    const H = window.HEALTH_DATA;
+    return !!(H && Array.isArray(H.stays) && H.stays.length);
+  }
 
-  window.filterDailyByRange = function (arr) {
+  function loadCity() {
+    if (window.activeCity === undefined) {
+      try { window.activeCity = localStorage.getItem('cyclingActiveCity') || null; }
+      catch (_) { window.activeCity = null; }
+    }
+    return cityFilterReady() ? window.activeCity : null;
+  }
+
+  function cityStays() {
+    const c = loadCity();
+    if (!c) return null;
+    const all = (window.HEALTH_DATA && window.HEALTH_DATA.stays) || [];
+    const mine = all.filter(st => st.city === c);
+    return mine.length ? mine : null;
+  }
+
+  function inStays(dateStr, stays) {
+    if (!dateStr || !stays) return false;
+    const d = String(dateStr).slice(0, 10);
+    return stays.some(st => d >= st.from && d <= st.to);
+  }
+
+  function byRange(arr, key) {
     const r = loadActive();
     if (!r) return arr;
-    return arr.filter(d => inRange(d.date, r));
+    return arr.filter(x => inRange(key(x), r));
+  }
+
+  function byStays(arr, key) {
+    const stays = cityStays();
+    if (!stays) return arr;
+    return arr.filter(x => inStays(key(x), stays));
+  }
+
+  // Monthly buckets are coarser than a day: a month survives if any part of
+  // it overlaps the active filters.
+  function monthsIn(arr) {
+    const r = loadActive();
+    const stays = cityStays();
+    if (!r && !stays) return arr;
+    return arr.filter(m => {
+      const start = new Date(m.month + '-01');
+      const end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+      if (r && (end < r.from || start > r.to)) return false;
+      if (stays && !stays.some(st => m.month + '-31' >= st.from && m.month + '-01' <= st.to)) return false;
+      return true;
+    });
+  }
+
+  window.getActiveCity = loadCity;
+  window.getCityStays = cityStays;
+
+  // The span the selected city covers — this is what narrows every time axis.
+  window.getCityRange = function () {
+    const stays = cityStays();
+    if (!stays) return null;
+    let from = stays[0].from, to = stays[0].to;
+    stays.forEach(st => { if (st.from < from) from = st.from; if (st.to > to) to = st.to; });
+    return { from: new Date(from), to: new Date(to) };
   };
 
+  // What the user picked in the date inputs, for the range widget itself.
+  window.getUserRange = loadActive;
+
+  // What the charts should draw: the picked range clipped to the picked city.
+  window.getActiveRange = function () {
+    const user = loadActive();
+    const city = window.getCityRange();
+    if (!city) return user;
+    if (!user) return { from: city.from, to: city.to, label: loadCity() };
+    const from = user.from > city.from ? user.from : city.from;
+    const to = user.to < city.to ? user.to : city.to;
+    return { from, to: to < from ? from : to, label: `${user.label} · ${loadCity()}` };
+  };
+
+  window.filterDailyByRange = function (arr) { return byRange(arr, d => d.date); };
   window.filterWorkoutsByRange = function (arr) {
-    const r = loadActive();
-    if (!r) return arr;
-    return arr.filter(w => inRange(w.date || (w.start_iso || '').slice(0, 10), r));
+    return byRange(arr, w => w.date || (w.start_iso || '').slice(0, 10));
+  };
+  window.filterDailyByCity = function (arr) { return byStays(arr, d => d.date); };
+  window.filterRoutesByCity = function (arr) {
+    const c = loadCity();
+    return c ? arr.filter(r => r.city === c) : arr;
   };
 
+  // A ride knows its own city. Indoor rides have no GPX and so no city — fall
+  // back to the stay window their date lands in rather than dropping them,
+  // since an indoor ride still happened somewhere.
+  window.filterWorkoutsByCity = function (arr) {
+    const c = loadCity();
+    if (!c) return arr;
+    const stays = cityStays();
+    return arr.filter(w => (w.city ? w.city === c
+      : inStays(w.date || (w.start_iso || '').slice(0, 10), stays)));
+  };
+
+  window.setActiveCity = function (name) {
+    window.activeCity = name || null;
+    try {
+      if (name) localStorage.setItem('cyclingActiveCity', name);
+      else localStorage.removeItem('cyclingActiveCity');
+    } catch (_) {}
+    if (typeof window.__rerunRanged === 'function') window.__rerunRanged();
+    if (typeof window.__updateRangeSummary === 'function') window.__updateRangeSummary();
+    if (typeof window.__syncCityUI === 'function') window.__syncCityUI();
+  };
+
+  // Swap the shared datasets for filtered copies for the duration of one
+  // render, then put them back. Charts stay oblivious — they read
+  // HEALTH_DATA / ROUTES_DATA as usual and simply see less.
   window.withRange = function (fn) {
     const H = window.HEALTH_DATA;
     if (!H) { fn(); return; }
     if (!window._origHealthDaily) window._origHealthDaily = H.daily;
     if (!window._origHealthWorkouts) window._origHealthWorkouts = H.workouts;
-    const od = H.daily, ow = H.workouts;
-    H.daily = window.filterDailyByRange(window._origHealthDaily);
-    H.workouts = window.filterWorkoutsByRange(window._origHealthWorkouts);
+    if (!window._origHealthVo2) window._origHealthVo2 = H.vo2max || [];
+    if (!window._origHealthWeight) window._origHealthWeight = H.weight || [];
+    if (!window._origHealthMonthly) window._origHealthMonthly = H.monthly || [];
+    if (!window._origRoutes) window._origRoutes = window.ROUTES_DATA || [];
+
+    const keep = {
+      daily: H.daily, workouts: H.workouts, vo2max: H.vo2max,
+      weight: H.weight, monthly: H.monthly, routes: window.ROUTES_DATA,
+    };
+    H.daily = byRange(byStays(window._origHealthDaily, d => d.date), d => d.date);
+    H.workouts = window.filterWorkoutsByRange(
+      window.filterWorkoutsByCity(window._origHealthWorkouts));
+    H.vo2max = byRange(byStays(window._origHealthVo2, x => x.date), x => x.date);
+    H.weight = byRange(byStays(window._origHealthWeight, x => x.date), x => x.date);
+    H.monthly = monthsIn(window._origHealthMonthly);
+    window.ROUTES_DATA = byRange(
+      window.filterRoutesByCity(window._origRoutes), r => r.start_date);
+
     try { fn(); }
-    finally { H.daily = od; H.workouts = ow; }
+    finally {
+      H.daily = keep.daily; H.workouts = keep.workouts; H.vo2max = keep.vo2max;
+      H.weight = keep.weight; H.monthly = keep.monthly;
+      window.ROUTES_DATA = keep.routes;
+    }
   };
 
   window.setActiveRange = function (from, to, label) {
@@ -3417,9 +3575,79 @@ function isRanged(fn) {
       typeof renderSleepStory === 'function' ? renderSleepStory : null,
       typeof renderWalkingReserve === 'function' ? renderWalkingReserve : null,
       typeof renderRecoveryComposite === 'function' ? renderRecoveryComposite : null,
+      // Route-driven sections. These read ROUTES_DATA, which the city filter
+      // narrows, so they have to re-run when the selection changes.
+      typeof renderHourClock === 'function' ? renderHourClock : null,
+      typeof renderWeekday === 'function' ? renderWeekday : null,
+      typeof renderPersonalRecords === 'function' ? renderPersonalRecords : null,
+      typeof renderRidesTable === 'function' ? renderRidesTable : null,
+      typeof renderMonthlyStats === 'function' ? renderMonthlyStats : null,
+      typeof renderVo2 === 'function' ? renderVo2 : null,
+      typeof renderWeight === 'function' ? renderWeight : null,
+      typeof renderCityMap === 'function' ? renderCityMap : null,
     ].filter(Boolean));
   }
   return window._RANGED_RENDERS.has(fn);
+}
+
+// ============ 城市筛选 / City filter UI ============
+// Chips are built from HEALTH_DATA.summary.cities rather than hardcoded, so a
+// new place in CITY_BOXES shows up here without touching this file.
+const CITY_CN = {
+  Sydney: '悉尼', Shanghai: '上海', Ningbo: '宁波', Henan: '华北',
+};
+
+function cityLabel(name) {
+  return CITY_CN[name] || name;
+}
+
+function buildCityFilter() {
+  const host = document.getElementById('cityFilter');
+  if (!host) return;
+  const cities = ((window.HEALTH_DATA || {}).summary || {}).cities || [];
+  if (!cities.length) { host.remove(); return; }
+
+  const chips = [{ name: null, label: '全部', n: null }]
+    .concat(cities.map(c => ({ name: c.name, label: cityLabel(c.name), n: c.tracks })));
+  host.innerHTML = `
+    <span class="range-filter-label">城市 · City</span>
+    <div class="city-filter-chips">
+      ${chips.map(c => `<button class="city-chip" data-city="${c.name || 'all'}">${c.label}`
+        + (c.n != null ? `<span class="city-chip-n">${c.n}</span>` : '') + `</button>`).join('')}
+    </div>
+    <div class="city-filter-summary" id="cityFilterSummary"></div>`;
+
+  host.querySelectorAll('.city-chip').forEach(btn => btn.addEventListener('click', () => {
+    const v = btn.dataset.city;
+    window.setActiveCity(v === 'all' ? null : v);
+  }));
+
+  window.__syncCityUI = function () {
+    const active = window.getActiveCity();
+    host.querySelectorAll('.city-chip').forEach(b =>
+      b.classList.toggle('city-chip--active', b.dataset.city === (active || 'all')));
+
+    const note = document.getElementById('cityFilterSummary');
+    if (note) {
+      if (!active) {
+        note.textContent = '全部城市 · 时间轴覆盖完整记录';
+      } else {
+        const stays = window.getCityStays() || [];
+        const c = cities.find(x => x.name === active);
+        const spans = stays.map(st => `${st.from} → ${st.to}`).join('、');
+        note.innerHTML = `<strong>${cityLabel(active)}</strong> · ${c ? c.tracks : 0} 条轨迹`
+          + (c && c.rides ? ` · ${c.rides} 次骑行` : '')
+          + ` · ${stays.length} 段停留：${spans}`
+          + `<span class="city-filter-caveat">身体数据没有地点标签，按停留区间归属（由轨迹推断，前后各外扩至多 `
+          + `${((window.HEALTH_DATA.summary || {}).stay_fill_days) || 30} 天）</span>`;
+      }
+    }
+
+    // The overview map's own tabs are the same choice by another name.
+    document.querySelectorAll('#cityTabs .city-tab').forEach(t =>
+      t.classList.toggle('active', t.dataset.city === (active || 'all')));
+  };
+  window.__syncCityUI();
 }
 
 // Range-filter UI binding. The widget is HTML markup in the page;
@@ -3466,6 +3694,8 @@ function bindRangeFilter() {
   }
 
   function updateSummary() {
+    // The widget reports the *effective* window — the picked range clipped to
+    // the picked city — because that is what the charts below are drawing.
     const r = window.getActiveRange();
     if (!r) {
       summary.innerHTML = `<strong>全部数据</strong> · ${minDate} → ${maxDate}`;
@@ -3474,7 +3704,8 @@ function bindRangeFilter() {
     const days = Math.round((r.to - r.from) / 86400000) + 1;
     const f = r.from.toISOString().slice(0, 10);
     const t = r.to.toISOString().slice(0, 10);
-    const rides = window.filterWorkoutsByRange(window._origHealthWorkouts || []).length;
+    const rides = window.filterWorkoutsByRange(
+      window.filterWorkoutsByCity(window._origHealthWorkouts || [])).length;
     summary.innerHTML = `<strong>${r.label || '自定义'}</strong> · ${f} → ${t} · ${days} 天 · ${rides} 次骑行`;
   }
   window.__updateRangeSummary = updateSummary;
@@ -3494,8 +3725,10 @@ function bindRangeFilter() {
   fromInp.addEventListener('change', applyCustomFromInputs);
   toInp.addEventListener('change', applyCustomFromInputs);
 
-  // Restore persisted selection
-  const saved = window.getActiveRange();
+  // Restore persisted selection. This reads the *user* range, not the
+  // effective one — otherwise a city's span would come back as if the user
+  // had typed those dates into the inputs.
+  const saved = window.getUserRange();
   if (saved && saved.from && saved.to) {
     fromInp.value = saved.from.toISOString().slice(0, 10);
     toInp.value = saved.to.toISOString().slice(0, 10);
@@ -3528,8 +3761,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const PAGE_RENDERS = {
     overview: [
-      [initMap], [renderRoutes, 'Sydney'], [renderList, 'Sydney'],
-      [updateCityInfo, 'Sydney'], [renderCityCounts],
+      [initMap], [renderCityMap], [renderCityCounts],
       [renderHero], [renderLatestBand], [renderPersonalRecords],
       [renderCityAtlas], [renderJourney],
     ],
@@ -3583,21 +3815,11 @@ window.addEventListener('DOMContentLoaded', () => {
   const pageKey = (document.body.dataset.page || 'all').toLowerCase();
   const plan = PAGE_RENDERS[pageKey];
 
-  // Save plan so the range-filter can re-run only the ranged renders later.
-  window.__rerunRanged = function () {
-    const targetPlan = plan || [];
-    targetPlan.forEach(([fn, ...args]) => {
-      if (isRanged(fn)) safe(fn, ...args);
-    });
-  };
-
-  if (plan) {
-    plan.forEach(([fn, ...args]) => safe(fn, ...args));
-  } else {
-    // legacy: run the full original sequence
-    [
-      [initMap], [renderRoutes, 'Sydney'], [renderList, 'Sydney'],
-      [updateCityInfo, 'Sydney'], [renderCityCounts],
+  // The single-page archive has no named plan, so it used to fall through to
+  // an empty array here — meaning the filter bar on cycling-analysis.html
+  // changed nothing. Give it the legacy sequence to re-run instead.
+  const ALL_RENDERS = [
+      [initMap], [renderCityMap], [renderCityCounts],
       [renderHero], [renderPersonalRecords], [renderHourClock],
       [renderWeekday], [renderDailyChart], [renderMonthlyChart],
       [bindMonthlyTabs], [renderMonthlyStats], [renderHrZones],
@@ -3625,10 +3847,19 @@ window.addEventListener('DOMContentLoaded', () => {
       [typeof renderCorridors === 'function' ? renderCorridors : null],
       [typeof renderHourBars === 'function' ? renderHourBars : null],
       [typeof renderHourZone === 'function' ? renderHourZone : null],
-    ].forEach(([fn, ...args]) => safe(fn, ...args));
-  }
+  ];
+
+  // Save the plan so the filter bar can re-run only the filtered renders.
+  window.__rerunRanged = function () {
+    (plan || ALL_RENDERS).forEach(([fn, ...args]) => {
+      if (isRanged(fn)) safe(fn, ...args);
+    });
+  };
+
+  (plan || ALL_RENDERS).forEach(([fn, ...args]) => safe(fn, ...args));
 
   bindRangeFilter();
+  safe(buildCityFilter);
   safe(buildSideNav);
   safe(buildTopNav);
   safe(renderDerivedStats);

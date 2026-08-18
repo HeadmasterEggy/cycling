@@ -166,6 +166,13 @@ DELIVERY_SECTIONS = {'dlv_kpis', 'dlv_zones', 'dlv_map', 'dlv_roads', 'dlv_hours
 MAP_SECTIONS = {'map', 'dlv_map'}
 
 # -- 3. page assembly -------------------------------------------------------
+# The city picker goes on every page; the date-range widget only on the pages
+# that opted into it. Both write to the same filter state, and the chips are
+# filled in at runtime from HEALTH_DATA.summary.cities.
+CITY_FILTER_HTML = """
+<div class="range-filter city-filter" id="cityFilter"></div>
+"""
+
 RANGE_FILTER_HTML = """
 <div class="range-filter" id="rangeFilter">
   <span class="range-filter-label">时间范围 · Time Range</span>
@@ -359,6 +366,9 @@ PAGES = [
         'intro': '',
         'sections': ['dlv_kpis', 'dlv_zones', 'dlv_map', 'dlv_roads', 'dlv_hours'],
         'has_filter': False,
+        # Delivery analysis is Sydney-only by construction — a city picker
+        # here would offer three choices that all empty the page.
+        'no_city': True,
     },
     {
         'file': 'recovery.html',
@@ -385,7 +395,8 @@ for p in PAGES:
         page_key=p['page_key'],
         hero_block=p['hero'],
         intro_block=p['intro'],
-        range_filter_block=RANGE_FILTER_HTML if p.get('has_filter') else '',
+        range_filter_block=(('' if p.get('no_city') else CITY_FILTER_HTML)
+                            + (RANGE_FILTER_HTML if p.get('has_filter') else '')),
         body_html=body_html,
         leaflet_css=LEAFLET_CSS if has_map else '',
         leaflet_js=LEAFLET_JS if has_map else '',
@@ -412,7 +423,7 @@ all_html = PAGE_TEMPLATE.format(
     page_key='all',
     hero_block=hero,
     intro_block=stats_bar + "\n" + latest_band,
-    range_filter_block=RANGE_FILTER_HTML,
+    range_filter_block=CITY_FILTER_HTML + RANGE_FILTER_HTML,
     body_html=all_body,
     leaflet_css=LEAFLET_CSS,
     leaflet_js=LEAFLET_JS,

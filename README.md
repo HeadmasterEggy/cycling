@@ -43,7 +43,8 @@ delivery_data.json  与 delivery-data.js 同内容的可移植 JSON 导出
 apple_health_export/export.xml + workout-routes/*.gpx
         │  parse_health.py
         ▼
-health_data.json  +  assets/health-data.js   (window.HEALTH_DATA)
+health_data.json  +  assets/health-data.js   (window.HEALTH_DATA
+                  |                           含 stays / summary.cities)
                   +  assets/routes.js        (window.ROUTES_DATA)
 
 apple_health_export/workout-routes/*.gpx + suburbs_sydney.json
@@ -87,6 +88,27 @@ python3 parse_health.py --routes-only
 > ```
 >
 > 折线本身(`track` / `num_simplified`)预期会变,因为原简化算法已无从考证。
+
+### 城市筛选与停留区间
+
+记录横跨四个城市、两年多,中间大段空白 —— 2024-2025 在国内,2026 年 2 月起在悉尼,
+中间还回过两次国。把这些摊在同一条时间轴上,任何一张图都在展示一段跟当下无关的历史。
+
+每个页面顶部因此有一排城市筹码(配送页除外 —— 那一页本来就只有悉尼)。选中一个城市:
+
+- **轨迹与骑行**自带城市标签,直接按标签筛。
+- **身体数据**(HRV、静息心率、睡眠、体重、步数)没有地点标签,按 `stays` 筛 ——
+  `parse_health.py` 把所有 GPS 轨迹的时间线切成「停留区间」,每段从首条轨迹到末条轨迹,
+  再向两侧各外扩最多 `STAY_FILL_DAYS`(30)天。相邻两段之间的空档从中点切开,谁也不
+  越界;空档超过两倍上限时中间那块就没人认领 —— 那是诚实的答案,不是猜。
+- **时间轴自动收窄**到该城市的范围。选悉尼,横轴就只剩 2026-01 → 2026-08,前面两年
+  不入镜。时间范围筛选器仍然可用,两者取交集。
+- 选择存在 localStorage,跨页跨刷新保留;总览页地图那排 tab 与筹码是同一个选择。
+
+当前数据切出 9 段停留,覆盖 94% 的有记录天数。页面上会写明身体数据的归属是推断的。
+
+> 城市判定用的是 `CITY_BOXES` 里的经纬度方框。去了新地方就往里加一个,
+> 否则轨迹会落进 `Unknown`,只出现在「全部」里。
 
 ### 配送分析
 

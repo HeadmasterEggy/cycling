@@ -432,8 +432,9 @@ def build_routes(routes_dir, epsilon_m):
     return routes
 
 
-def write_routes(epsilon_m=RDP_EPSILON_M):
-    routes = build_routes(ROUTES_DIR, epsilon_m)
+def write_routes(epsilon_m=RDP_EPSILON_M, routes=None):
+    if routes is None:
+        routes = build_routes(ROUTES_DIR, epsilon_m)
     payload = json.dumps(routes, ensure_ascii=False, separators=(",", ":"))
     os.makedirs(os.path.dirname(OUT_ROUTES) or ".", exist_ok=True)
     with open(OUT_ROUTES, "w", encoding="utf-8") as f:
@@ -700,6 +701,115 @@ def parse_body_metrics(xml_path: str):
     return daily, vo2max, weight
 
 
+# Body metrics carry no location, so "which city was I in on 2026-07-20" has
+# to be inferred. Rides are the only geo-tagged thing in the export, so the
+# ride timeline is cut into stays and each stay's window is grown outward
+# into the silence around it — capped, because after a month of no rides the
+# honest answer is "no idea", not a confident guess.
+STAY_FILL_DAYS = 30
+
+
+def build_stays(points, first_day, last_day):
+    """Consecutive same-city days -> one stay, then fill the gaps between.
+
+    `points` is every dated, located thing in the export — GPX tracks and
+    rides both. Outside Sydney most tracks are walks, so deriving location
+    from cycling workouts alone would leave 2024-2025 nearly blank.
+    """
+    located = sorted((w for w in points if w.get("city") and w["city"] != "Unknown"),
+                     key=lambda w: w["date"])
+    if not located:
+        return []
+
+    stays = []
+    for w in located:
+        if stays and stays[-1]["city"] == w["city"]:
+            stays[-1]["last_ride"] = w["date"]
+            stays[-1]["tracks"] += 1
+        else:
+            stays.append({"city": w["city"], "first_ride": w["date"],
+                          "last_ride": w["date"], "tracks": 1})
+
+    def d(x):
+        return datetime.strptime(x, "%Y-%m-%d")
+
+    def s(x):
+        return x.strftime("%Y-%m-%d")
+
+    # Each stay starts as [first track, last track] and grows outward by at
+    # most STAY_FILL_DAYS. A gap between two stays is split at its midpoint so
+    # the two windows meet without overlapping; when the gap is wider than
+    # twice the cap the middle stays unattributed, which is the honest answer.
+    for i, st in enumerate(stays):
+        st["from"] = s(d(st["first_ride"]) - timedelta(days=STAY_FILL_DAYS))
+        st["to"] = s(d(st["last_ride"]) + timedelta(days=STAY_FILL_DAYS))
+
+    for i in range(len(stays) - 1):
+        cur, nxt = stays[i], stays[i + 1]
+        gap_days = (d(nxt["first_ride"]) - d(cur["last_ride"])).days
+        mid = d(cur["last_ride"]) + timedelta(days=gap_days // 2)
+        cur["to"] = s(min(d(cur["to"]), mid))
+        nxt["from"] = s(max(d(nxt["from"]), mid + timedelta(days=1)))
+
+    # Do not let the outer clamp eat into a stay: the first GPX track can
+    # predate the first cycling workout, and clamping to that date pushed a
+    # window's start past its own first track.
+    if first_day:
+        floor = min(d(first_day), d(stays[0]["first_ride"]))
+        stays[0]["from"] = s(max(d(stays[0]["from"]), floor))
+    if last_day:
+        ceiling = max(d(last_day), d(stays[-1]["last_ride"]))
+        stays[-1]["to"] = s(min(d(stays[-1]["to"]), ceiling))
+
+    for st in stays:
+        st["days"] = (d(st["to"]) - d(st["from"])).days + 1
+    return stays
+
+
+def build_city_list(workouts, routes, stays):
+    """Per-city totals for the city picker, in descending track count."""
+    def blank(c):
+        return {"name": c, "rides": 0, "tracks": 0, "km": 0.0, "days": 0,
+                "from": None, "to": None, "stays": 0}
+
+    out = {}
+    for r in routes:
+        c = r.get("city")
+        if not c or c == "Unknown":
+            continue
+        out.setdefault(c, blank(c))["tracks"] += 1
+    for w in workouts:
+        c = w.get("city")
+        if not c or c == "Unknown":
+            continue
+        e = out.setdefault(c, blank(c))
+        e["rides"] += 1
+        e["km"] += w.get("distance_km") or 0
+    for st in stays:
+        e = out.get(st["city"])
+        if not e:
+            continue
+        e["stays"] += 1
+        span = (datetime.strptime(st["to"], "%Y-%m-%d")
+                - datetime.strptime(st["from"], "%Y-%m-%d")).days + 1
+        e["days"] += span
+        e["from"] = st["from"] if not e["from"] else min(e["from"], st["from"])
+        e["to"] = st["to"] if not e["to"] else max(e["to"], st["to"])
+    for e in out.values():
+        e["km"] = round(e["km"], 1)
+    return sorted(out.values(), key=lambda e: (-e["tracks"], -e["rides"]))
+
+
+def load_existing_routes():
+    """Read a previously written assets/routes.js so --skip-routes still has
+    somewhere to get the location timeline from."""
+    try:
+        text = open(OUT_ROUTES, encoding="utf-8").read()
+        return json.loads(text[text.index("=") + 1:].rstrip().rstrip(";\n").rstrip(";"))
+    except Exception:
+        return []
+
+
 def main(skip_routes=False, epsilon_m=RDP_EPSILON_M):
     print("Parsing workouts from export.xml ...")
     workouts = []
@@ -740,6 +850,7 @@ def main(skip_routes=False, epsilon_m=RDP_EPSILON_M):
 
         # GPX enrichment
         wo["route_file"] = None
+        wo["city"] = None
         wo["track"] = None
         wo["elev_gain_m"] = None
         wo["elev_loss_m"] = None
@@ -755,6 +866,10 @@ def main(skip_routes=False, epsilon_m=RDP_EPSILON_M):
                 gd = parse_gpx(gpx_full)
                 if gd:
                     wo["track"] = gd["track"]
+                    if gd["track"]:
+                        # Same CITY_BOXES the routes use, so a ride and its
+                        # GPX track can never disagree about where it happened.
+                        wo["city"] = classify_city(gd["track"][0][0], gd["track"][0][1])
                     wo["elev_gain_m"] = gd["elev_gain_m"]
                     wo["elev_loss_m"] = gd["elev_loss_m"]
                     wo["elev_min_m"] = gd["elev_min_m"]
@@ -931,8 +1046,21 @@ def main(skip_routes=False, epsilon_m=RDP_EPSILON_M):
         summary["weight_latest_kg"] = weight_series[-1]["kg"]
         summary["weight_first_kg"]  = weight_series[0]["kg"]
 
+    routes = load_existing_routes() if skip_routes else build_routes(ROUTES_DIR, epsilon_m)
+    # Bound the stay windows by the body-metric series, not by the ride dates —
+    # daily data starts weeks before the first recorded ride.
+    daily_dates = sorted(daily_full)
+    day_lo = daily_dates[0] if daily_dates else first_day
+    day_hi = daily_dates[-1] if daily_dates else last_day
+    loc_points = [{"date": r["start_date"], "city": r["city"]} for r in routes]
+    loc_points += [{"date": w["date"], "city": w["city"]} for w in workouts if w.get("city")]
+    stays = build_stays(loc_points, day_lo, day_hi)
+    summary["cities"] = build_city_list(workouts, routes, stays)
+    summary["stay_fill_days"] = STAY_FILL_DAYS
+
     out = {
         "summary": summary,
+        "stays": stays,
         "monthly": monthly_list,
         "daily": sorted(daily_full.values(), key=lambda x: x["date"]),
         "workouts": workouts,
@@ -950,7 +1078,7 @@ def main(skip_routes=False, epsilon_m=RDP_EPSILON_M):
         print(f"Wrote {path} ({os.path.getsize(path)/1024:.1f} KB)")
 
     if not skip_routes:
-        write_routes(epsilon_m)
+        write_routes(epsilon_m, routes)
 
 
 if __name__ == "__main__":
