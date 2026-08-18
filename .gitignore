@@ -2,6 +2,11 @@
 .DS_Store
 
 # Apple Health raw export — multi-hundred-MB XML, not committed.
-# Page consumes the derived health_data.json (inlined into the HTML by parse_health.py).
+# parse_health.py derives assets/health-data.js from it; that is what the
+# pages load, and it is committed.
 data/
 health_data/
+
+# Bytecode from running parse_health.py / build_pages.py.
+__pycache__/
+*.py[cod]
