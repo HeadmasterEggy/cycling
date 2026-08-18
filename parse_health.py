@@ -99,6 +99,26 @@ def haversine(lat1, lon1, lat2, lon2):
     return 2 * R * math.asin(math.sqrt(a))
 
 
+def extension_speed(ext):
+    """Read <speed> out of a trkpt's <extensions>, whatever namespace it uses.
+
+    Apple's export writes a bare <speed>, which inherits the GPX default
+    namespace, while Garmin devices prefix it with one of their own and may
+    bury it inside a TrackPointExtension wrapper. Matching on the local tag
+    name covers all of them; a namespace-qualified lookup silently found
+    nothing in the Apple files and left every speed at None.
+    """
+    if ext is None:
+        return None
+    for child in ext.iter():
+        if child.tag.rsplit("}", 1)[-1] == "speed" and child.text:
+            try:
+                return float(child.text)
+            except ValueError:
+                return None
+    return None
+
+
 def read_gpx_points(path: str):
     """Read every <trkpt> in a GPX file into plain dicts.
 
@@ -120,14 +140,7 @@ def read_gpx_points(path: str):
         ele = trkpt.find("g:ele", GPX_NS)
         time = trkpt.find("g:time", GPX_NS)
         ext = trkpt.find("g:extensions", GPX_NS)
-        speed = None
-        if ext is not None:
-            sp = ext.find("ge:speed", GPX_NS)
-            if sp is not None and sp.text:
-                try:
-                    speed = float(sp.text)
-                except ValueError:
-                    speed = None
+        speed = extension_speed(ext)
         pts.append({
             "lat": lat,
             "lon": lon,
