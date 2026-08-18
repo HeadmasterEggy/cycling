@@ -1,0 +1,10 @@
+# Build-time tooling — the generated HTML is committed, nothing runs on Vercel.
+build_pages.py
+parse_health.py
+
+# Raw derived export; the site reads assets/health-data.js, not this file.
+health_data.json
+
+data/
+health_data/
+.claude/
