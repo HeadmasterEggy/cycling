@@ -279,6 +279,19 @@ function closeDetail() {
   document.querySelectorAll('.route-item').forEach(el => el.classList.remove('active'));
 }
 
+// ============ 城市计数 ============
+// Fill the per-city route counts in the tab bar from ROUTES_DATA so the
+// tabs never sit on their "—" placeholder.
+function renderCityCounts() {
+  const routes = window.ROUTES_DATA || [];
+  document.querySelectorAll('[data-city-count]').forEach(el => {
+    const city = el.dataset.cityCount;
+    el.textContent = city === 'all'
+      ? routes.length
+      : routes.filter(r => r.city === city).length;
+  });
+}
+
 // ============ 城市说明 ============
 function updateCityInfo(city) {
   const info = cityInfo(city);
@@ -3473,7 +3486,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const PAGE_RENDERS = {
     overview: [
       [initMap], [renderRoutes, 'Sydney'], [renderList, 'Sydney'],
-      [updateCityInfo, 'Sydney'],
+      [updateCityInfo, 'Sydney'], [renderCityCounts],
       [renderHero], [renderLatestBand], [renderPersonalRecords],
       [renderCityAtlas], [renderJourney],
     ],
@@ -3530,7 +3543,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // legacy: run the full original sequence
     [
       [initMap], [renderRoutes, 'Sydney'], [renderList, 'Sydney'],
-      [updateCityInfo, 'Sydney'],
+      [updateCityInfo, 'Sydney'], [renderCityCounts],
       [renderHero], [renderPersonalRecords], [renderHourClock],
       [renderWeekday], [renderDailyChart], [renderMonthlyChart],
       [bindMonthlyTabs], [renderMonthlyStats], [renderHrZones],
@@ -3566,6 +3579,10 @@ function renderFooter() {
   if (gen) {
     const g = (s.generated_at || '').slice(0, 10).replace(/-/g, '.');
     gen.textContent = `导出于 ${g} · Apple Health Export · 数据范围 ${s.first_ride} → ${s.last_ride}`;
+  }
+  const tracks = document.getElementById('footerTracks');
+  if (tracks) {
+    tracks.textContent = `${(window.ROUTES_DATA || []).length} GPX tracks`;
   }
   const days = document.getElementById('footerDays');
   if (days) {

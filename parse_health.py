@@ -1,7 +1,19 @@
 #!/usr/bin/env python3
-"""Parse Apple Health export.xml and GPX route files into a single JSON
-payload consumed by cycling-analysis.html."""
+"""Parse an Apple Health export.xml plus its GPX route files into the data
+payload the site consumes.
 
+Writes two files with identical content:
+  health_data.json      — portable JSON export
+  assets/health-data.js — the same payload wrapped as `window.HEALTH_DATA`,
+                          which is what the pages actually load
+
+Paths default to this repo (./data/apple_health_export) and can be
+overridden with CLI flags or the HEALTH_EXPORT_DIR environment variable:
+
+    python3 parse_health.py --export-dir ~/Downloads/apple_health_export
+"""
+
+import argparse
 import json
 import os
 import re
@@ -9,10 +21,42 @@ import math
 from datetime import datetime, timedelta
 from xml.etree import ElementTree as ET
 
-EXPORT_DIR = "/Users/joey/cycling/data/apple_health_export"
+ROOT = os.path.dirname(os.path.abspath(__file__))
+
+# Defaults resolve inside the repo; the raw export is gitignored (it is
+# hundreds of MB), so point at wherever you unzipped it.
+EXPORT_DIR = os.environ.get(
+    "HEALTH_EXPORT_DIR", os.path.join(ROOT, "data", "apple_health_export"))
 EXPORT_XML = os.path.join(EXPORT_DIR, "export.xml")
 ROUTES_DIR = os.path.join(EXPORT_DIR, "workout-routes")
-OUT_JSON = "/Users/joey/cycling/health_data.json"
+OUT_JSON = os.path.join(ROOT, "health_data.json")
+OUT_JS = os.path.join(ROOT, "assets", "health-data.js")
+
+
+def configure_paths(export_dir=None, out_json=None, out_js=None):
+    """Rebind the module-level paths (used by main() and its helpers)."""
+    global EXPORT_DIR, EXPORT_XML, ROUTES_DIR, OUT_JSON, OUT_JS
+    if export_dir:
+        EXPORT_DIR = os.path.abspath(os.path.expanduser(export_dir))
+        EXPORT_XML = os.path.join(EXPORT_DIR, "export.xml")
+        ROUTES_DIR = os.path.join(EXPORT_DIR, "workout-routes")
+    if out_json:
+        OUT_JSON = os.path.abspath(os.path.expanduser(out_json))
+    if out_js:
+        OUT_JS = os.path.abspath(os.path.expanduser(out_js))
+
+
+def parse_args():
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--export-dir", default=None,
+                    help="unzipped apple_health_export directory "
+                         f"(default: {EXPORT_DIR})")
+    ap.add_argument("--out-json", default=None,
+                    help=f"JSON output path (default: {OUT_JSON})")
+    ap.add_argument("--out-js", default=None,
+                    help=f"JS asset output path (default: {OUT_JS})")
+    return ap.parse_args()
 
 GPX_NS = {"g": "http://www.topografix.com/GPX/1/1",
           "ge": "http://www.garmin.com/xmlschemas/GpxExtensions/v3",
@@ -535,10 +579,21 @@ def main():
         "weight": weight_series,
     }
 
-    with open(OUT_JSON, "w") as f:
-        json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
-    print(f"Wrote {OUT_JSON} ({os.path.getsize(OUT_JSON)/1024:.1f} KB)")
+    payload = json.dumps(out, ensure_ascii=False, separators=(",", ":"))
+
+    for path, text in ((OUT_JSON, payload),
+                       (OUT_JS, f"window.HEALTH_DATA = {payload};\n")):
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text)
+        print(f"Wrote {path} ({os.path.getsize(path)/1024:.1f} KB)")
 
 
 if __name__ == "__main__":
+    args = parse_args()
+    configure_paths(args.export_dir, args.out_json, args.out_js)
+    if not os.path.exists(EXPORT_XML):
+        raise SystemExit(
+            f"export.xml not found at {EXPORT_XML}\n"
+            "Unzip your Apple Health export there, or pass --export-dir.")
     main()
