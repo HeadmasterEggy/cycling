@@ -59,6 +59,23 @@ def load_site_stats():
 
 STATS = load_site_stats()
 
+_STAT_SPAN_RE = re.compile(r'(<span data-stat="(months|tracks|cities|rides)">)[^<]*(</span>)')
+
+
+def fill_stat_spans(html):
+    """Write the current numbers into every [data-stat] span.
+
+    Section markup is sliced verbatim out of cycling-analysis.html, so without
+    this the hero would quote fresh numbers while the section subtitles below
+    it still carried the ones typed in whenever they were last touched.
+    app.js refills these at runtime; doing it here too keeps the committed HTML
+    honest with JS off and for crawlers.
+
+    Idempotent: it replaces whatever is between the tags, so re-running never
+    compounds — which matters because build_pages.py rewrites its own source.
+    """
+    return _STAT_SPAN_RE.sub(lambda m: f'{m.group(1)}{STATS[m.group(2)]}{m.group(3)}', html)
+
 # -- 1. read source ---------------------------------------------------------
 text = SRC.read_text(encoding="utf-8")
 lines = text.splitlines(keepends=True)
@@ -342,7 +359,7 @@ for p in PAGES:
         leaflet_css=LEAFLET_CSS if has_map else '',
         leaflet_js=LEAFLET_JS if has_map else '',
     )
-    (ROOT / p['file']).write_text(out, encoding="utf-8")
+    (ROOT / p['file']).write_text(fill_stat_spans(out), encoding="utf-8")
     print(f"wrote {p['file']:18s} ({len(out)//1024} KB, {len(p['sections'])} sections)")
 
 # -- 4. rewrite cycling-analysis.html as a slim shell loading shared assets -
@@ -367,5 +384,5 @@ all_html = PAGE_TEMPLATE.format(
     leaflet_css=LEAFLET_CSS,
     leaflet_js=LEAFLET_JS,
 )
-(ROOT / 'cycling-analysis.html').write_text(all_html, encoding="utf-8")
+(ROOT / 'cycling-analysis.html').write_text(fill_stat_spans(all_html), encoding="utf-8")
 print(f"wrote cycling-analysis.html ({len(all_html)//1024} KB, all sections)")

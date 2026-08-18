@@ -90,10 +90,17 @@ function formatDuration(sec) {
   return `${m}m`;
 }
 
+// Only ever called with a route's start_local/end_local, which carry the
+// wall-clock time where the ride happened, tagged "+00:00" — a marker, not the
+// real offset. Formatting in UTC reads those digits straight back, so a ride
+// at 10:57pm in Sydney shows as 10:57pm everywhere. Without the timeZone the
+// browser re-renders them in the viewer's own zone and every time on the page
+// shifts by that offset.
 function formatTime(iso) {
   if (!iso) return "";
   const d = new Date(iso);
   return d.toLocaleString("zh-CN", {
+    timeZone: "UTC",
     month: "2-digit", day: "2-digit",
     hour: "2-digit", minute: "2-digit",
     hour12: false

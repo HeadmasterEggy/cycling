@@ -380,9 +380,10 @@ def build_route(path, epsilon_m):
         "bbox": bbox,
         "center": center,
         "city": city,
-        # The "+00:00" suffix is not the real offset — these are wall-clock
-        # strings that app.js formats without a timeZone, so the digits must
-        # already be local. Kept as-is so rendering does not shift.
+        # Wall-clock time where the ride happened. The "+00:00" is a marker,
+        # not the real offset — app.js formats these with timeZone "UTC", which
+        # reads the digits straight back, so a ride at 10:57pm in Sydney shows
+        # as 10:57pm to every viewer regardless of where they are.
         "start_local": start_local.isoformat() + "+00:00",
         "end_local": end_local.isoformat() + "+00:00",
         "start_hour": start_local.hour + start_local.minute / 60,
