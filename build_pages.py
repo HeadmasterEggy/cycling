@@ -12,12 +12,52 @@ is safe to re-run at any time.
 
     python3 build_pages.py
 """
+import json
 import re
+from datetime import datetime
 from pathlib import Path
 from textwrap import dedent
 
 ROOT = Path(__file__).parent
 SRC = ROOT / "cycling-analysis.html"
+
+
+def _js_payload(path):
+    """Pull the JSON out of an `window.X = <json>;` asset file."""
+    text = path.read_text(encoding="utf-8").strip()
+    start = text.index("=") + 1
+    return json.loads(text[start:].rstrip().rstrip(";"))
+
+
+def load_site_stats():
+    """Numbers the page copy quotes, read from the committed data.
+
+    These used to be typed into the prose by hand, so every refreshed export
+    left the text disagreeing with the charts beside it. Missing or unreadable
+    data falls back to the last built values rather than failing the build —
+    the copy stays stale, but the pages still regenerate.
+    """
+    stats = {"months": 19, "tracks": 55, "cities": 4, "rides": 34}
+    try:
+        summary = _js_payload(ROOT / "assets" / "health-data.js")["summary"]
+        first = datetime.strptime(summary["first_ride"], "%Y-%m-%d")
+        last = datetime.strptime(summary["last_ride"], "%Y-%m-%d")
+        stats["months"] = (last.year - first.year) * 12 + (last.month - first.month)
+        stats["rides"] = summary["ride_count"]
+    except Exception as exc:
+        print(f"  !! assets/health-data.js unreadable ({exc}); "
+              "keeping last built month/ride counts")
+    try:
+        routes = _js_payload(ROOT / "assets" / "routes.js")
+        stats["tracks"] = len(routes)
+        stats["cities"] = len({r["city"] for r in routes})
+    except Exception as exc:
+        print(f"  !! assets/routes.js unreadable ({exc}); "
+              "keeping last built track/city counts")
+    return stats
+
+
+STATS = load_site_stats()
 
 # -- 1. read source ---------------------------------------------------------
 text = SRC.read_text(encoding="utf-8")
@@ -196,12 +236,12 @@ def make_hero(custom_h1=None, custom_sub=None, custom_meta=None):
 PAGES = [
     {
         'file': 'index.html',
-        'description': '19 个月、55 条 GPS 轨迹、4 座城市的骑行总览 —— 轨迹地图、个人最佳、城市分布与累计旅程。',
+        'description': f'{STATS["months"]} 个月、{STATS["tracks"]} 条 GPS 轨迹、{STATS["cities"]} 座城市的骑行总览 —— 轨迹地图、个人最佳、城市分布与累计旅程。',
         'page_key': 'overview',
         'title': '总览 · Cycling Atlas',
         'hero': make_hero(
             custom_h1='在路上<br><em>夜色与坐垫</em>',
-            custom_sub='19 个月,55 条 GPS 轨迹,4 个城市。这是你在悉尼下午到深夜骑出的城市,也是早期在宁波、上海、河南留下的零星记号。每一条线,都是一次出门。',
+            custom_sub=f'<span data-stat="months">{STATS["months"]}</span> 个月,<span data-stat="tracks">{STATS["tracks"]}</span> 条 GPS 轨迹,<span data-stat="cities">{STATS["cities"]}</span> 个城市。这是你在悉尼下午到深夜骑出的城市,也是早期在宁波、上海、河南留下的零星记号。每一条线,都是一次出门。',
             custom_meta='总览 · Overview'),
         'intro': stats_bar + "\n" + latest_band,
         'sections': ['map', 'records', 'cities', 'journey'],
@@ -227,7 +267,7 @@ PAGES = [
         'title': '身体 · Body Signals',
         'hero': make_hero(
             custom_h1='身体在听<br><em>心率与适应</em>',
-            custom_sub='34 次骑行的心率、VO₂max 的爬升、体重的浮动、湿度温度对心率的拉拽。骑行不是一组数字 —— 是身体在被改写。',
+            custom_sub=f'<span data-stat="rides">{STATS["rides"]}</span> 次骑行的心率、VO₂max 的爬升、体重的浮动、湿度温度对心率的拉拽。骑行不是一组数字 —— 是身体在被改写。',
             custom_meta='身体 · Body Signals'),
         'intro': '',
         'sections': ['hr_zones', 'hr_range', 'climate', 'body', 'daily_pulse'],
