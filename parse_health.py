@@ -18,7 +18,7 @@ import json
 import os
 import re
 import math
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from xml.etree import ElementTree as ET
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -31,11 +31,17 @@ EXPORT_XML = os.path.join(EXPORT_DIR, "export.xml")
 ROUTES_DIR = os.path.join(EXPORT_DIR, "workout-routes")
 OUT_JSON = os.path.join(ROOT, "health_data.json")
 OUT_JS = os.path.join(ROOT, "assets", "health-data.js")
+OUT_ROUTES = os.path.join(ROOT, "assets", "routes.js")
+
+# Ramer-Douglas-Peucker tolerance for the map polylines, in metres.
+# Raise it for smaller files, lower it for more faithful corners.
+RDP_EPSILON_M = 12.0
 
 
-def configure_paths(export_dir=None, out_json=None, out_js=None):
+def configure_paths(export_dir=None, out_json=None, out_js=None,
+                    out_routes=None):
     """Rebind the module-level paths (used by main() and its helpers)."""
-    global EXPORT_DIR, EXPORT_XML, ROUTES_DIR, OUT_JSON, OUT_JS
+    global EXPORT_DIR, EXPORT_XML, ROUTES_DIR, OUT_JSON, OUT_JS, OUT_ROUTES
     if export_dir:
         EXPORT_DIR = os.path.abspath(os.path.expanduser(export_dir))
         EXPORT_XML = os.path.join(EXPORT_DIR, "export.xml")
@@ -44,6 +50,8 @@ def configure_paths(export_dir=None, out_json=None, out_js=None):
         OUT_JSON = os.path.abspath(os.path.expanduser(out_json))
     if out_js:
         OUT_JS = os.path.abspath(os.path.expanduser(out_js))
+    if out_routes:
+        OUT_ROUTES = os.path.abspath(os.path.expanduser(out_routes))
 
 
 def parse_args():
@@ -56,6 +64,20 @@ def parse_args():
                     help=f"JSON output path (default: {OUT_JSON})")
     ap.add_argument("--out-js", default=None,
                     help=f"JS asset output path (default: {OUT_JS})")
+    ap.add_argument("--out-routes", default=None,
+                    help=f"GPS track output path (default: {OUT_ROUTES})")
+    ap.add_argument("--rdp-epsilon", type=float, default=RDP_EPSILON_M,
+                    help="map polyline simplification tolerance in metres "
+                         f"(default: {RDP_EPSILON_M})")
+    ap.add_argument("--skip-routes", action="store_true",
+                    help="leave assets/routes.js alone")
+    ap.add_argument("--routes-only", action="store_true",
+                    help="rebuild assets/routes.js and nothing else; needs "
+                         "only the GPX files, not export.xml")
+    ap.add_argument("--check-routes", action="store_true",
+                    help="rebuild the tracks in memory and diff them against "
+                         "the committed assets/routes.js without writing "
+                         "anything; needs only the GPX files, not export.xml")
     return ap.parse_args()
 
 GPX_NS = {"g": "http://www.topografix.com/GPX/1/1",
@@ -77,7 +99,12 @@ def haversine(lat1, lon1, lat2, lon2):
     return 2 * R * math.asin(math.sqrt(a))
 
 
-def parse_gpx(path: str):
+def read_gpx_points(path: str):
+    """Read every <trkpt> in a GPX file into plain dicts.
+
+    Shared by parse_gpx() (per-workout metrics) and build_routes() (the
+    ROUTES_DATA payload), so both read the file the same way.
+    """
     try:
         tree = ET.parse(path)
     except ET.ParseError:
@@ -108,6 +135,11 @@ def parse_gpx(path: str):
             "t": time.text if time is not None and time.text else None,
             "speed": speed,
         })
+    return pts or None
+
+
+def parse_gpx(path: str):
+    pts = read_gpx_points(path)
     if not pts:
         return None
 
@@ -165,6 +197,321 @@ def parse_gpx(path: str):
         "end_t": end_t,
         "n_points": len(pts),
     }
+
+
+# ---- ROUTES_DATA: assets/routes.js -------------------------------------
+#
+# The pages load assets/routes.js as window.ROUTES_DATA — one entry per GPX
+# file in the export's workout-routes/ directory, including tracks with no
+# matching workout (walks, pre-watch rides, unpaired loops). Until now
+# nothing in the repo produced this file, so the map could not follow a
+# refreshed export.
+
+# Bounding boxes for the places these rides happened, wide enough to absorb
+# GPS drift but non-overlapping. A track centred outside all of them is
+# labelled "Unknown" and reported at the end of the run rather than being
+# silently filed under the nearest city.
+CITY_BOXES = [
+    # name,       min_lat, max_lat, min_lon, max_lon
+    ("Sydney",     -34.30,  -33.50,  150.80,  151.50),
+    ("Ningbo",      29.60,   30.10,  121.30,  121.90),
+    ("Shanghai",    30.90,   31.60,  121.00,  121.90),
+    ("Henan",       35.50,   36.10,  114.80,  115.40),
+]
+
+CITY_TZ = {
+    "Sydney": "Australia/Sydney",
+    "Ningbo": "Asia/Shanghai",
+    "Shanghai": "Asia/Shanghai",
+    "Henan": "Asia/Shanghai",
+}
+
+
+def classify_city(lat, lon):
+    for name, min_lat, max_lat, min_lon, max_lon in CITY_BOXES:
+        if min_lat <= lat <= max_lat and min_lon <= lon <= max_lon:
+            return name
+    return "Unknown"
+
+
+def _local_wall_clock(dt_utc, city):
+    """The wall-clock time at the ride's location, as a naive datetime.
+
+    Sydney needs a real timezone because the existing data spans both AEST
+    and AEDT; the Chinese cities are a fixed +08:00.
+    """
+    tz_name = CITY_TZ.get(city)
+    if tz_name:
+        try:
+            from zoneinfo import ZoneInfo
+            return dt_utc.astimezone(ZoneInfo(tz_name)).replace(tzinfo=None)
+        except Exception:
+            pass  # tzdata missing — fall through to the fixed offset below
+    return (dt_utc + timedelta(hours=8)).replace(tzinfo=None)
+
+
+def _perp_distance_m(p, a, b):
+    """Distance from point p to segment a-b, in metres.
+
+    Equirectangular projection around a, which is accurate well past the
+    few-kilometre span of any single track here.
+    """
+    lat_rad = math.radians(a[0])
+    mx = 111320.0 * math.cos(lat_rad)   # metres per degree of longitude
+    my = 110540.0                        # metres per degree of latitude
+    ax, ay = 0.0, 0.0
+    bx, by = (b[1] - a[1]) * mx, (b[0] - a[0]) * my
+    px, py = (p[1] - a[1]) * mx, (p[0] - a[0]) * my
+    dx, dy = bx - ax, by - ay
+    seg2 = dx * dx + dy * dy
+    if seg2 == 0.0:
+        return math.hypot(px, py)
+    t = max(0.0, min(1.0, (px * dx + py * dy) / seg2))
+    return math.hypot(px - t * dx, py - t * dy)
+
+
+def rdp(points, epsilon_m):
+    """Ramer-Douglas-Peucker simplification, iterative to avoid deep recursion.
+
+    Keeps the shape of a route while dropping the points that sit on a
+    straight line — a 20k-point track collapses to a few hundred without a
+    visible change at map zoom.
+    """
+    n = len(points)
+    if n < 3:
+        return list(points)
+    keep = [False] * n
+    keep[0] = keep[n - 1] = True
+    stack = [(0, n - 1)]
+    while stack:
+        first, last = stack.pop()
+        if last <= first + 1:
+            continue
+        worst, worst_i = 0.0, -1
+        a, b = points[first], points[last]
+        for i in range(first + 1, last):
+            d = _perp_distance_m(points[i], a, b)
+            if d > worst:
+                worst, worst_i = d, i
+        if worst > epsilon_m and worst_i > 0:
+            keep[worst_i] = True
+            stack.append((first, worst_i))
+            stack.append((worst_i, last))
+    return [points[i] for i in range(n) if keep[i]]
+
+
+def _gpx_time(value):
+    """Parse a GPX <time> value into an aware UTC datetime."""
+    if not value:
+        return None
+    text = value.strip().replace("Z", "+00:00")
+    try:
+        dt = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+
+def build_route(path, epsilon_m):
+    """Build one ROUTES_DATA entry from a GPX file, or None if unusable."""
+    pts = read_gpx_points(path)
+    if not pts or len(pts) < 2:
+        return None
+    start_dt = _gpx_time(pts[0]["t"])
+    end_dt = _gpx_time(pts[-1]["t"])
+    if start_dt is None or end_dt is None:
+        return None
+
+    dist_km = 0.0
+    elev_gain = 0.0
+    speeds = []
+    prev = None
+    for p in pts:
+        if prev is not None:
+            dist_km += haversine(prev["lat"], prev["lon"], p["lat"], p["lon"])
+            if p["ele"] is not None and prev["ele"] is not None:
+                de = p["ele"] - prev["ele"]
+                if de > 0:
+                    elev_gain += de
+        if p["speed"] is not None:
+            speeds.append(p["speed"])
+        prev = p
+
+    duration_sec = (end_dt - start_dt).total_seconds()
+    coords = [[p["lat"], p["lon"]] for p in pts]
+    lats = [c[0] for c in coords]
+    lons = [c[1] for c in coords]
+    bbox = {"minLat": min(lats), "maxLat": max(lats),
+            "minLon": min(lons), "maxLon": max(lons)}
+    center = [(bbox["minLat"] + bbox["maxLat"]) / 2,
+              (bbox["minLon"] + bbox["maxLon"]) / 2]
+    city = classify_city(center[0], center[1])
+
+    # Speeds come from the GPX <speed> extension in m/s. avg_speed_kmh is the
+    # mean of those samples rather than distance/duration, so it reflects
+    # moving speed and stays comparable with the existing data.
+    if speeds:
+        avg_kmh = sum(speeds) / len(speeds) * 3.6
+        max_kmh = max(speeds) * 3.6
+    else:
+        avg_kmh = dist_km / (duration_sec / 3600) if duration_sec > 0 else 0.0
+        max_kmh = 0.0
+
+    start_local = _local_wall_clock(start_dt, city)
+    end_local = _local_wall_clock(end_dt, city)
+    track = [[round(lat, 6), round(lon, 6)] for lat, lon in rdp(coords, epsilon_m)]
+    name = os.path.basename(path)[:-4]
+    if name.startswith("route_"):
+        name = name[len("route_"):]
+
+    return {
+        "filename": os.path.basename(path),
+        "name": name,
+        "start_time": start_dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "end_time": end_dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "duration_sec": duration_sec,
+        "distance_km": dist_km,
+        "avg_speed_kmh": avg_kmh,
+        "max_speed_kmh": max_kmh,
+        "ele_gain_m": elev_gain,
+        "num_points": len(pts),
+        "num_simplified": len(track),
+        "track": track,
+        "bbox": bbox,
+        "center": center,
+        "city": city,
+        # The "+00:00" suffix is not the real offset — these are wall-clock
+        # strings that app.js formats without a timeZone, so the digits must
+        # already be local. Kept as-is so rendering does not shift.
+        "start_local": start_local.isoformat() + "+00:00",
+        "end_local": end_local.isoformat() + "+00:00",
+        "start_hour": start_local.hour + start_local.minute / 60,
+        "start_date": start_local.date().isoformat(),
+        "weekday": start_local.weekday(),
+    }
+
+
+def build_routes(routes_dir, epsilon_m):
+    """Build every ROUTES_DATA entry, ordered by filename like the existing file."""
+    if not os.path.isdir(routes_dir):
+        raise SystemExit(
+            f"workout-routes directory not found at {routes_dir}\n"
+            "Point --export-dir at your unzipped Apple Health export.")
+    names = sorted(n for n in os.listdir(routes_dir) if n.lower().endswith(".gpx"))
+    routes, skipped = [], []
+    for n in names:
+        entry = build_route(os.path.join(routes_dir, n), epsilon_m)
+        if entry is None:
+            skipped.append(n)
+        else:
+            routes.append(entry)
+    if skipped:
+        print(f"  !! skipped {len(skipped)} unreadable/empty GPX file(s): "
+              + ", ".join(skipped[:5]) + (" ..." if len(skipped) > 5 else ""))
+    unknown = [r["filename"] for r in routes if r["city"] == "Unknown"]
+    if unknown:
+        print(f"  !! {len(unknown)} track(s) fell outside every box in CITY_BOXES "
+              "and are labelled \"Unknown\" — they will only appear under the "
+              "\"all\" tab. Add a box for them if this is a new place:")
+        for f in unknown[:10]:
+            print(f"       {f}")
+    return routes
+
+
+def write_routes(epsilon_m=RDP_EPSILON_M):
+    routes = build_routes(ROUTES_DIR, epsilon_m)
+    payload = json.dumps(routes, ensure_ascii=False, separators=(",", ":"))
+    os.makedirs(os.path.dirname(OUT_ROUTES) or ".", exist_ok=True)
+    with open(OUT_ROUTES, "w", encoding="utf-8") as f:
+        f.write(f"window.ROUTES_DATA = {payload};\n")
+    pts = sum(r["num_simplified"] for r in routes)
+    print(f"Wrote {OUT_ROUTES} ({os.path.getsize(OUT_ROUTES)/1024:.1f} KB, "
+          f"{len(routes)} tracks, {pts} polyline points)")
+    return routes
+
+
+def load_routes_js(path):
+    """Read window.ROUTES_DATA back out of an existing routes.js."""
+    with open(path, encoding="utf-8") as f:
+        text = f.read().strip()
+    start = text.index("[")
+    end = text.rindex("]")
+    return json.loads(text[start:end + 1])
+
+
+# Fields whose values depend on the simplification algorithm rather than on
+# the underlying GPX, so they are expected to differ from the committed file.
+_DERIVED_FROM_SIMPLIFICATION = {"track", "num_simplified"}
+
+
+def check_routes(epsilon_m=RDP_EPSILON_M):
+    """Rebuild tracks from GPX and diff against the committed routes.js.
+
+    Writes nothing. This exists because assets/routes.js was produced by a
+    script that is no longer in the repo, so the rules used here (city boxes,
+    speed units, the local-time convention) are reconstructed from its output
+    and need checking against the real export before anything is overwritten.
+    """
+    if not os.path.exists(OUT_ROUTES):
+        print(f"No existing {OUT_ROUTES} to compare against.")
+        return 1
+    existing = {r["filename"]: r for r in load_routes_js(OUT_ROUTES)}
+    rebuilt = {r["filename"]: r for r in build_routes(ROUTES_DIR, epsilon_m)}
+
+    added = sorted(set(rebuilt) - set(existing))
+    missing = sorted(set(existing) - set(rebuilt))
+    shared = sorted(set(existing) & set(rebuilt))
+
+    print(f"\nexisting {len(existing)} tracks · rebuilt {len(rebuilt)} tracks "
+          f"· {len(shared)} in both")
+    if added:
+        print(f"\nNEW — in the export but not in routes.js ({len(added)}):")
+        for f in added:
+            r = rebuilt[f]
+            print(f"  + {f}  {r['city']}  {r['distance_km']:.2f} km  {r['start_date']}")
+    if missing:
+        print(f"\nGONE — in routes.js but not in the export ({len(missing)}):")
+        for f in missing:
+            print(f"  - {f}")
+
+    fields = [k for k in (existing[shared[0]] if shared else {})
+              if k not in _DERIVED_FROM_SIMPLIFICATION]
+    mismatches = {}
+    for f in shared:
+        for k in fields:
+            a, b = existing[f].get(k), rebuilt[f].get(k)
+            if isinstance(a, float) and isinstance(b, float):
+                same = math.isclose(a, b, rel_tol=1e-9, abs_tol=1e-9)
+            else:
+                same = a == b
+            if not same:
+                mismatches.setdefault(k, []).append((f, a, b))
+
+    print(f"\nField check over {len(shared)} shared tracks "
+          f"({len(fields)} fields, ignoring {sorted(_DERIVED_FROM_SIMPLIFICATION)}):")
+    for k in fields:
+        bad = mismatches.get(k, [])
+        flag = "OK  " if not bad else "DIFF"
+        print(f"  {flag} {k:<16} {len(shared) - len(bad)}/{len(shared)} match")
+        for f, a, b in bad[:3]:
+            print(f"         {f}\n           committed={a!r}\n           rebuilt  ={b!r}")
+        if len(bad) > 3:
+            print(f"         ... and {len(bad) - 3} more")
+
+    if shared:
+        deltas = [len(rebuilt[f]["track"]) - len(existing[f]["track"]) for f in shared]
+        print(f"\nPolyline points (expected to differ — the original "
+              f"simplification is not in the repo):")
+        print(f"  committed total {sum(len(existing[f]['track']) for f in shared)}, "
+              f"rebuilt total {sum(len(rebuilt[f]['track']) for f in shared)} "
+              f"at epsilon={epsilon_m}m")
+        print(f"  per-track change: min {min(deltas):+d}, max {max(deltas):+d}")
+
+    if mismatches:
+        print("\nSome fields do not reproduce — do not overwrite routes.js yet.")
+        return 1
+    print("\nEvery field outside the simplification reproduces exactly.")
+    return 0
 
 
 # ---- Stream parse export.xml: cycling workouts + daily body metrics ----
@@ -339,7 +686,7 @@ def parse_body_metrics(xml_path: str):
     return daily, vo2max, weight
 
 
-def main():
+def main(skip_routes=False, epsilon_m=RDP_EPSILON_M):
     print("Parsing workouts from export.xml ...")
     workouts = []
     for w in iter_cycling_workouts(EXPORT_XML):
@@ -588,12 +935,21 @@ def main():
             f.write(text)
         print(f"Wrote {path} ({os.path.getsize(path)/1024:.1f} KB)")
 
+    if not skip_routes:
+        write_routes(epsilon_m)
+
 
 if __name__ == "__main__":
     args = parse_args()
-    configure_paths(args.export_dir, args.out_json, args.out_js)
+    configure_paths(args.export_dir, args.out_json, args.out_js,
+                    args.out_routes)
+    if args.check_routes:
+        raise SystemExit(check_routes(args.rdp_epsilon))
+    if args.routes_only:
+        write_routes(args.rdp_epsilon)
+        raise SystemExit(0)
     if not os.path.exists(EXPORT_XML):
         raise SystemExit(
             f"export.xml not found at {EXPORT_XML}\n"
             "Unzip your Apple Health export there, or pass --export-dir.")
-    main()
+    main(skip_routes=args.skip_routes, epsilon_m=args.rdp_epsilon)
