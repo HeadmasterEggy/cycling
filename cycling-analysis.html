@@ -693,32 +693,73 @@
 
 <section class="analysis-section">
   <div class="section-title">配送概览<em>·</em>Shift Economics</div>
-  <div class="section-sub">从 GPS 停留反推的接单节奏 —— 没有平台数据，一次停车超过 <span id="dlvStopSec">90</span> 秒就算一单（取餐或送达），更短的停车归为红灯与路口</div>
+  <div class="section-sub">从 GPS 停留反推的接单节奏 —— 没有平台数据，每一次超过 <span id="dlvStopSec">20</span> 秒的停车都对着地图判断是取餐、送达还是等红灯</div>
   <div class="dlv-kpis" id="dlvKpis"></div>
   <div class="dlv-note" id="dlvMethod"></div>
 </section>
 
 
 <section class="analysis-section">
+  <div class="section-title">这一脚是在干嘛<em>·</em>What Was That Stop</div>
+  <div class="section-sub">旧规则只看时长：停够 90 秒算一单。可 98 秒可能是在等一个大路口的红灯，73 秒也可能是冲进店里拿了就走 —— 所以改成对着地图看证据</div>
+
+  <div class="analysis-grid dlv-method-grid">
+    <div class="chart-card">
+      <div class="chart-title">1140 次停车的去向</div>
+      <div class="chart-sub">Every dwell, classified</div>
+      <div class="dlv-tally" id="dlvTally"></div>
+      <div class="dlv-howto">
+        <div class="dlv-howto-item"><b>时长</b>停 23 秒和停 4 分钟，说明的事情完全不同</div>
+        <div class="dlv-howto-item"><b>离红绿灯多远</b>贴着信号灯停的，几乎都是在等灯；离得越远越像在干活</div>
+        <div class="dlv-howto-item"><b>停留范围</b>等灯时人车不动，范围就两三米；送餐要下车走到门口，范围拉到二三十米</div>
+        <div class="dlv-howto-item"><b>进出方向</b>等灯是直着穿过路口；送完餐往往原路折返，进出夹角接近 180°</div>
+        <div class="dlv-howto-item"><b>门口是什么</b>停的地方 20 米内有没有餐厅、便利店，是取餐判定的主要依据</div>
+        <div class="dlv-howto-item"><b>来过几次</b>同一个点跨班次反复停 —— 那是常取餐的店，不是某个客户家</div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">不到 90 秒，但确实是在干活</div>
+      <div class="chart-sub">旧规则会把这些整个漏掉</div>
+      <div class="dlv-cases" id="dlvCasesQuick"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">超过 90 秒，但只是在等灯</div>
+      <div class="chart-sub">旧规则会把这些当成单</div>
+      <div class="dlv-cases" id="dlvCasesLong"></div>
+    </div>
+  </div>
+  <div class="dlv-note" id="dlvRatioNote"></div>
+</section>
+
+
+<section class="analysis-section">
   <div class="section-title">区域排行<em>·</em>Zone Leaderboard</div>
-  <div class="section-sub">横轴单量、纵轴好跑指数 —— 右上角是「单多又好跑」的区，右下角是「单多但难跑」的区</div>
+  <div class="section-sub">横轴是识别出的活（取餐 + 送达），纵轴好跑指数 —— 右上角「活多又好跑」，右下角「活多但难跑」。圈大小 = 在这个区待过的时长</div>
   <div class="chart-card">
     <svg id="zoneQuadrant" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid meet"></svg>
     <div class="eq-legend" id="zoneQuadLegend"></div>
+    <div class="dlv-table-foot" style="padding: 10px 2px 0;">灰色的点是样本不足的区 —— 画出来当背景，但不参与上面四格的点名</div>
   </div>
   <div class="chart-card" style="padding: 0; margin-top: 20px;">
+    <div class="dlv-table-bar">
+      <button class="dlv-chip active" id="zoneRankToggle">只看样本够的区</button>
+      <span class="dlv-table-foot" id="zoneTableFoot"></span>
+    </div>
     <div class="rides-table-wrap">
       <table class="rides-table dlv-table" id="zoneTable">
         <thead><tr>
-          <th data-sort="orders" data-dir="desc" class="sorted">区 Suburb</th>
-          <th data-sort="orders" data-dir="desc">单量</th>
-          <th data-sort="shifts" data-dir="desc">出现班次</th>
-          <th data-sort="orders_per_hour" data-dir="desc">单/小时</th>
+          <th data-sort="jobs" data-dir="desc" class="sorted">区 Suburb</th>
+          <th data-sort="jobs" data-dir="desc" title="取餐 + 送达">活</th>
+          <th data-sort="orders" data-dir="desc">送达</th>
+          <th data-sort="pickups" data-dir="desc">取餐</th>
+          <th data-sort="shifts" data-dir="desc">班次</th>
+          <th data-sort="jobs_per_hour" data-dir="desc">活/小时</th>
           <th data-sort="med_speed" data-dir="desc">中位速度</th>
-          <th data-sort="waits_per_km" data-dir="asc">红灯/km</th>
+          <th data-sort="light_min_per_km" data-dir="asc" title="每公里花在等红灯上的分钟数">红灯 min/km</th>
           <th data-sort="climb_per_km" data-dir="asc">爬升 m/km</th>
+          <th data-sort="prep_per_km2" data-dir="desc" title="OpenStreetMap 里每平方公里的餐厅、外卖店、咖啡馆数量">餐厅/km²</th>
           <th data-sort="flow" data-dir="desc">好跑指数</th>
-          <th data-sort="worth" data-dir="desc">值得去</th>
+          <th data-sort="worth" data-dir="desc" title="收缩后的活/小时 × 好跑相对城市中位数">值得去</th>
         </tr></thead>
         <tbody id="zoneTbody"></tbody>
       </table>
@@ -729,20 +770,27 @@
 
 <section class="analysis-section">
   <div class="section-title">热点地图<em>·</em>Order Hotspots</div>
-  <div class="section-sub">圈越大去得越多 · 图层可以叠 · 点某个区钻进去只看它 · 拖时间轴看某个时段 —— 已排除每次出勤自己起点/终点 150 米内的停留</div>
+  <div class="section-sub">取餐点、送达点和红灯堵点分开画 · 底色可以换成任意一项指标 · 点某个区钻进去只看它 · 拖时间轴看某个时段 —— 已排除每次出勤自己起点/终点 150 米内的停留</div>
   <div class="dlv-map-controls">
     <div class="dlv-layer-chips" id="dlvLayerChips">
-      <button class="dlv-chip active" data-layer="hotspots"><i class="dlv-dot dot-hot"></i>停车热点</button>
-      <button class="dlv-chip active" data-layer="zones"><i class="dlv-dot dot-zone"></i>区域单量</button>
+      <button class="dlv-chip active" data-layer="pickups"><i class="dlv-dot dot-pickup"></i>取餐点</button>
+      <button class="dlv-chip active" data-layer="drops"><i class="dlv-dot dot-drop"></i>送达点</button>
+      <button class="dlv-chip" data-layer="lights"><i class="dlv-dot dot-light"></i>红灯堵点</button>
+      <button class="dlv-chip active" data-layer="zones"><i class="dlv-dot dot-zone"></i>区域底色</button>
       <button class="dlv-chip" data-layer="common"><i class="dlv-dot dot-common"></i>最常走</button>
       <button class="dlv-chip" data-layer="hard"><i class="dlv-dot dot-hard"></i>最难走</button>
       <button class="dlv-reset" id="dlvReset">回到全图</button>
+    </div>
+    <div class="dlv-metric-row">
+      <span class="dlv-metric-title">区域底色按</span>
+      <div class="dlv-metric-chips" id="dlvMetricChips"></div>
+      <span class="dlv-metric-note" id="dlvMetricNote"></span>
     </div>
     <div class="dlv-time">
       <button class="dlv-play" id="dlvPlay" aria-label="按时段播放">▶</button>
       <input type="range" id="dlvHour" min="-1" max="23" step="1" value="-1" aria-label="时段">
       <span class="dlv-time-label" id="dlvHourLabel">全天</span>
-      <span class="dlv-time-note">时段只筛热点与区域单量，路段是整班统计的</span>
+      <span class="dlv-time-note">时段只筛取餐点、送达点和「活的数量」底色，路段与结构指标是整段统计的</span>
     </div>
   </div>
 
@@ -752,7 +800,9 @@
     <div id="dlvMap"></div>
     <div class="route-panel">
       <div class="dlv-panel-tabs" id="dlvPanelTabs">
-        <button class="dlv-ptab active" data-list="hotspots">热点</button>
+        <button class="dlv-ptab active" data-list="pickups">取餐</button>
+        <button class="dlv-ptab" data-list="drops">送达</button>
+        <button class="dlv-ptab" data-list="lights">红灯</button>
         <button class="dlv-ptab" data-list="zones">区域</button>
         <button class="dlv-ptab" data-list="common">常走</button>
         <button class="dlv-ptab" data-list="hard">难走</button>
@@ -764,6 +814,7 @@
       <div id="dlvList"></div>
     </div>
   </div>
+  <div class="dlv-map-legend" id="dlvMapLegend"></div>
 </section>
 
 
@@ -787,20 +838,34 @@
 
 <section class="analysis-section">
   <div class="section-title">时段规律<em>·</em>Hour × Zone</div>
-  <div class="section-sub">几点该在哪 —— 行是区，列是本地时间，颜色越亮那个时段该区的单越密</div>
+  <div class="section-sub">几点该在哪 —— 行是区，列是本地时间，颜色越亮那个时段该区的活越密。只列样本够、活在 3 次以上的区</div>
   <div class="chart-card">
-    <div class="chart-title">全天单量分布</div>
-    <div class="chart-sub">Orders by hour of day · 所有班次合计</div>
+    <div class="chart-title">全天活量分布</div>
+    <div class="chart-sub">Jobs by hour of day · 取餐 + 送达 · 所有班次合计</div>
     <svg id="hourBars" viewBox="0 0 900 180" preserveAspectRatio="xMidYMid meet"></svg>
   </div>
   <div class="chart-card" style="margin-top: 20px;">
     <div class="chart-title">时段 × 区域</div>
-    <div class="chart-sub">Hour × zone heatmap · 只显示有单的时段</div>
+    <div class="chart-sub">Hour × zone heatmap · 点一行在上方地图里钻进那个区</div>
+    <div class="dlv-table-bar">
+      <button class="dlv-chip active" id="hzRowToggle">每区各自归一</button>
+      <span class="dlv-table-foot">各自归一时，每个区都跟自己最忙的时段比 —— 冷门区也能看出它什么时候忙</span>
+    </div>
     <div class="hz-wrap"><div class="hz-grid" id="hourZoneHeat"></div></div>
     <div class="heatmap-legend">
       <span>少</span><span class="grad"></span><span>多</span>
       <span style="margin-left:auto;" id="hzFoot">—</span>
     </div>
+  </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">区域档案<em>·</em>Zone Profile</div>
+  <div class="section-sub">同一批区，换个角度看 —— 前两列是这个区「本来长什么样」（地图给的），后面几列是「骑起来什么感觉」（自己跑出来的）。点表头按那一列排序，点一行钻进地图</div>
+  <div class="chart-card" style="padding: 0;">
+    <div class="zp-wrap"><div class="zp-grid" id="zoneProfile"></div></div>
+    <div class="dlv-note" id="zpFoot" style="margin: 0; border-radius: 0 0 var(--radius) var(--radius);"></div>
   </div>
 </section>
 

@@ -3796,6 +3796,7 @@ window.addEventListener('DOMContentLoaded', () => {
     delivery: [
       [renderHero],
       [typeof renderDeliveryKpis === 'function' ? renderDeliveryKpis : null],
+      [typeof renderStopMethod === 'function' ? renderStopMethod : null],
       [typeof renderZoneQuadrant === 'function' ? renderZoneQuadrant : null],
       [typeof renderZoneTable === 'function' ? renderZoneTable : null],
       [typeof bindZoneTable === 'function' ? bindZoneTable : null],
@@ -3803,6 +3804,8 @@ window.addEventListener('DOMContentLoaded', () => {
       [typeof renderCorridors === 'function' ? renderCorridors : null],
       [typeof renderHourBars === 'function' ? renderHourBars : null],
       [typeof renderHourZone === 'function' ? renderHourZone : null],
+      [typeof bindHourZone === 'function' ? bindHourZone : null],
+      [typeof renderZoneProfile === 'function' ? renderZoneProfile : null],
     ],
     recovery: [
       [renderHero],
@@ -3840,6 +3843,7 @@ window.addEventListener('DOMContentLoaded', () => {
       [renderElevGallery],
       [renderMetsIntensity], [renderDepartureHeatmap],
       [typeof renderDeliveryKpis === 'function' ? renderDeliveryKpis : null],
+      [typeof renderStopMethod === 'function' ? renderStopMethod : null],
       [typeof renderZoneQuadrant === 'function' ? renderZoneQuadrant : null],
       [typeof renderZoneTable === 'function' ? renderZoneTable : null],
       [typeof bindZoneTable === 'function' ? bindZoneTable : null],
@@ -3847,6 +3851,8 @@ window.addEventListener('DOMContentLoaded', () => {
       [typeof renderCorridors === 'function' ? renderCorridors : null],
       [typeof renderHourBars === 'function' ? renderHourBars : null],
       [typeof renderHourZone === 'function' ? renderHourZone : null],
+      [typeof bindHourZone === 'function' ? bindHourZone : null],
+      [typeof renderZoneProfile === 'function' ? renderZoneProfile : null],
   ];
 
   // Save the plan so the filter bar can re-run only the filtered renders.

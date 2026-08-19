@@ -2,13 +2,16 @@
 build_pages.py
 parse_health.py
 analyze_delivery.py
+fetch_osm.py
 
 # Raw derived exports; the site reads assets/*.js, not these files.
 health_data.json
 delivery_data.json
 
-# Build input for analyze_delivery.py — suburb polygons, never fetched at runtime.
+# Build inputs for analyze_delivery.py — suburb polygons and the cached
+# OpenStreetMap context. Both are read at analysis time, never at runtime.
 suburbs_sydney.json
+osm_context.json
 
 data/
 health_data/

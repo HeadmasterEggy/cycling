@@ -12,7 +12,7 @@
 | `body.html` | `body` | 心率区间、气候画像、VO₂max、体重、日常脉搏 |
 | `training.html` | `training` | 滚动负荷、Fitness/Form、训练效率、强度象限 |
 | `rides.html` | `rides` | 能量构成、海拔画廊、爬升/下降、骑行明细表 |
-| `delivery.html` | `delivery` | 配送效率:区域单量排行、停车热点、路段好坏、时段规律 |
+| `delivery.html` | `delivery` | 配送效率:停留分类(取餐/送达/等灯)、区域排行、可交互热点地图、路段好坏、时段规律、区域档案 |
 | `explorer.html` | `explorer` | 单次骑行逐条放大 |
 | `recovery.html` | `recovery` | HRV、静息心率、呼吸、血氧、睡眠 |
 | `cycling-analysis.html` | `all` | 所有章节合并的单页全景视图 |
@@ -24,14 +24,15 @@ assets/
   styles.css        共享样式
   app.js            渲染逻辑(图表、地图、导航、页脚)
   recovery.js       恢复类图表
-  delivery.js       配送页图表(区域、地图、路段、时段)
+  delivery.js       配送页图表(停留判定、区域、地图、路段、时段、档案)
   routes.js         window.ROUTES_DATA —— 逐条 GPS 轨迹(含简化后的折线)
   health-data.js    window.HEALTH_DATA —— Apple Health 派生数据
   delivery-data.js  window.DELIVERY_DATA —— 配送分析派生数据
   favicon.svg
 build_pages.py      由 cycling-analysis.html 生成全部页面
 parse_health.py     由 Apple Health 导出生成 health-data.js / health_data.json / routes.js
-analyze_delivery.py 由 GPX 轨迹生成 delivery-data.js / delivery_data.json
+analyze_delivery.py 由 GPX 轨迹 + osm_context.json 生成 delivery-data.js / delivery_data.json
+fetch_osm.py        抓 OpenStreetMap 与人口数据,缓存成 osm_context.json
 suburbs_sydney.json 悉尼 suburb 边界(点在多边形判定用),ABS 2016 SSC
 health_data.json    与 health-data.js 同内容的可移植 JSON 导出
 delivery_data.json  与 delivery-data.js 同内容的可移植 JSON 导出
@@ -47,7 +48,12 @@ health_data.json  +  assets/health-data.js   (window.HEALTH_DATA
                   |                           含 stays / summary.cities)
                   +  assets/routes.js        (window.ROUTES_DATA)
 
-apple_health_export/workout-routes/*.gpx + suburbs_sydney.json
+Overpass API + Wikipedia/Wikidata
+        │  fetch_osm.py
+        ▼
+osm_context.json  (红绿灯 / 餐饮店 / 主干道 / 每区结构指标)
+        │
+apple_health_export/workout-routes/*.gpx + suburbs_sydney.json + osm_context.json
         │  analyze_delivery.py
         ▼
 delivery_data.json + assets/delivery-data.js (window.DELIVERY_DATA)
@@ -112,21 +118,43 @@ python3 parse_health.py --routes-only
 
 ### 配送分析
 
-`analyze_delivery.py` 只看 GPX,回答一个别的页面回答不了的问题:**哪儿的活值得干**。
+`analyze_delivery.py` 回答一个别的页面回答不了的问题:**哪儿的活值得干**。
+它读 GPX,再配上 `fetch_osm.py` 缓存下来的地图底料。
 
 ```bash
+python3 fetch_osm.py          # 抓一次红绿灯 / 餐饮店 / 路网,写进 osm_context.json
 python3 analyze_delivery.py
-python3 analyze_delivery.py --stop-seconds 120   # 换个门槛看看
+python3 analyze_delivery.py --dry-run
 ```
 
-导出里没有订单,只有 1 Hz 的位置、速度和海拔,所以一切都是推断出来的:
+导出里没有订单,只有 1 Hz 的位置、速度、航向和海拔,所以一切都是推断出来的:
 
-- **单** —— 速度低于 0.7 m/s 连续 ≥ 90 秒。取餐和送达从外面看是一样的:车停两分钟。
-  红灯通常更短,落进单独的「等待」桶,不会把单量撑起来。门槛用 `--stop-seconds` 调。
+- **停留(dwell)** —— 速度低于 0.7 m/s 的连续段,再把中间那段「短、近、慢」的移动合并进来。
+  送一单是停车 → 走到门口 → 等 → 走回来,朴素的停车检测会把这一单切成三段;按时长记数
+  就变成了三单。合并之后,停留的**活动范围**本身成了有用的信号 —— 等红灯是没有范围的。
+- **停留分类** —— 每次停留判成 `取餐 / 送达 / 等灯`,靠的是几条人也会用的证据加权:
+  停了多久、离最近的红绿灯多远、活动范围多大、进出方向夹角(等灯是直着穿过去,送完餐常是
+  原路折返)、门口 20 米内有没有餐饮店、这个点跨班次来过几次。权重不是拟合出来的 ——
+  没有标注可拟合 —— 而是照着数据的形状定的:离红绿灯 12 米内的停留中位 45 秒、范围 2 米,
+  80 米外的中位 87 秒、范围 7 米,两拨分得足够开,权重再动几个点也翻不了案。
+  每条证据都随结果输出,页面上直接把它们摆出来。
+- **旧规则错在哪** —— 「停够 90 秒算一单」两头都会错。一个六车道路口 98 秒的红灯不是单;
+  一家去过 14 次的店门口 81 秒的停留是。这两类样本页面上各列了 8 个。
+- **单** —— 一单 = 一次**送达**。取餐单独计数;把两者相加会把每一单算两遍,旧版本正是如此。
+  取餐和送达是用两条互不相关的证据判的,谁也不知道对方存在,结果落在 215 : 197(比值 1.09)——
+  每单本该一取一送,这个比值是个说得过去的旁证(规则换一换会在 0.8–1.4 间晃),不是证明。
 - **区** —— 点落在哪个 ABS 2016 suburb 多边形里。用的是点在多边形,不是就近取中心点 ——
   内西区的 suburb 互相咬合得厉害,取中心点会把停留判到隔壁区去。
-- **好跑指数** —— 0–100,由中位速度(40%)、红灯密度(25%)、爬升(20%)、龟速占比(15%)
-  加权而成。权重写在 `FLOW_WEIGHTS` 里,也印在页面上 —— 一个合成指标只有能看见成分才算诚实。
+  CBD 那个 suburb 官方就叫 `Sydney`,在图表里看着像整座城市,所以显示名改成 `Sydney CBD`;
+  查找、多边形和 OSM 关联仍然用官方名。
+- **好跑指数** —— 0–100,由通行速度(34%)、红灯耗时(28%)、爬升(20%)、走走停停(18%)
+  加权而成。两处和旧版不同:每项的归一化用的是数据自身按里程加权的 10/90 分位数,不再是手挑的
+  边界(旧的 8–22 km/h、0–26 m/km 是拍的,超出还会悄悄截断),分位数会写进输出让页面印出来;
+  每项还会按里程向全城水平**收缩**,`PRIOR_KM` 公里的曝光量等于自身和全城各占一半。
+  跑了 400 米的区照样有中位速度,但那是一个晚上一条街的中位速度。
+- **值得去** —— 单位是「活/小时」,不再是对最好那个区取比值的 0–100 分。
+  = 收缩后的活/小时 × (本区好跑 / 全城好跑中位)。样本不够的区不给分,也不参与排名
+  (门槛:`RANK_MIN_KM` 公里 + `RANK_MIN_SHIFTS` 个班次)。
 - **路段** —— 常骑的 60 米格子连成链。单个格子不成路,一串才是。「最难走」按每趟多花的
   时间排序,不是累计 —— 否则排出来的只是最长最常走的那几条。
 
@@ -137,6 +165,10 @@ python3 analyze_delivery.py --stop-seconds 120   # 换个门槛看看
 
 `suburbs_sydney.json` 是从 [michalsn/australian-suburbs](https://github.com/michalsn/australian-suburbs)(MIT,
 数据源为 ABS 2016 Census)裁出悉尼一带、再用 30 米容差简化后的边界。
+`osm_context.json` 由 `fetch_osm.py` 生成:OpenStreetMap(ODbL)的红绿灯、餐饮店、
+主干道中心线,以及每个区的餐厅数、红绿灯数、路网长度和面积;人口密度取自 Wikipedia/Wikidata
+的 ABS 普查数字 —— 它用的是同一套 suburb 边界(Haymarket 两边都是 0.52 km²),
+所以密度和这里的几何是对得上的,不是把两种「区」的定义混在一起。
 
 > 单量是从轨迹反推的,不是平台真实单数。它能比较区与区的相对高低,不能当账单看。
 

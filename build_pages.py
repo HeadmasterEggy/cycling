@@ -152,16 +152,19 @@ SECTIONS = {
     'walking_reserve': find_section_by_title('心率储备'),
     'recovery_composite': find_section_by_title('晨间生理'),
     'dlv_kpis':     find_section_by_title('配送概览'),
+    'dlv_method':   find_section_by_title('这一脚是在干嘛'),
     'dlv_zones':    find_section_by_title('区域排行'),
     'dlv_map':      find_section_by_title('热点地图'),
     'dlv_roads':    find_section_by_title('路段好坏'),
     'dlv_hours':    find_section_by_title('时段规律'),
+    'dlv_profile':  find_section_by_title('区域档案'),
 }
 
 # Sections that need the delivery dataset + renderer. Every page used to load
 # every asset; the delivery data is another ~150 KB, so pages that show none
 # of these sections do not get the tags at all.
-DELIVERY_SECTIONS = {'dlv_kpis', 'dlv_zones', 'dlv_map', 'dlv_roads', 'dlv_hours'}
+DELIVERY_SECTIONS = {'dlv_kpis', 'dlv_method', 'dlv_zones', 'dlv_map',
+                     'dlv_roads', 'dlv_hours', 'dlv_profile'}
 # Sections that draw a Leaflet map.
 MAP_SECTIONS = {'map', 'dlv_map'}
 
@@ -356,15 +359,16 @@ PAGES = [
     },
     {
         'file': 'delivery.html',
-        'description': '悉尼送外卖的效率地图 —— 区域单量排行、停车热点、最常走与最难走的路段，以及时段 × 区域的出单规律。',
+        'description': '悉尼送外卖的效率地图 —— 每一次停车判成取餐/送达/等红灯，区域好跑指数、取餐点与红灯堵点、路段耗时，以及时段 × 区域的出单规律。',
         'page_key': 'delivery',
         'title': '配送 · Delivery',
         'hero': make_hero(
             custom_h1='哪儿的单好跑<br><em>区域与路段</em>',
-            custom_sub='从 GPS 轨迹反推出的接单节奏 —— 哪个区单最多、哪个区跑得动、哪几段路最费时间、几点该在哪儿。没有平台数据，全部是从停车与速度里读出来的。',
+            custom_sub='从 GPS 轨迹反推出的接单节奏 —— 每一次停车都对着地图判断是取餐、送达还是等红灯，再看哪个区活最多、哪个区跑得动、哪几段路最费时间、几点该在哪儿。没有平台数据，全部是从停车、速度和 OpenStreetMap 里读出来的。',
             custom_meta='配送 · Delivery'),
         'intro': '',
-        'sections': ['dlv_kpis', 'dlv_zones', 'dlv_map', 'dlv_roads', 'dlv_hours'],
+        'sections': ['dlv_kpis', 'dlv_method', 'dlv_zones', 'dlv_map', 'dlv_roads',
+                     'dlv_hours', 'dlv_profile'],
         'has_filter': False,
         # Delivery analysis is Sydney-only by construction — a city picker
         # here would offer three choices that all empty the page.
@@ -414,7 +418,8 @@ ALL_TITLES_ORDER = [
     'hrv', 'rhr', 'resp', 'sleep', 'walking_reserve', 'recovery_composite',
     'elev_gallery', 'ascent_descent',
     'ride_explorer', 'mets', 'departure', 'rides_table',
-    'dlv_kpis', 'dlv_zones', 'dlv_map', 'dlv_roads', 'dlv_hours',
+    'dlv_kpis', 'dlv_method', 'dlv_zones', 'dlv_map', 'dlv_roads',
+    'dlv_hours', 'dlv_profile',
 ]
 all_body = "\n\n".join(SECTIONS[s] for s in ALL_TITLES_ORDER)
 all_html = PAGE_TEMPLATE.format(

@@ -2,8 +2,9 @@
 // 配送分析 / Delivery analytics renderers
 //
 // Reads window.DELIVERY_DATA (built by analyze_delivery.py) and draws the
-// 配送 page: shift economics, the zone leaderboard, the hotspot map, the
-// corridor lists and the hour x zone heatmap.
+// 配送 page: shift economics, how each stop was classified, the zone
+// leaderboard, the hotspot map, the corridor lists, the hour x zone heatmap
+// and the per-suburb structural profile.
 //
 // Kept out of app.js because the data behind it is only loaded on the pages
 // that show it — every other page would pay for it and render nothing.
@@ -11,8 +12,16 @@
 
 const DLV = {
   amber: '#e8b76d', amberBright: '#ffd897',
-  cyan: '#6cc4d9', rose: '#d97a8a',
+  cyan: '#6cc4d9', rose: '#d97a8a', green: '#8fbf7f', violet: '#a894d9',
   grid: '#1c1e25', axis: '#5d5b55', dim: '#908d85', line: '#3a3d48',
+};
+
+// One colour per stop kind, used by the map, the legend, the evidence cards
+// and the profile chart so a 取餐 dot means the same thing everywhere.
+const DLV_KIND = {
+  pickup: { label: '取餐', en: 'Pickup', color: DLV.cyan },
+  dropoff: { label: '送达', en: 'Drop-off', color: DLV.amber },
+  light: { label: '等灯', en: 'Traffic light', color: DLV.rose },
 };
 
 function dlvData() {
@@ -21,7 +30,11 @@ function dlvData() {
     // Stable ids so the panel, the map and the corridor lists further down
     // the page can all point at the same feature after any amount of
     // filtering or re-sorting.
-    D.hotspots.forEach((h, i) => { h._i = i; });
+    D.pickups = D.hotspots.filter(h => h.kind === 'pickup');
+    D.drops = D.hotspots.filter(h => h.kind === 'dropoff');
+    D.pickups.forEach((h, i) => { h._i = i; h._kind = 'pickups'; });
+    D.drops.forEach((h, i) => { h._i = i; h._kind = 'drops'; });
+    (D.light_spots || []).forEach((h, i) => { h._i = i; h._kind = 'lights'; });
     D.zones.forEach((z, i) => { z._i = i; });
     D.corridors.forEach((c, i) => { c._i = i; });
     D._indexed = true;
@@ -59,6 +72,10 @@ function dlvEsc(s) {
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
+function dlvNum(v, digits = 1, dash = '—') {
+  return (v == null || Number.isNaN(v)) ? dash : Number(v).toFixed(digits);
+}
+
 // ============ 配送概览 / Shift economics ============
 function renderDeliveryKpis() {
   const D = dlvData();
@@ -68,16 +85,15 @@ function renderDeliveryKpis() {
   const s = D.summary;
   const m = D.meta;
 
-  const secEl = document.getElementById('dlvStopSec');
-  if (secEl) secEl.textContent = m.stop_seconds;
-
   const cards = [
-    ['识别出的单量', s.orders, '单', `${m.shifts} 个班次 · ${m.first} → ${m.last}`],
-    ['单 / 小时', s.orders_per_hour.toFixed(2), '单/h', `平均每 ${s.min_per_order} 分钟一单`],
-    ['每单里程', s.km_per_order.toFixed(2), 'km', `合计骑了 ${s.km} km`],
-    ['在岗时长', s.hours.toFixed(1), 'h', `覆盖 ${s.zones_touched} 个区`],
-    ['单最多的区', s.top_zone || '—', '', '按识别出的停车次数'],
-    ['最值得去', s.sweet_zone || '—', '', '出单速度 × 好跑指数'],
+    ['送达', s.orders, '单', `${m.shifts} 个班次 · ${m.first} → ${m.last}`],
+    ['取餐', s.pickups, '次', `每 ${s.orders} 单配 ${s.pickups} 次取餐 · 比值 ${s.pd_ratio}`],
+    ['单 / 小时', dlvNum(s.orders_per_hour, 2), '单/h', `平均每 ${s.min_per_order} 分钟一单`],
+    ['送一单要多久', dlvNum(s.leg_min_med, 1), 'min', `取到餐再到门口 · 直线 ${s.leg_km_med} km`],
+    ['在店里等餐', `${s.pickup_wait_med}`, 's', `中位等待 · 送达停留 ${s.drop_wait_med}s`],
+    ['等红灯', dlvNum(s.light_min_per_hour, 1), 'min/h', `${s.lights} 次 · 占在岗时间 ${(s.light_share * 100).toFixed(1)}%`],
+    ['每单里程', dlvNum(s.km_per_order, 2), 'km', `合计骑了 ${s.km} km`],
+    ['最该待的区', s.sweet_zone || '—', '', `出单密度 × 好跑指数 · ${s.zones_ranked}/${s.zones_touched} 个区够样本`],
   ];
   host.innerHTML = cards.map(([label, value, unit, foot]) => `
     <div class="dlv-kpi">
@@ -86,16 +102,82 @@ function renderDeliveryKpis() {
       <div class="dlv-kpi-foot">${dlvEsc(foot)}</div>
     </div>`).join('');
 
+  const secEl = document.getElementById('dlvStopSec');
+  if (secEl) secEl.textContent = m.dwell_seconds;
   const note = document.getElementById('dlvMethod');
   if (note) {
     const w = m.flow_weights || {};
     const pct = k => Math.round((w[k] || 0) * 100);
-    note.innerHTML = `<strong>怎么算的</strong> · 速度低于 ${m.stop_speed_ms} m/s 连续 ${m.stop_seconds} 秒以上算一单；`
-      + `${m.wait_seconds}–${m.stop_seconds} 秒算红灯路口，只进路况不进单量。`
-      + `区名用 ABS 2016 suburb 边界做点在多边形判定，不是就近取中心点。`
-      + `好跑指数 = 中位速度 ${pct('speed')}% + 红灯密度 ${pct('waits')}% + 爬升 ${pct('climb')}% + 龟速占比 ${pct('crawl')}%。`
-      + `每次出勤自己的起点/终点 ${m.endpoint_m} 米内的停留已剔除（共 ${m.endpoint_stops_dropped} 次），那是家不是客户。`
-      + `单量是从轨迹推断的，不是平台真实单数 —— 用来比区与区的相对高低，别当账单看。`;
+    const osm = m.osm && m.osm.counts ? m.osm.counts : {};
+    note.innerHTML = `<strong>怎么算的</strong> · 平台数据一条都没有，全部从 1 Hz 的 GPS 轨迹里反推。`
+      + `每一次停车都对着地图判断是<em>取餐 / 送达 / 等红灯</em>（方法见下一节），`
+      + `不再用「超过 90 秒就算一单」这种只看时长的规则。`
+      + `一单 = 一次送达；取餐单独计数，把两者相加会把每一单算两遍。`
+      + `地图底料来自 OpenStreetMap：${osm.signals || 0} 个红绿灯、${osm.venues || 0} 家餐饮店、`
+      + `${osm.suburbs || 0} 个区的路网与人口。`
+      + `好跑指数 = 通行速度 ${pct('pace')}% + 红灯耗时 ${pct('lights')}% + 爬升 ${pct('climb')}% + 走走停停 ${pct('stopgo')}%，`
+      + `每项都按里程加权收缩过，跑得少的区不会拿到一个漂亮但没根据的分数。`
+      + `每次出勤自己的起点/终点 ${m.endpoint_m} 米内的停留已剔除（共 ${m.endpoint_stops_dropped} 次），那是家不是客户。`;
+  }
+}
+
+// ============ 停车判定 / How each stop was classified ============
+function dlvEvidenceCard(row) {
+  const kind = DLV_KIND[row.kind] || DLV_KIND.dropoff;
+  const chips = (row.evidence || []).map(([w, why]) => {
+    const cls = w > 0 ? 'pos' : 'neg';
+    return `<span class="dlv-ev ${cls}"><em>${w > 0 ? '+' : ''}${w.toFixed(1)}</em>${dlvEsc(why)}</span>`;
+  }).join('');
+  const why = (row.kind_why || []).map(t => dlvEsc(t)).join('、');
+  const conf = row.confidence >= 0.8 ? '很确定' : (row.confidence >= 0.4 ? '比较确定' : '把握不大');
+  return `<div class="dlv-case">
+    <div class="dlv-case-head">
+      <span class="dlv-case-kind" style="background:${kind.color}1f;color:${kind.color};border-color:${kind.color}55">${kind.label}</span>
+      <span class="dlv-case-secs">${row.secs}s</span>
+      <span class="dlv-case-where">${dlvEsc(row.venue || row.zone || '—')}</span>
+      <span class="dlv-case-score" title="证据总分，正数偏向「在干活」">${row.score > 0 ? '+' : ''}${row.score} · ${conf}</span>
+    </div>
+    <div class="dlv-case-ev">${chips}</div>
+    ${why ? `<div class="dlv-case-why">判为${kind.label}：${why}</div>` : ''}
+  </div>`;
+}
+
+function renderStopMethod() {
+  const D = dlvData();
+  if (!D) return;
+  const s = D.summary;
+  const m = D.meta;
+
+  const tally = document.getElementById('dlvTally');
+  if (tally) {
+    const total = s.orders + s.pickups + s.lights;
+    const rows = [
+      ['dropoff', s.orders], ['pickup', s.pickups], ['light', s.lights],
+    ];
+    tally.innerHTML = rows.map(([k, n]) => {
+      const kind = DLV_KIND[k];
+      return `<div class="dlv-tally-row">
+        <span class="dlv-tally-label" style="color:${kind.color}">${kind.label}<em>${kind.en}</em></span>
+        <span class="dlv-tally-bar"><span style="width:${(n / total) * 100}%;background:${kind.color}"></span></span>
+        <span class="dlv-tally-num">${n}</span>
+      </div>`;
+    }).join('')
+      + `<div class="dlv-tally-foot">${m.dwells} 次停车 · 其中 ${m.uncertain} 次证据接近五五开，标为「把握不大」</div>`;
+  }
+
+  const quick = document.getElementById('dlvCasesQuick');
+  if (quick) quick.innerHTML = (D.samples.quick_pickups || []).map(dlvEvidenceCard).join('');
+  const slow = document.getElementById('dlvCasesLong');
+  if (slow) slow.innerHTML = (D.samples.long_lights || []).map(dlvEvidenceCard).join('');
+
+  const ratio = document.getElementById('dlvRatioNote');
+  if (ratio) {
+    ratio.innerHTML = `<strong>一个自检</strong> · 每一单都该是「取一次 + 送一次」，`
+      + `所以取餐数和送达数本来就该差不多。分类器完全没有被告知这件事 —— `
+      + `取餐和送达是用两条互不相关的证据判的 —— 结果落在 `
+      + `<b>${s.pickups} : ${s.orders}</b>（比值 ${s.pd_ratio}）。`
+      + `这不是证明，只是个说得过去的旁证：规则稍微换一换，比值会在 0.8–1.4 之间晃。`
+      + `真要是大面积判错了，它没有理由这么接近 1。`;
   }
 }
 
@@ -105,17 +187,17 @@ function renderZoneQuadrant() {
   if (!D) return;
   const svg = document.getElementById('zoneQuadrant');
   if (!svg) return;
-  const zones = D.zones.filter(z => z.orders > 0);
+  const zones = D.zones.filter(z => z.jobs > 0);
   if (!zones.length) return;
 
   const W = 900, H = 460, P = { l: 58, r: 28, t: 34, b: 52 };
-  const xMax = Math.max(4, Math.max(...zones.map(z => z.orders)) * 1.12);
+  const xMax = Math.max(4, Math.max(...zones.map(z => z.jobs)) * 1.12);
   const y0 = Math.max(0, Math.min(...zones.map(z => z.flow)) - 8);
   const y1 = Math.min(100, Math.max(...zones.map(z => z.flow)) + 8);
   const xs = v => P.l + (v / xMax) * (W - P.l - P.r);
   const ys = v => H - P.b - ((v - y0) / (y1 - y0 || 1)) * (H - P.t - P.b);
 
-  const xMed = dlvMedian(zones.map(z => z.orders));
+  const xMed = dlvMedian(zones.map(z => z.jobs));
   const yMed = dlvMedian(zones.map(z => z.flow));
 
   const xTicks = [0, 0.25, 0.5, 0.75, 1].map(f => Math.round(xMax * f));
@@ -132,26 +214,26 @@ function renderZoneQuadrant() {
     + `<line x1="${P.l}" x2="${W - P.r}" y1="${ys(yMed)}" y2="${ys(yMed)}" stroke="${DLV.line}" stroke-dasharray="4 4"/>`;
 
   const quads =
-    `<text x="${W - P.r - 8}" y="${P.t + 14}" text-anchor="end" fill="${DLV.amberBright}" font-family="JetBrains Mono" font-size="10" letter-spacing="0.1em">单 多 · 好 跑</text>`
-    + `<text x="${P.l + 8}" y="${P.t + 14}" fill="${DLV.cyan}" font-family="JetBrains Mono" font-size="10" letter-spacing="0.1em">单 少 · 好 跑</text>`
-    + `<text x="${W - P.r - 8}" y="${H - P.b - 8}" text-anchor="end" fill="${DLV.rose}" font-family="JetBrains Mono" font-size="10" letter-spacing="0.1em">单 多 · 难 跑</text>`
-    + `<text x="${P.l + 8}" y="${H - P.b - 8}" fill="${DLV.axis}" font-family="JetBrains Mono" font-size="10" letter-spacing="0.1em">单 少 · 难 跑</text>`;
+    `<text x="${W - P.r - 8}" y="${P.t + 14}" text-anchor="end" fill="${DLV.amberBright}" font-family="JetBrains Mono" font-size="10" letter-spacing="0.1em">活 多 · 好 跑</text>`
+    + `<text x="${P.l + 8}" y="${P.t + 14}" fill="${DLV.cyan}" font-family="JetBrains Mono" font-size="10" letter-spacing="0.1em">活 少 · 好 跑</text>`
+    + `<text x="${W - P.r - 8}" y="${H - P.b - 8}" text-anchor="end" fill="${DLV.rose}" font-family="JetBrains Mono" font-size="10" letter-spacing="0.1em">活 多 · 难 跑</text>`
+    + `<text x="${P.l + 8}" y="${H - P.b - 8}" fill="${DLV.axis}" font-family="JetBrains Mono" font-size="10" letter-spacing="0.1em">活 少 · 难 跑</text>`;
 
   const hMax = Math.max(...zones.map(z => z.hours)) || 1;
   const dots = zones.map(z => {
     const r = 5 + Math.sqrt(z.hours / hMax) * 16;
-    const hot = z.orders >= xMed && z.flow >= yMed;
-    const col = !z.ranked ? DLV.axis : (hot ? DLV.amber : (z.orders >= xMed ? DLV.rose : DLV.cyan));
-    return `<circle cx="${xs(z.orders)}" cy="${ys(z.flow)}" r="${r}" fill="${col}" fill-opacity="${z.ranked ? 0.3 : 0.14}" stroke="${col}" stroke-width="1.2" stroke-opacity="${z.ranked ? 1 : 0.5}">`
-      + `<title>${dlvEsc(z.name)} · ${z.orders} 单 · ${z.shifts} 个班次 · 好跑 ${z.flow} · 中位 ${z.med_speed} km/h · 红灯 ${z.waits_per_km}/km · 爬升 ${z.climb_per_km} m/km${z.ranked ? '' : ' · 样本不足'}</title></circle>`;
+    const hot = z.jobs >= xMed && z.flow >= yMed;
+    const col = !z.ranked ? DLV.axis : (hot ? DLV.amber : (z.jobs >= xMed ? DLV.rose : DLV.cyan));
+    return `<circle cx="${xs(z.jobs)}" cy="${ys(z.flow)}" r="${r}" fill="${col}" fill-opacity="${z.ranked ? 0.3 : 0.14}" stroke="${col}" stroke-width="1.2" stroke-opacity="${z.ranked ? 1 : 0.5}">`
+      + `<title>${dlvEsc(z.label)} · ${z.jobs} 次活（送 ${z.orders} / 取 ${z.pickups}）· ${z.shifts} 个班次 · 好跑 ${z.flow} · 中位 ${z.med_speed} km/h · 红灯 ${z.light_min_per_km} min/km · 爬升 ${z.climb_per_km} m/km${z.ranked ? '' : ' · 样本不足，未参与排名'}</title></circle>`;
   }).join('');
 
   // Label the zones worth reading; the rest stay hover targets. Busy suburbs
   // cluster, so nudge a label up until it clears the one above it — otherwise
   // the two or three names that matter most are the ones that overlap.
   const placed = [];
-  const labels = [...zones].sort((a, b) => b.orders - a.orders).slice(0, 10).map(z => {
-    const cx = xs(z.orders);
+  const labels = [...zones].sort((a, b) => b.jobs - a.jobs).slice(0, 10).map(z => {
+    const cx = xs(z.jobs);
     let cy = ys(z.flow) - (7 + Math.sqrt(z.hours / hMax) * 16);
     for (let guard = 0; guard < 8; guard++) {
       const clash = placed.find(p => Math.abs(p.x - cx) < 72 && Math.abs(p.y - cy) < 13);
@@ -159,27 +241,31 @@ function renderZoneQuadrant() {
       cy = clash.y - 13;
     }
     placed.push({ x: cx, y: cy });
-    return `<text x="${cx}" y="${Math.max(P.t + 24, cy)}" text-anchor="middle" fill="${DLV.dim}" font-family="JetBrains Mono" font-size="9.5">${dlvEsc(z.name)}</text>`;
+    return `<text x="${cx}" y="${Math.max(P.t + 24, cy)}" text-anchor="middle" fill="${DLV.dim}" font-family="JetBrains Mono" font-size="9.5">${dlvEsc(z.label)}</text>`;
   }).join('');
 
   svg.innerHTML = grid + cross + quads + dots + labels
-    + `<text x="${W / 2}" y="${H - 8}" text-anchor="middle" class="eq-axis-title">识别出的单量</text>`
+    + `<text x="${W / 2}" y="${H - 8}" text-anchor="middle" class="eq-axis-title">识别出的活（取餐 + 送达）</text>`
     + `<text x="16" y="${H / 2}" text-anchor="middle" class="eq-axis-title" transform="rotate(-90 16 ${H / 2})">好跑指数 0–100</text>`;
 
+  // The grey dots stay on the chart — a suburb crossed twice is still part of
+  // the picture — but only zones with enough exposure get named underneath.
+  // Reading "好跑但没活: Croydon" off two minutes of riding is worse than
+  // reading nothing.
   const buckets = { hot: [], flowOnly: [], grind: [], quiet: [] };
-  zones.forEach(z => {
-    if (z.orders >= xMed && z.flow >= yMed) buckets.hot.push(z);
-    else if (z.orders < xMed && z.flow >= yMed) buckets.flowOnly.push(z);
-    else if (z.orders >= xMed) buckets.grind.push(z);
+  zones.filter(z => z.ranked).forEach(z => {
+    if (z.jobs >= xMed && z.flow >= yMed) buckets.hot.push(z);
+    else if (z.jobs < xMed && z.flow >= yMed) buckets.flowOnly.push(z);
+    else if (z.jobs >= xMed) buckets.grind.push(z);
     else buckets.quiet.push(z);
   });
-  const names = list => list.sort((a, b) => b.orders - a.orders).slice(0, 4).map(z => z.name).join('、') || '—';
+  const names = list => list.sort((a, b) => b.jobs - a.jobs).slice(0, 4).map(z => z.label).join('、') || '—';
   const legend = document.getElementById('zoneQuadLegend');
   if (legend) {
     legend.innerHTML =
-      `<div class="eq-tag eff"><strong>单多又好跑</strong><span class="eq-count">${buckets.hot.length} 区</span><br>${dlvEsc(names(buckets.hot))}</div>`
-      + `<div class="eq-tag costly"><strong>单多但难跑</strong><span class="eq-count">${buckets.grind.length} 区</span><br>${dlvEsc(names(buckets.grind))}</div>`
-      + `<div class="eq-tag eff"><strong>好跑但没单</strong><span class="eq-count">${buckets.flowOnly.length} 区</span><br>${dlvEsc(names(buckets.flowOnly))}</div>`
+      `<div class="eq-tag eff"><strong>活多又好跑</strong><span class="eq-count">${buckets.hot.length} 区</span><br>${dlvEsc(names(buckets.hot))}</div>`
+      + `<div class="eq-tag costly"><strong>活多但难跑</strong><span class="eq-count">${buckets.grind.length} 区</span><br>${dlvEsc(names(buckets.grind))}</div>`
+      + `<div class="eq-tag eff"><strong>好跑但没活</strong><span class="eq-count">${buckets.flowOnly.length} 区</span><br>${dlvEsc(names(buckets.flowOnly))}</div>`
       + `<div class="eq-tag easy"><strong>又少又难</strong><span class="eq-count">${buckets.quiet.length} 区</span><br>${dlvEsc(names(buckets.quiet))}</div>`;
   }
 }
@@ -189,80 +275,137 @@ function renderZoneTable() {
   if (!D) return;
   const tbody = document.getElementById('zoneTbody');
   if (!tbody) return;
-  const rows = D.zones.filter(z => z.orders > 0 || z.km >= 1.5);
-  const st = window.__dlvZoneSort || { key: 'orders', dir: 'desc' };
-  rows.sort((a, b) => {
+  const onlyRanked = window.__dlvOnlyRanked !== false;
+  let rows = D.zones.filter(z => z.jobs > 0 || z.km >= 1.5);
+  if (onlyRanked) rows = rows.filter(z => z.ranked);
+  const st = window.__dlvZoneSort || { key: 'jobs', dir: 'desc' };
+  rows = [...rows].sort((a, b) => {
     const av = a[st.key], bv = b[st.key];
     const an = av == null ? -Infinity : av;
     const bn = bv == null ? -Infinity : bv;
-    if (an === bn) return b.orders - a.orders;
+    if (an === bn) return b.jobs - a.jobs;
     return st.dir === 'desc' ? (bn > an ? 1 : -1) : (an > bn ? 1 : -1);
   });
-  const flowMax = 100;
   tbody.innerHTML = rows.map(z => {
-    const bar = `<span class="flow-bar"><span class="flow-bar-fill" style="width:${(z.flow / flowMax) * 100}%;background:${dlvRamp(z.flow / flowMax)}"></span></span>`;
-    return `<tr${z.ranked ? '' : ' class="dlv-thin"'}>
-      <td class="dlv-zone">${dlvEsc(z.name)}<span class="dlv-lga">${dlvEsc(z.lga || '')}</span></td>
-      <td class="col-distance">${z.orders}</td>
+    const bar = `<span class="flow-bar"><span class="flow-bar-fill" style="width:${z.flow}%;background:${dlvRamp(z.flow / 100)}"></span></span>`;
+    const thin = z.ranked ? '' : ' class="dlv-thin"';
+    const na = '<span class="dlv-na" title="骑过的里程或出现班次太少，速率不可靠">样本少</span>';
+    return `<tr${thin} data-zone="${dlvEsc(z.name)}">
+      <td class="dlv-zone">${dlvEsc(z.label)}<span class="dlv-lga">${dlvEsc(z.lga || '')}</span></td>
+      <td class="col-distance">${z.jobs}</td>
+      <td>${z.orders}</td>
+      <td>${z.pickups}</td>
       <td>${z.shifts}</td>
-      <td>${z.ranked ? z.orders_per_hour.toFixed(2) : '<span class="dlv-na" title="出现班次不足 3 次或停留时间太短，速率不可靠">样本少</span>'}</td>
-      <td>${z.med_speed.toFixed(1)}</td>
-      <td>${z.waits_per_km.toFixed(2)}</td>
-      <td>${z.climb_per_km.toFixed(1)}</td>
+      <td>${z.ranked ? dlvNum(z.jobs_per_hour, 2) : na}</td>
+      <td>${dlvNum(z.med_speed, 1)}</td>
+      <td>${dlvNum(z.light_min_per_km, 2)}</td>
+      <td>${dlvNum(z.climb_per_km, 1)}</td>
+      <td>${z.prep_per_km2 == null ? '—' : Math.round(z.prep_per_km2)}</td>
       <td>${bar}<span class="flow-num">${z.flow.toFixed(0)}</span></td>
-      <td>${z.worth == null ? '—' : z.worth.toFixed(0)}</td>
+      <td>${z.worth == null ? '—' : dlvNum(z.worth, 1)}</td>
     </tr>`;
   }).join('');
+
+  const foot = document.getElementById('zoneTableFoot');
+  if (foot) {
+    const m = D.meta;
+    foot.textContent = onlyRanked
+      ? `只显示骑够 ${m.rank_min_km} km 且出现过 ${m.rank_min_shifts} 个班次以上的 ${rows.length} 个区`
+      : `显示全部 ${rows.length} 个区，灰色行样本不足、不参与排名`;
+  }
 }
 
 function bindZoneTable() {
   const table = document.getElementById('zoneTable');
-  if (!table) return;
-  table.querySelectorAll('thead th[data-sort]').forEach(th => {
-    th.addEventListener('click', () => {
-      const key = th.dataset.sort;
-      const cur = window.__dlvZoneSort || { key: 'orders', dir: 'desc' };
-      const dir = cur.key === key ? (cur.dir === 'desc' ? 'asc' : 'desc') : (th.dataset.dir || 'desc');
-      window.__dlvZoneSort = { key, dir };
-      table.querySelectorAll('thead th').forEach(o => o.classList.remove('sorted'));
-      th.classList.add('sorted');
+  if (table) {
+    table.querySelectorAll('thead th[data-sort]').forEach(th => {
+      th.addEventListener('click', () => {
+        const key = th.dataset.sort;
+        const cur = window.__dlvZoneSort || { key: 'jobs', dir: 'desc' };
+        const dir = cur.key === key ? (cur.dir === 'desc' ? 'asc' : 'desc') : (th.dataset.dir || 'desc');
+        window.__dlvZoneSort = { key, dir };
+        table.querySelectorAll('thead th').forEach(o => o.classList.remove('sorted'));
+        th.classList.add('sorted');
+        renderZoneTable();
+      });
+    });
+    // A row is a way into the map: click it and the map drills to that suburb.
+    table.addEventListener('click', ev => {
+      const tr = ev.target.closest('tbody tr[data-zone]');
+      if (!tr) return;
+      dlvSetFocus(tr.dataset.zone);
+      const map = document.getElementById('dlvMap');
+      if (map) map.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }
+  const toggle = document.getElementById('zoneRankToggle');
+  if (toggle) {
+    toggle.addEventListener('click', () => {
+      window.__dlvOnlyRanked = window.__dlvOnlyRanked === false;
+      toggle.classList.toggle('active', window.__dlvOnlyRanked !== false);
+      toggle.textContent = window.__dlvOnlyRanked !== false ? '只看样本够的区' : '显示全部区';
       renderZoneTable();
     });
-  });
+  }
 }
 
 // ============ 热点地图 / Hotspot map ============
-// One map, four layers that stack rather than replace each other, a panel
+// One map, six layers that stack rather than replace each other, a panel
 // wired to it in both directions, an hour scrubber, and a click-a-suburb
-// drill-down. The old version swapped one layer at a time and refit the
-// bounds on every switch, which threw away whatever you had zoomed into.
+// drill-down.
 
 const DLVMAP = {
   map: null,
   panes: {},                 // kind -> L.LayerGroup
   refs: {},                  // "kind:id" -> leaflet layer
-  items: { hotspots: [], zones: [], common: [], hard: [] },
-  visible: { hotspots: true, zones: true, common: false, hard: false },
-  panel: 'hotspots',
+  items: { pickups: [], drops: [], lights: [], zones: [], common: [], hard: [] },
+  visible: { pickups: true, drops: true, lights: false, zones: true, common: false, hard: false },
+  panel: 'pickups',
   hour: -1,                  // -1 = 全天
   focus: null,               // suburb name being drilled into
   selected: null,            // { kind, id }
+  metric: 'jobs',            // what the choropleth shades by
   play: null,
-  fitted: false,
 };
 
-const DLV_KIND_LABEL = { hotspots: '停车热点', zones: '区域单量', common: '最常走的路段', hard: '最难走的路段' };
-const DLV_KIND_UNIT = { hotspots: '处', zones: '区', common: '段', hard: '段' };
+const DLV_KIND_LABEL = {
+  pickups: '取餐点', drops: '送达点', lights: '红灯堵点',
+  zones: '区域', common: '最常走', hard: '最难走',
+};
+const DLV_KIND_UNIT = { pickups: '处', drops: '处', lights: '处', zones: '区', common: '段', hard: '段' };
 
-// Hour filtering only makes sense for things counted per order. Corridors are
+// Hour filtering only makes sense for things counted per job. Corridors are
 // aggregated over whole shifts, so the scrubber leaves them alone — said out
 // loud under the slider rather than silently doing nothing.
-const DLV_HOURLY = new Set(['hotspots', 'zones']);
+const DLV_HOURLY = new Set(['pickups', 'drops', 'zones']);
+
+// What the suburb fill can be shaded by. Every one of these is a number the
+// page can defend: three measured on the bike, two read off the map.
+const DLV_METRICS = {
+  jobs: { label: '活的数量', unit: '次', get: z => z.jobs, hourly: true },
+  worth: { label: '值得去', unit: '次/h', get: z => z.worth, rankedOnly: true },
+  flow: { label: '好跑指数', unit: '', get: z => z.flow },
+  light_min_per_km: { label: '红灯耗时', unit: 'min/km', get: z => z.light_min_per_km, invert: true },
+  climb_per_km: { label: '爬升', unit: 'm/km', get: z => z.climb_per_km, invert: true },
+  prep_per_km2: { label: '餐厅密度', unit: '家/km²', get: z => z.prep_per_km2 },
+  sig_per_km: { label: '红绿灯密度', unit: '个/km路', get: z => z.sig_per_km, invert: true },
+  pop_density: { label: '人口密度', unit: '人/km²', get: z => z.pop_density },
+};
+
+function dlvMetric() { return DLV_METRICS[DLVMAP.metric] || DLV_METRICS.jobs; }
+
+function dlvZoneValue(z) {
+  const m = dlvMetric();
+  if (m.hourly && DLVMAP.hour >= 0) return (z.hour_hist && z.hour_hist[DLVMAP.hour]) || 0;
+  if (m.rankedOnly && !z.ranked) return null;
+  return m.get(z);
+}
 
 function dlvHourCount(kind, item) {
-  if (DLVMAP.hour < 0) return kind === 'zones' ? item.orders : item.visits;
-  const hist = kind === 'zones' ? item.hour_hist : item.hours;
-  return (hist && hist[DLVMAP.hour]) || 0;
+  if (kind === 'zones') return dlvZoneValue(item) || 0;
+  if (kind === 'lights') return item.waits;
+  if (DLVMAP.hour < 0) return item.visits;
+  return (item.hours && item.hours[DLVMAP.hour]) || 0;
 }
 
 // The lists behind each layer, after the hour scrubber and the suburb focus.
@@ -270,39 +413,56 @@ function dlvItems(kind) {
   const D = dlvData();
   if (!D) return [];
   const focus = DLVMAP.focus;
-  if (kind === 'hotspots') {
-    return D.hotspots.filter(h => (!focus || h.zone === focus) && dlvHourCount('hotspots', h) > 0);
+  if (kind === 'pickups' || kind === 'drops') {
+    return D[kind].filter(h => (!focus || h.zone === dlvLabelOf(focus))
+      && dlvHourCount(kind, h) > 0);
+  }
+  if (kind === 'lights') {
+    return (D.light_spots || []).filter(h => !focus || h.zone === dlvLabelOf(focus));
   }
   if (kind === 'zones') {
     // Keep every polygon while focused — the neighbours are the context that
     // makes the focused one mean something — and dim them at draw time.
-    return D.zones.filter(z => z.ring && (focus ? true : dlvHourCount('zones', z) > 0));
+    return D.zones.filter(z => z.ring && (focus ? true : dlvZoneValue(z) != null));
   }
   const pool = kind === 'hard'
     ? D.corridors.filter(c => c.passes >= 3).sort((a, b) => b.lost_per_pass - a.lost_per_pass).slice(0, 25)
     : [...D.corridors].sort((a, b) => b.passes - a.passes).slice(0, 25);
-  return focus ? pool.filter(c => (c.zones || []).includes(focus)) : pool;
+  return focus ? pool.filter(c => (c.zones || []).includes(dlvLabelOf(focus))) : pool;
+}
+
+function dlvLabelOf(name) {
+  const D = dlvData();
+  const z = D && D.zones.find(x => x.name === name);
+  return z ? z.label : name;
 }
 
 function dlvBaseStyle(kind, item, max) {
-  if (kind === 'hotspots') {
-    const v = dlvHourCount('hotspots', item);
-    return { radius: 6 + Math.sqrt(v / max) * 18, color: DLV.amber, weight: 1.2,
-             opacity: 0.9, fillColor: dlvRamp(v / max), fillOpacity: 0.45 };
+  if (kind === 'pickups' || kind === 'drops' || kind === 'lights') {
+    const v = dlvHourCount(kind, item);
+    const col = kind === 'pickups' ? DLV.cyan : (kind === 'drops' ? DLV.amber : DLV.rose);
+    return {
+      radius: 5 + Math.sqrt(v / max) * 16, color: col, weight: 1.2,
+      opacity: 0.9, fillColor: col, fillOpacity: 0.18 + 0.42 * (v / max),
+    };
   }
   if (kind === 'zones') {
-    const v = dlvHourCount('zones', item);
+    const v = dlvZoneValue(item);
     const focused = DLVMAP.focus === item.name;
     const muted = DLVMAP.focus && !focused;
+    const m = dlvMetric();
+    let t = v == null ? null : (max ? v / max : 0);
+    if (t != null && m.invert) t = 1 - t;
     // The focused suburb trades fill for outline: a solid amber wash hid the
     // hotspot circles sitting inside it, which are the reason to drill in.
     return {
       color: focused ? DLV.amberBright : DLV.amber,
       weight: focused ? 2.5 : (muted ? 0.6 : 1),
       opacity: focused ? 0.95 : (muted ? 0.18 : 0.45),
-      fillColor: v ? dlvRamp(v / max) : '#1c1e25',
-      fillOpacity: focused ? 0.16 : (muted ? 0.05 : (v ? 0.32 : 0.1)),
-      dashArray: focused ? null : undefined,
+      fillColor: t == null ? '#15171c' : dlvRamp(t),
+      // Light enough that the pickup and drop-off dots still read on top of
+      // it — the fill is context, the dots are the subject.
+      fillOpacity: focused ? 0.14 : (muted ? 0.05 : (t == null ? 0.07 : 0.26)),
     };
   }
   const key = kind === 'hard' ? 'lost_per_pass' : 'passes';
@@ -319,7 +479,7 @@ function dlvApplyStyle(kind, item, layer, max, mode) {
   if (mode === 'hot' || mode === 'sel') {
     const lift = { ...base, color: kind === 'hard' ? '#f2a0ad' : DLV.amberBright, opacity: 1 };
     if (base.fillOpacity != null) lift.fillOpacity = Math.min(0.75, base.fillOpacity + 0.25);
-    if (base.weight != null) lift.weight = base.weight + (kind === 'hotspots' || kind === 'zones' ? 1.2 : 2.5);
+    if (base.weight != null) lift.weight = base.weight + (kind === 'common' || kind === 'hard' ? 2.5 : 1.2);
     layer.setStyle(lift);
     layer.bringToFront();
     return;
@@ -344,7 +504,10 @@ function dlvRestyle(kind) {
 }
 
 function dlvMaxFor(kind, items) {
-  if (kind === 'hotspots' || kind === 'zones') {
+  if (kind === 'zones') {
+    return Math.max(...items.map(i => dlvZoneValue(i) || 0), 1);
+  }
+  if (kind === 'pickups' || kind === 'drops' || kind === 'lights') {
     return Math.max(...items.map(i => dlvHourCount(kind, i)), 1);
   }
   const key = kind === 'hard' ? 'lost_per_pass' : 'passes';
@@ -352,21 +515,34 @@ function dlvMaxFor(kind, items) {
 }
 
 function dlvPopupHtml(kind, item) {
-  if (kind === 'hotspots') {
-    const v = dlvHourCount('hotspots', item);
-    return `<b>${dlvEsc(item.zone || '未知区')}</b><br>`
-      + (DLVMAP.hour >= 0 ? `${String(DLVMAP.hour).padStart(2, '0')}:00 停 ${v} 次<br>` : '')
-      + `合计停 ${item.visits} 次 · ${item.shifts} 个班次<br>中位停留 ${item.dwell_med}s · 累计 ${item.dwell_total_min} min`;
+  if (kind === 'pickups' || kind === 'drops') {
+    const v = dlvHourCount(kind, item);
+    const title = kind === 'pickups' ? (item.venue || item.zone || '取餐点') : (item.zone || '送达点');
+    return `<b>${dlvEsc(title)}</b><br>`
+      + (kind === 'pickups' && item.venue ? `<span class="dlv-pop-sub">${dlvEsc(item.zone || '')}</span><br>` : '')
+      + (DLVMAP.hour >= 0 ? `${String(DLVMAP.hour).padStart(2, '0')}:00 来过 ${v} 次<br>` : '')
+      + `合计 ${item.visits} 次 · ${item.shifts} 个班次<br>`
+      + `取餐 ${item.pickups} · 送达 ${item.dropoffs}<br>`
+      + `中位停留 ${item.dwell_med}s · 累计 ${item.dwell_total_min} min`;
+  }
+  if (kind === 'lights') {
+    return `<b>${dlvEsc(item.zone || '路口')}</b><br>`
+      + `等过 ${item.waits} 次 · ${item.shifts} 个班次<br>`
+      + `中位每次 ${item.wait_med}s · 累计 ${item.wait_total_min} min<br>`
+      + `离最近红绿灯 ${item.d_signal} m`;
   }
   if (kind === 'zones') {
-    const v = dlvHourCount('zones', item);
-    return `<b>${dlvEsc(item.name)}</b><br>`
-      + (DLVMAP.hour >= 0 ? `${String(DLVMAP.hour).padStart(2, '0')}:00 有 ${v} 单<br>` : '')
-      + `合计 ${item.orders} 单 · ${item.shifts} 个班次<br>好跑 ${item.flow} · 中位 ${item.med_speed} km/h<br>`
+    const m = dlvMetric();
+    const v = dlvZoneValue(item);
+    return `<b>${dlvEsc(item.label)}</b><br>`
+      + `<span class="dlv-pop-sub">${dlvEsc(item.lga || '')}</span><br>`
+      + `${m.label}：${v == null ? '—' : v}${m.unit ? ' ' + m.unit : ''}<br>`
+      + `送达 ${item.orders} · 取餐 ${item.pickups} · ${item.shifts} 个班次<br>`
+      + `好跑 ${item.flow} · 中位 ${item.med_speed} km/h<br>`
       + `<span class="dlv-pop-hint">点一下只看这个区</span>`;
   }
   return `<b>${dlvEsc(item.zone || '—')}</b><br>${item.passes} 个班次经过 · 约 ${item.len_m} m<br>`
-    + `中位 ${item.med_speed} km/h · 停车占比 ${(item.stop_share * 100).toFixed(0)}% · 上坡 ${item.grade_up}%<br>`
+    + `中位 ${item.med_speed} km/h · 红灯占 ${(item.light_share * 100).toFixed(0)}% · 上坡 ${item.grade_up}%<br>`
     + `每趟比 18 km/h 多花 ${item.lost_per_pass} min（累计 ${item.lost_min} min）`;
 }
 
@@ -383,12 +559,12 @@ function dlvDrawLayer(kind) {
 
   items.forEach(item => {
     let layer;
-    if (kind === 'hotspots') {
-      layer = L.circleMarker([item.lat, item.lon], dlvBaseStyle(kind, item, max));
-    } else if (kind === 'zones') {
+    if (kind === 'zones') {
       layer = L.polygon(item.ring.map(p => [p[1], p[0]]), dlvBaseStyle(kind, item, max));
-    } else {
+    } else if (kind === 'common' || kind === 'hard') {
       layer = L.polyline(item.track, dlvBaseStyle(kind, item, max));
+    } else {
+      layer = L.circleMarker([item.lat, item.lon], dlvBaseStyle(kind, item, max));
     }
     layer.bindPopup(dlvPopupHtml(kind, item));
     layer.on('mouseover', () => {
@@ -446,10 +622,16 @@ function dlvClearSelection() {
 function dlvSetFocus(name) {
   DLVMAP.focus = name || null;
   DLVMAP.selected = null;
+  if (name && !DLVMAP.visible.zones) {
+    DLVMAP.visible.zones = true;
+    const chip = document.querySelector('#dlvLayerChips .dlv-chip[data-layer="zones"]');
+    if (chip) chip.classList.add('active');
+  }
   dlvRedraw();
   dlvRenderFocusBar();
   if (name) {
-    const layer = DLVMAP.refs[`zones:${(dlvData().zones.find(z => z.name === name) || {})._i}`];
+    const z = dlvData().zones.find(x => x.name === name);
+    const layer = z && DLVMAP.refs[`zones:${z._i}`];
     if (layer && DLVMAP.map) DLVMAP.map.fitBounds(layer.getBounds(), { padding: [40, 40] });
   } else {
     dlvFitAll();
@@ -464,18 +646,30 @@ function dlvRenderFocusBar() {
   if (!z) { bar.hidden = true; return; }
   const peak = z.hour_hist.indexOf(Math.max(...z.hour_hist));
   const stats = [
-    ['单量', z.orders],
+    ['送达', z.orders],
+    ['取餐', z.pickups],
     ['出现班次', z.shifts],
-    ['单/小时', z.ranked ? z.orders_per_hour.toFixed(2) : '样本少'],
+    ['活/小时', z.ranked ? dlvNum(z.jobs_per_hour, 2) : '样本少'],
     ['中位速度', `${z.med_speed} km/h`],
-    ['红灯/km', z.waits_per_km.toFixed(2)],
+    ['红灯', `${dlvNum(z.light_min_per_km, 2)} min/km`],
     ['爬升', `${z.climb_per_km} m/km`],
+    ['餐厅密度', z.prep_per_km2 == null ? '—' : `${Math.round(z.prep_per_km2)}/km²`],
+    ['人口密度', z.pop_density == null ? '—' : `${Math.round(z.pop_density)}/km²`],
     ['好跑指数', z.flow.toFixed(0)],
-    ['最密时段', Math.max(...z.hour_hist) ? `${String(peak).padStart(2, '0')}:00` : '—'],
+    ['最忙时段', Math.max(...z.hour_hist) ? `${String(peak).padStart(2, '0')}:00` : '—'],
   ];
+  const parts = z.flow_parts || {};
+  const partBar = ['pace', 'lights', 'climb', 'stopgo'].map(k => {
+    const names = { pace: '速度', lights: '红灯', climb: '爬升', stopgo: '走停' };
+    const v = parts[k] == null ? 0 : parts[k];
+    return `<span class="dlv-part" title="${names[k]} 分项 ${v.toFixed(0)}/100">
+      <em>${names[k]}</em><span class="dlv-part-bar"><span style="width:${v}%;background:${dlvRamp(v / 100)}"></span></span></span>`;
+  }).join('');
   bar.hidden = false;
-  bar.innerHTML = `<div class="dlv-focus-name">${dlvEsc(z.name)}<span class="dlv-focus-lga">${dlvEsc(z.lga || '')}</span></div>`
+  bar.innerHTML = `<div class="dlv-focus-name">${dlvEsc(z.label)}<span class="dlv-focus-lga">${dlvEsc(z.lga || '')}</span>`
+    + `${z.ranked ? '' : '<span class="dlv-focus-thin">样本不足</span>'}</div>`
     + `<div class="dlv-focus-stats">${stats.map(([k, v]) => `<span><em>${k}</em>${dlvEsc(v)}</span>`).join('')}</div>`
+    + `<div class="dlv-focus-parts">${partBar}</div>`
     + `<button class="dlv-focus-exit" id="dlvFocusExit">退出 ×</button>`;
   const exit = document.getElementById('dlvFocusExit');
   if (exit) exit.addEventListener('click', () => dlvSetFocus(null));
@@ -495,13 +689,18 @@ function dlvRenderPanel() {
   const title = document.getElementById('dlvPanelTitle');
   const count = document.getElementById('dlvPanelCount');
   const list = document.getElementById('dlvList');
-  if (title) title.textContent = DLV_KIND_LABEL[kind] + (DLVMAP.focus ? ` · ${DLVMAP.focus}` : '');
+  if (title) title.textContent = DLV_KIND_LABEL[kind] + (DLVMAP.focus ? ` · ${dlvLabelOf(DLVMAP.focus)}` : '');
   if (!list) return;
 
-  const shown = kind === 'zones'
-    ? items.filter(z => dlvHourCount('zones', z) > 0)
-        .sort((a, b) => dlvHourCount('zones', b) - dlvHourCount('zones', a))
-    : items;
+  let shown = items;
+  if (kind === 'zones') {
+    shown = items.filter(z => dlvZoneValue(z) != null)
+      .sort((a, b) => (dlvZoneValue(b) || 0) - (dlvZoneValue(a) || 0));
+  } else if (kind === 'pickups' || kind === 'drops') {
+    shown = [...items].sort((a, b) => dlvHourCount(kind, b) - dlvHourCount(kind, a));
+  } else if (kind === 'lights') {
+    shown = [...items].sort((a, b) => b.wait_total_min - a.wait_total_min);
+  }
   // Count what the list actually shows. The zone layer keeps every polygon
   // while focused — the neighbours are the context — so the layer size and
   // the row count diverge, and the header was quietly reporting the wrong one.
@@ -514,14 +713,24 @@ function dlvRenderPanel() {
   const seen = {};
   list.innerHTML = shown.slice(0, 60).map((item, i) => {
     let main, meta;
-    if (kind === 'hotspots') {
-      main = item.zone || '未知区';
+    if (kind === 'pickups') {
+      main = item.venue || item.zone || '取餐点';
       meta = DLVMAP.hour >= 0
-        ? `${String(DLVMAP.hour).padStart(2, '0')}:00 停 ${dlvHourCount('hotspots', item)} 次 · 合计 ${item.visits} 次`
+        ? `${String(DLVMAP.hour).padStart(2, '0')}:00 来 ${dlvHourCount(kind, item)} 次 · 合计 ${item.visits} 次`
+        : `${item.visits} 次 · ${item.shifts} 班次 · 等餐中位 ${item.dwell_med}s`;
+    } else if (kind === 'drops') {
+      main = item.zone || '送达点';
+      meta = DLVMAP.hour >= 0
+        ? `${String(DLVMAP.hour).padStart(2, '0')}:00 来 ${dlvHourCount(kind, item)} 次 · 合计 ${item.visits} 次`
         : `${item.visits} 次 · ${item.shifts} 班次 · 中位 ${item.dwell_med}s`;
+    } else if (kind === 'lights') {
+      main = item.zone || '路口';
+      meta = `等 ${item.waits} 次 · 累计 ${item.wait_total_min} min · 每次 ${item.wait_med}s`;
     } else if (kind === 'zones') {
-      main = item.name;
-      meta = `${dlvHourCount('zones', item)} 单 · 好跑 ${item.flow} · ${item.med_speed} km/h`;
+      const m = dlvMetric();
+      const v = dlvZoneValue(item);
+      main = item.label;
+      meta = `${m.label} ${v == null ? '—' : v}${m.unit ? ' ' + m.unit : ''} · 送 ${item.orders} / 取 ${item.pickups} · 好跑 ${item.flow}`;
     } else {
       const n = (seen[item.zone] = (seen[item.zone] || 0) + 1);
       main = n === 1 ? item.zone : `${item.zone} ${'②③④⑤⑥⑦⑧⑨'[n - 2] || n}`;
@@ -566,19 +775,64 @@ function dlvRedraw() {
     else { DLVMAP.panes[kind].clearLayers(); DLVMAP.items[kind] = []; }
   });
   dlvRenderPanel();
+  dlvRenderLegend();
+}
+
+function dlvRenderLegend() {
+  const host = document.getElementById('dlvMapLegend');
+  if (!host) return;
+  const m = dlvMetric();
+  const items = DLVMAP.items.zones || [];
+  const vals = items.map(dlvZoneValue).filter(v => v != null);
+  const max = vals.length ? Math.max(...vals) : 0;
+  const min = vals.length ? Math.min(...vals) : 0;
+  const dots = [];
+  if (DLVMAP.visible.pickups) dots.push(['取餐点', DLV.cyan]);
+  if (DLVMAP.visible.drops) dots.push(['送达点', DLV.amber]);
+  if (DLVMAP.visible.lights) dots.push(['红灯堵点', DLV.rose]);
+  // Left is always the smaller number and right the larger, whichever end is
+  // the good one — a legend that silently flips its axis to keep "good" on the
+  // left is harder to read than one that just says which way is better.
+  const digits = max >= 100 ? 0 : (max >= 10 ? 1 : 2);
+  host.innerHTML =
+    (DLVMAP.visible.zones
+      ? `<div class="dlv-leg-scale"><span>${dlvNum(min, digits)}</span>`
+        + `<span class="dlv-leg-grad${m.invert ? ' rev' : ''}"></span>`
+        + `<span>${dlvNum(max, digits)}</span>`
+        + `<em>底色 = ${m.label}${m.unit ? ` (${m.unit})` : ''} · ${m.invert ? '越少越好' : '越多越好'}</em></div>`
+      : '')
+    + (dots.length
+      ? `<div class="dlv-leg-dots">${dots.map(([t, c]) =>
+        `<span><i style="background:${c}"></i>${t}</span>`).join('')}</div>`
+      : '');
 }
 
 function dlvFitAll() {
   if (!DLVMAP.map) return;
-  const pts = [];
-  Object.keys(DLVMAP.items).forEach(kind => {
-    (DLVMAP.items[kind] || []).forEach(item => {
-      if (kind === 'hotspots') pts.push([item.lat, item.lon]);
-      else if (kind === 'zones') item.ring.forEach(p => pts.push([p[1], p[0]]));
-      else item.track.forEach(p => pts.push(p));
+  // Fit to the stops, not to the suburb outlines. The polygons stretch from
+  // Mascot to Brighton-le-Sands and fitting them squeezed the inner-city
+  // cluster — where nearly every job actually is — into a thumbnail.
+  const stops = [];
+  ['pickups', 'drops', 'lights'].forEach(kind =>
+    (DLVMAP.items[kind] || []).forEach(i => stops.push([i.lat, i.lon])));
+  let pts = stops;
+  if (!pts.length) {
+    Object.keys(DLVMAP.items).forEach(kind => {
+      (DLVMAP.items[kind] || []).forEach(item => {
+        if (kind === 'zones') item.ring.forEach(p => pts.push([p[1], p[0]]));
+        else if (kind === 'common' || kind === 'hard') item.track.forEach(p => pts.push(p));
+      });
     });
-  });
-  if (pts.length) DLVMAP.map.fitBounds(pts, { padding: [24, 24] });
+  } else if (pts.length >= 12) {
+    // Trim the far tail. A handful of shifts wandered to the airport and back;
+    // letting those two dots set the zoom costs every other dot its detail.
+    const lats = pts.map(p => p[0]).sort((a, b) => a - b);
+    const lons = pts.map(p => p[1]).sort((a, b) => a - b);
+    const at = (arr, q) => arr[Math.min(arr.length - 1, Math.floor(q * arr.length))];
+    const box = [at(lats, 0.03), at(lats, 0.97), at(lons, 0.03), at(lons, 0.97)];
+    pts = pts.filter(p => p[0] >= box[0] && p[0] <= box[1] && p[1] >= box[2] && p[1] <= box[3]);
+  }
+  if (pts.length) DLVMAP.map.fitBounds(pts, { padding: [28, 28] });
 }
 
 function dlvSetHour(h) {
@@ -591,6 +845,19 @@ function dlvSetHour(h) {
   dlvRedraw();
 }
 
+function dlvSetMetric(key) {
+  DLVMAP.metric = key;
+  document.querySelectorAll('#dlvMetricChips .dlv-mchip').forEach(b =>
+    b.classList.toggle('active', b.dataset.metric === key));
+  const note = document.getElementById('dlvMetricNote');
+  if (note) {
+    const m = DLV_METRICS[key];
+    note.textContent = m.hourly ? '这个口径跟着时间轴走' :
+      (m.rankedOnly ? '只有样本够的区有值，其余留空' : '整段统计，不随时间轴变化');
+  }
+  dlvRedraw();
+}
+
 function dlvTogglePlay() {
   const btn = document.getElementById('dlvPlay');
   if (DLVMAP.play) {
@@ -599,7 +866,7 @@ function dlvTogglePlay() {
     if (btn) { btn.textContent = '▶'; btn.classList.remove('playing'); }
     return;
   }
-  // Step only through hours that actually have orders — most of the night is
+  // Step only through hours that actually have jobs — most of the night is
   // empty and watching it tick through 03:00 teaches nothing.
   const totals = (dlvData().summary.hour_totals) || [];
   const live = totals.map((v, h) => (v ? h : -1)).filter(h => h >= 0);
@@ -632,7 +899,7 @@ function renderDeliveryMap() {
   }).addTo(DLVMAP.map);
 
   // Draw order matters: fills first, lines over them, dots on top.
-  ['zones', 'common', 'hard', 'hotspots'].forEach(kind => {
+  ['zones', 'common', 'hard', 'lights', 'drops', 'pickups'].forEach(kind => {
     DLVMAP.panes[kind] = L.layerGroup().addTo(DLVMAP.map);
   });
   DLVMAP.map.on('click', () => dlvClearSelection());
@@ -654,6 +921,13 @@ function renderDeliveryMap() {
         dlvRedraw();
       });
     });
+  }
+  const metrics = document.getElementById('dlvMetricChips');
+  if (metrics) {
+    metrics.innerHTML = Object.entries(DLV_METRICS).map(([k, m]) =>
+      `<button class="dlv-mchip${k === DLVMAP.metric ? ' active' : ''}" data-metric="${k}">${m.label}</button>`).join('');
+    metrics.querySelectorAll('.dlv-mchip').forEach(b =>
+      b.addEventListener('click', () => dlvSetMetric(b.dataset.metric)));
   }
   const tabs = document.getElementById('dlvPanelTabs');
   if (tabs) {
@@ -746,7 +1020,7 @@ function renderCorridors() {
           <span class="corridor-metric">${kind === 'hard' ? `+${c.lost_per_pass} min/趟` : `${c.passes} 班次`}</span>
         </div>
         <div class="corridor-bar"><span style="width:${w}%;background:${col}"></span></div>
-        <div class="corridor-meta">${c.med_speed} km/h · 约 ${c.len_m} m · 停车 ${(c.stop_share * 100).toFixed(0)}% · 上坡 ${c.grade_up}%${c.zones.length > 1 ? ` · 途经 ${dlvEsc(c.zones.slice(0, 3).join('/'))}` : ''}</div>
+        <div class="corridor-meta">${c.med_speed} km/h · 约 ${c.len_m} m · 红灯占 ${(c.light_share * 100).toFixed(0)}% · 上坡 ${c.grade_up}%${c.zones.length > 1 ? ` · 途经 ${dlvEsc(c.zones.slice(0, 3).join('/'))}` : ''}</div>
       </div>`;
     }).join('');
     host.querySelectorAll('.corridor-row').forEach(row => row.addEventListener('click', () => {
@@ -773,7 +1047,7 @@ function renderHourBars() {
     const y = H - P.b - bh;
     const peak = h === D.summary.peak_hour;
     return `<rect x="${x + 2}" y="${y}" width="${bw - 4}" height="${Math.max(0, bh)}" fill="${peak ? DLV.amberBright : DLV.amber}" fill-opacity="${v ? 0.72 : 0.12}" rx="2">`
-      + `<title>${String(h).padStart(2, '0')}:00 · ${v} 单</title></rect>`
+      + `<title>${String(h).padStart(2, '0')}:00 · ${v} 次活</title></rect>`
       + (h % 3 === 0 ? `<text x="${x + bw / 2}" y="${H - P.b + 16}" text-anchor="middle" fill="${DLV.axis}" font-family="JetBrains Mono" font-size="10">${h}</text>` : '');
   }).join('');
   const axis = `<line x1="${P.l}" x2="${W - P.r}" y1="${H - P.b}" y2="${H - P.b}" stroke="${DLV.line}"/>`
@@ -787,8 +1061,11 @@ function renderHourZone() {
   if (!D) return;
   const host = document.getElementById('hourZoneHeat');
   if (!host) return;
-  const zones = D.zones.filter(z => z.orders >= 2).slice(0, 14);
-  if (!zones.length) { host.innerHTML = '<div class="empty-range">还没有足够的单量画热力图</div>'; return; }
+  // Only zones with enough exposure to mean something. A suburb crossed once
+  // that happened to yield two jobs used to sit in this grid looking like a
+  // pattern; three data points are not a pattern.
+  const zones = D.zones.filter(z => z.ranked && z.jobs >= 3).slice(0, 16);
+  if (!zones.length) { host.innerHTML = '<div class="empty-range">还没有足够的数据画热力图</div>'; return; }
 
   // Trim the all-zero hours off both ends so the grid is not mostly empty.
   const totals = D.summary.hour_totals || [];
@@ -798,25 +1075,121 @@ function renderHourZone() {
   const hours = [];
   for (let h = lo; h <= hi; h++) hours.push(h);
 
-  const max = Math.max(...zones.flatMap(z => hours.map(h => z.hour_hist[h])), 1);
+  // Row-normalised: each suburb is shaded against its own busiest hour, so a
+  // quiet suburb still shows *when* it is busy. Shading everything against one
+  // global max just redrew the leaderboard in a second form.
+  const rowMode = window.__dlvHzRow !== false;
+  const globalMax = Math.max(...zones.flatMap(z => hours.map(h => z.hour_hist[h])), 1);
   const head = `<div class="hz-row hz-head"><div class="hz-label"></div>`
     + hours.map(h => `<div class="hz-cell hz-hour">${String(h).padStart(2, '0')}</div>`).join('') + `</div>`;
-  const body = zones.map(z => `<div class="hz-row">
-      <div class="hz-label" title="${dlvEsc(z.name)} · ${z.orders} 单">${dlvEsc(z.name)}</div>`
-    + hours.map(h => {
-      const v = z.hour_hist[h];
-      return `<div class="hz-cell" style="background:${v ? dlvRamp(v / max) : '#1c1e25'}" title="${dlvEsc(z.name)} ${String(h).padStart(2, '0')}:00 · ${v} 单"></div>`;
-    }).join('') + `</div>`).join('');
+  const body = zones.map(z => {
+    const rowMax = Math.max(...hours.map(h => z.hour_hist[h]), 1);
+    const max = rowMode ? rowMax : globalMax;
+    return `<div class="hz-row" data-zone="${dlvEsc(z.name)}">
+      <div class="hz-label" title="${dlvEsc(z.label)} · ${z.jobs} 次活（送 ${z.orders} / 取 ${z.pickups}）">${dlvEsc(z.label)}</div>`
+      + hours.map(h => {
+        const v = z.hour_hist[h];
+        return `<div class="hz-cell" style="background:${v ? dlvRamp(v / max) : '#1c1e25'}" title="${dlvEsc(z.label)} ${String(h).padStart(2, '0')}:00 · ${v} 次活"></div>`;
+      }).join('') + `</div>`;
+  }).join('');
   host.innerHTML = head + body;
+  host.querySelectorAll('.hz-row[data-zone]').forEach(row =>
+    row.addEventListener('click', () => {
+      dlvSetFocus(row.dataset.zone);
+      document.getElementById('dlvMap').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }));
 
   const foot = document.getElementById('hzFoot');
   if (foot) {
     let best = { v: -1 };
     zones.forEach(z => hours.forEach(h => {
-      if (z.hour_hist[h] > best.v) best = { v: z.hour_hist[h], z: z.name, h };
+      if (z.hour_hist[h] > best.v) best = { v: z.hour_hist[h], z: z.label, h };
     }));
     foot.textContent = best.v > 0
-      ? `最密：${best.z} ${String(best.h).padStart(2, '0')}:00 · ${best.v} 单`
+      ? `最密：${best.z} ${String(best.h).padStart(2, '0')}:00 · ${best.v} 次活`
       : '—';
+  }
+}
+
+function bindHourZone() {
+  const btn = document.getElementById('hzRowToggle');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    window.__dlvHzRow = window.__dlvHzRow === false;
+    btn.classList.toggle('active', window.__dlvHzRow !== false);
+    btn.textContent = window.__dlvHzRow !== false ? '每区各自归一' : '全表统一色阶';
+    renderHourZone();
+  });
+}
+
+// ============ 区域档案 / Structural profile ============
+// The measured numbers say what riding a suburb was like. These say what the
+// suburb *is* — how much food it has, how many signals per km of road, how
+// many people live there. They come from the map rather than the bike, so
+// they are the part that can say something about a suburb before you ride it.
+function renderZoneProfile() {
+  const D = dlvData();
+  if (!D) return;
+  const host = document.getElementById('zoneProfile');
+  if (!host) return;
+  const zones = D.zones.filter(z => z.ranked).slice(0, 18);
+  if (!zones.length) { host.innerHTML = '<div class="empty-range">样本还不够</div>'; return; }
+
+  const cols = [
+    { key: 'prep_per_km2', label: '餐厅密度', unit: '家/km²', good: 'high', fmt: v => Math.round(v) },
+    { key: 'pop_density', label: '人口密度', unit: '人/km²', good: 'high', fmt: v => Math.round(v) },
+    { key: 'sig_per_km', label: '红绿灯', unit: '个/km 路', good: 'low', fmt: v => v.toFixed(1) },
+    { key: 'climb_per_km', label: '爬升', unit: 'm/km', good: 'low', fmt: v => v.toFixed(1) },
+    { key: 'med_speed', label: '实测速度', unit: 'km/h', good: 'high', fmt: v => v.toFixed(1) },
+    { key: 'light_min_per_km', label: '红灯耗时', unit: 'min/km', good: 'low', fmt: v => v.toFixed(2) },
+    { key: 'jobs_per_hour', label: '活/小时', unit: '', good: 'high', fmt: v => v.toFixed(2) },
+  ];
+  const ranges = {};
+  cols.forEach(c => {
+    const vals = zones.map(z => z[c.key]).filter(v => v != null);
+    ranges[c.key] = { lo: Math.min(...vals), hi: Math.max(...vals) };
+  });
+
+  const sortKey = window.__dlvProfSort || 'flow';
+  const sorted = [...zones].sort((a, b) => (b[sortKey] ?? -Infinity) - (a[sortKey] ?? -Infinity));
+
+  const head = `<div class="zp-row zp-head"><div class="zp-name">区</div>`
+    + cols.map(c => `<div class="zp-cell" data-sort="${c.key}" title="点击按这列排序">${c.label}<em>${c.unit}</em></div>`).join('')
+    + `<div class="zp-cell zp-flow" data-sort="flow">好跑<em>0–100</em></div></div>`;
+
+  const body = sorted.map(z => {
+    const cells = cols.map(c => {
+      const v = z[c.key];
+      if (v == null) return `<div class="zp-cell"><span class="zp-dash">—</span></div>`;
+      const { lo, hi } = ranges[c.key];
+      let t = hi === lo ? 0.5 : (v - lo) / (hi - lo);
+      if (c.good === 'low') t = 1 - t;
+      return `<div class="zp-cell">
+        <span class="zp-bar"><span style="width:${Math.max(4, t * 100)}%;background:${dlvRamp(t)}"></span></span>
+        <span class="zp-val">${c.fmt(v)}</span></div>`;
+    }).join('');
+    return `<div class="zp-row" data-zone="${dlvEsc(z.name)}">
+      <div class="zp-name">${dlvEsc(z.label)}</div>${cells}
+      <div class="zp-cell zp-flow"><span class="zp-bar"><span style="width:${z.flow}%;background:${dlvRamp(z.flow / 100)}"></span></span><span class="zp-val">${z.flow.toFixed(0)}</span></div>
+    </div>`;
+  }).join('');
+
+  host.innerHTML = head + body;
+  host.querySelectorAll('[data-sort]').forEach(el => el.addEventListener('click', () => {
+    window.__dlvProfSort = el.dataset.sort;
+    renderZoneProfile();
+  }));
+  host.querySelectorAll('.zp-row[data-zone]').forEach(row =>
+    row.addEventListener('click', ev => {
+      if (ev.target.closest('[data-sort]')) return;
+      dlvSetFocus(row.dataset.zone);
+      document.getElementById('dlvMap').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }));
+
+  const foot = document.getElementById('zpFoot');
+  if (foot) {
+    const src = (D.meta.osm && D.meta.osm.source) || 'OpenStreetMap';
+    foot.textContent = `餐厅数、红绿灯、路网长度来自 ${src}；速度、爬升、红灯耗时是自己骑出来的。`
+      + ` 条越长越有利 —— 红绿灯、爬升、红灯耗时是越少越好，已经反过来画了。`;
   }
 }
