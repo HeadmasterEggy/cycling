@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-08-19T08:05:26+00:00",
+  "generated_at": "2026-08-21T14:59:23+00:00",
   "city": "Sydney",
   "tz": "Australia/Sydney",
   "stop_speed_ms": 0.7,
@@ -20123,6 +20123,35 @@
    "top_zone": "Zetland"
   }
  ],
+ "validation": {
+  "source": "Uber driver activity export (rider's own account)",
+  "first": "2026-04-23",
+  "last": "2026-08-21",
+  "orders": 130,
+  "in_window": 84,
+  "coverage_pct": 65,
+  "recall_drop": 64,
+  "recall_pickup": 57,
+  "zone_pct": 80,
+  "venue_pct": 100,
+  "align_median_s": -28,
+  "align_iqr": [
+   -155,
+   51
+  ],
+  "misses": {
+   "light": 16,
+   "pickup": 13,
+   "no_dwell": 1
+  },
+  "match_window_s": 420,
+  "matched_drops": 51,
+  "total_drops": 197,
+  "platform_share_pct": 26,
+  "median_fare": 7.2,
+  "median_km": 3.04,
+  "median_min": 17.0
+ },
  "samples": {
   "quick_pickups": [
    {

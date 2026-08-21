@@ -733,6 +733,29 @@
 
 
 <section class="analysis-section">
+  <div class="section-title">判得准不准<em>·</em>Ground Truth</div>
+  <div class="section-sub">上面全是从轨迹里推断的。三个平台里有一个能导出真实订单记录 —— 拿它当答案，看看推断到底对了多少</div>
+
+  <div class="dlv-kpis" id="dlvValidation"></div>
+
+  <div class="analysis-grid dlv-val-grid">
+    <div class="chart-card">
+      <div class="chart-title">对得有多齐</div>
+      <div class="chart-sub">Time alignment · 送达时刻的中位偏差</div>
+      <div class="dlv-align" id="dlvAlign"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">漏掉的那些去哪了</div>
+      <div class="chart-sub">Where the misses went · 按被误判成什么分</div>
+      <div class="dlv-misses" id="dlvMisses"></div>
+    </div>
+  </div>
+
+  <div class="dlv-note" id="dlvValNote"></div>
+</section>
+
+
+<section class="analysis-section">
   <div class="section-title">区域排行<em>·</em>Zone Leaderboard</div>
   <div class="section-sub">横轴是识别出的活（取餐 + 送达），纵轴好跑指数 —— 右上角「活多又好跑」，右下角「活多但难跑」。圈大小 = 在这个区待过的时长</div>
   <div class="chart-card">

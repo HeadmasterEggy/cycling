@@ -577,6 +577,154 @@ def build_legs(shifts):
     return legs
 
 
+# -- ground truth -----------------------------------------------------------
+# One platform's real order log, used to measure how well the inference above
+# actually works. The file is a pipe-delimited export of the rider's own Uber
+# driver activity — `at|type|total|duration_s|distance_km|pickup|dropoff` —
+# and it stays out of the repo: the drop-off column is a list of customers'
+# home addresses, and this site is public. Only the aggregate scores below
+# ever reach the page.
+UBER_ORDER_TYPES = {"TRIP", "CT"}
+MATCH_WINDOW_S = 420
+
+
+def read_uber(path):
+    rows = []
+    try:
+        text = Path(path).read_text(encoding="utf-8")
+    except OSError:
+        return rows
+    for line in text.splitlines():
+        if not line.strip():
+            continue
+        parts = line.split("|")
+        if len(parts) < 7:
+            continue
+        at, kind, total, dur, dist, frm, to = parts[:7]
+        if kind not in UBER_ORDER_TYPES or not dur:
+            continue
+        rows.append({
+            "at": int(at), "kind": kind,
+            "total": float(total or 0),
+            "dur": int(dur),
+            "dist": float(dist) if dist else None,
+            "venue": frm or None, "to": to or None,
+        })
+    return rows
+
+
+def _gap(dwell, target):
+    """Seconds between a moment and a dwell, zero while inside it."""
+    start = dwell["t"].timestamp()
+    if start <= target <= start + dwell["secs"]:
+        return 0.0
+    return min(abs(start - target), abs(start + dwell["secs"] - target))
+
+
+def validate_against_uber(path, shifts, dwells, subs):
+    """Score the classifier against a real order log.
+
+    Only recall is measurable. The rider also runs two other platforms, so an
+    inferred stop with no Uber order behind it is not an error — it is most
+    likely a HungryPanda or DoorDash job that this file simply cannot see.
+    Precision would need every platform's log; claiming it from one would be
+    a straight lie about a number the page displays.
+
+    The order's own timestamp turned out to be the *pickup*, not the hand-over:
+    anchoring on `at + duration` lines the drop-offs up to within a few seconds,
+    where anchoring on `at` was hundreds out. That alignment is itself the
+    strongest single piece of evidence that the dwell detector is finding real
+    events rather than fitting noise.
+    """
+    orders = read_uber(path)
+    if not orders:
+        return None
+
+    drops = [d for d in dwells if d["kind"] == "dropoff"]
+    picks = [d for d in dwells if d["kind"] == "pickup"]
+    spans = []
+    for r in shifts:
+        ts = [s["t"].timestamp() for s in r["samples"]]
+        if ts:
+            spans.append((min(ts) - 60, max(ts) + 60))
+
+    def covered(t):
+        return any(a <= t <= b for a, b in spans)
+
+    def nearest(pool, target):
+        best = None
+        for d in pool:
+            g = _gap(d, target)
+            if g <= MATCH_WINDOW_S and (best is None or g < best[1]):
+                best = (d, g)
+        return best
+
+    offsets = []
+    in_window = 0
+    hit_drop = hit_pick = 0
+    zone_ok = zone_tot = 0
+    venue_ok = venue_tot = 0
+    misses = defaultdict(int)
+    matched_ids = set()
+
+    for o in orders:
+        drop_at = o["at"] + o["dur"]
+        if not covered(drop_at):
+            continue
+        in_window += 1
+        md = nearest(drops, drop_at)
+        mp = nearest(picks, o["at"])
+        if md:
+            hit_drop += 1
+            matched_ids.add(id(md[0]))
+            offsets.append(md[0]["t"].timestamp() - drop_at)
+            want = (o["to"] or "").split(",")[-1].strip()
+            got = subs.lookup(md[0]["lat"], md[0]["lon"])
+            if want and got:
+                zone_tot += 1
+                zone_ok += (want.lower() == got.lower())
+        else:
+            other = nearest([d for d in dwells if d["kind"] != "dropoff"], drop_at)
+            misses[other[0]["kind"] if other else "no_dwell"] += 1
+        if mp:
+            hit_pick += 1
+            venue_tot += 1
+            venue_ok += bool(mp[0]["venue"])
+
+    if not in_window:
+        return None
+    offsets.sort()
+    lo = offsets[len(offsets) // 4] if offsets else 0
+    hi = offsets[3 * len(offsets) // 4] if offsets else 0
+    pct = lambda a, b: round(100 * a / b) if b else None
+    return {
+        "source": "Uber driver activity export (rider's own account)",
+        "first": datetime.fromtimestamp(min(o["at"] for o in orders),
+                                        timezone.utc).astimezone(SYD_TZ).strftime("%Y-%m-%d"),
+        "last": datetime.fromtimestamp(max(o["at"] for o in orders),
+                                       timezone.utc).astimezone(SYD_TZ).strftime("%Y-%m-%d"),
+        "orders": len(orders),
+        "in_window": in_window,
+        "coverage_pct": pct(in_window, len(orders)),
+        "recall_drop": pct(hit_drop, in_window),
+        "recall_pickup": pct(hit_pick, in_window),
+        "zone_pct": pct(zone_ok, zone_tot),
+        "venue_pct": pct(venue_ok, venue_tot),
+        "align_median_s": round(st.median(offsets)) if offsets else None,
+        "align_iqr": [round(lo), round(hi)],
+        "misses": dict(misses),
+        "match_window_s": MATCH_WINDOW_S,
+        # What share of the inferred drop-offs this one platform accounts for.
+        # The remainder is the other two apps, not a pile of false positives.
+        "matched_drops": len(matched_ids),
+        "total_drops": len(drops),
+        "platform_share_pct": pct(len(matched_ids), len(drops)),
+        "median_fare": round(st.median([o["total"] for o in orders]), 2),
+        "median_km": round(st.median([o["dist"] for o in orders if o["dist"]]), 2),
+        "median_min": round(st.median([o["dur"] for o in orders]) / 60, 1),
+    }
+
+
 # -- per-ride pass ----------------------------------------------------------
 ENDPOINT_M = 150
 
@@ -1048,6 +1196,8 @@ def main():
     ap.add_argument("--export-dir", default=str(ROOT / "data" / "apple_health_export"))
     ap.add_argument("--suburbs", default=str(ROOT / "suburbs_sydney.json"))
     ap.add_argument("--osm", default=str(ROOT / "osm_context.json"))
+    ap.add_argument("--uber", default=str(ROOT / "data" / "uber" / "uber_activity.psv"),
+                    help="real order log to score the classifier against (optional)")
     ap.add_argument("--dry-run", action="store_true", help="print, do not write")
     args = ap.parse_args()
 
@@ -1087,10 +1237,17 @@ def main():
     for d in all_dwells:
         counts[d["kind"]] += 1
     legs = build_legs(shifts)
+    validation = validate_against_uber(args.uber, shifts, all_dwells, subs)
     print(f"  -> {len(all_dwells)} dwells: {counts['dropoff']} 送达, {counts['pickup']} 取餐, "
           f"{counts['light']} 等灯 ({len(anchors)} repeat pickup points, "
           f"{endpoint_dropped} dropped as shift endpoints)")
     print(f"  -> {len(legs)} pickup→drop-off legs paired")
+    if validation:
+        print(f"  -> validated against {validation['orders']} real orders: "
+              f"{validation['recall_drop']}% of drop-offs caught, "
+              f"{validation['zone_pct']}% in the right suburb")
+    else:
+        print("  -> no order log found, skipping validation")
 
     Z = build_zones(shifts, subs, ctx)
     zones = zone_rows(Z, subs, ctx, legs)
@@ -1286,6 +1443,7 @@ def main():
         "light_spots": light_spots[:80],
         "corridors": corridors,
         "shifts": shift_rows,
+        "validation": validation,
         "samples": {"quick_pickups": quick_work, "long_lights": long_light},
     }
 

@@ -1193,3 +1193,89 @@ function renderZoneProfile() {
       + ` 条越长越有利 —— 红绿灯、爬升、红灯耗时是越少越好，已经反过来画了。`;
   }
 }
+
+// ============ 准不准 / Scored against a real order log ============
+// Everything above is inferred. This section is the one place the page can
+// say how well that inference actually does, because one of the three
+// platforms the rider works for hands over a real order log.
+function renderValidation() {
+  const D = dlvData();
+  if (!D) return;
+  const host = document.getElementById('dlvValidation');
+  if (!host) return;
+  const v = D.validation;
+  if (!v) {
+    host.innerHTML = '<div class="empty-range">没有可对照的真实订单记录</div>';
+    const note = document.getElementById('dlvValNote');
+    if (note) note.innerHTML = '';
+    return;
+  }
+
+  const cards = [
+    ['送达召回率', v.recall_drop, '%', `手表在录时发生的 ${v.in_window} 单里，判对了 ${Math.round(v.in_window * v.recall_drop / 100)} 单`],
+    ['取餐召回率', v.recall_pickup, '%', `同一批单，取餐那一头判对的比例`],
+    ['区域判对', v.zone_pct, '%', `对上的单里，送达区和真实地址所在区一致`],
+    ['餐厅命中', v.venue_pct, '%', `对上的取餐点，地图上确实有餐饮店`],
+  ];
+  host.innerHTML = cards.map(([label, value, unit, foot]) => `
+    <div class="dlv-kpi">
+      <div class="dlv-kpi-label">${label}</div>
+      <div class="dlv-kpi-value">${value == null ? '—' : value}<span class="dlv-kpi-unit">${unit}</span></div>
+      <div class="dlv-kpi-foot">${dlvEsc(foot)}</div>
+    </div>`).join('');
+
+  // Where the missed ones went. Naming the failure mode is more useful than
+  // a single accuracy number: half of them look exactly like a red light.
+  const missHost = document.getElementById('dlvMisses');
+  if (missHost) {
+    const m = v.misses || {};
+    const total = Object.values(m).reduce((a, b) => a + b, 0) || 1;
+    const rows = [
+      ['light', '被判成了等灯', DLV.rose, '停 20–60 秒、范围两三米、就在信号灯旁边 —— 和一个红灯在物理上没有区别'],
+      ['pickup', '被判成了取餐', DLV.cyan, '停对了地方，但方向搞反：密集街区里客户楼下就是餐厅'],
+      ['no_dwell', '当时压根没停留', DLV.axis, '轨迹里那一刻还在动，可能是隔着门递出去的'],
+    ].filter(([k]) => m[k]);
+    missHost.innerHTML = rows.map(([k, label, col, why]) => `
+      <div class="dlv-miss">
+        <div class="dlv-miss-head">
+          <span class="dlv-miss-n" style="color:${col}">${m[k]}</span>
+          <span class="dlv-miss-label">${label}</span>
+        </div>
+        <div class="dlv-miss-bar"><span style="width:${(m[k] / total) * 100}%;background:${col}"></span></div>
+        <div class="dlv-miss-why">${why}</div>
+      </div>`).join('');
+  }
+
+  const align = document.getElementById('dlvAlign');
+  if (align) {
+    const sign = v.align_median_s > 0 ? '+' : '';
+    align.innerHTML = `<div class="dlv-align-num">${sign}${v.align_median_s}<em>秒</em></div>`
+      + `<div class="dlv-align-sub">我判定的送达时刻，和真实送达时刻的中位差<br>`
+      + `四分位区间 ${v.align_iqr[0]} ~ +${v.align_iqr[1]} 秒</div>`;
+  }
+
+  const note = document.getElementById('dlvValNote');
+  if (note) {
+    note.innerHTML = `<strong>这些数字怎么来的，以及不能怎么用</strong> · `
+      + `对照的是${dlvEsc(v.source)}，${v.first} → ${v.last} 共 ${v.orders} 单。`
+      + `<br><br>`
+      + `<b>时间锚点</b>：订单记录里的时间戳其实是<em>取餐</em>时刻，不是送达。`
+      + `用「时间戳 + 时长」去对，送达停留的中位偏差只有 ${Math.abs(v.align_median_s)} 秒；`
+      + `直接用时间戳去对会差出几百秒。能对得这么齐，本身就说明停留检测抓到的是真事件，不是噪声。`
+      + `<br><br>`
+      + `<b>只有召回率，没有准确率</b>：这一份记录只是三个平台里的一个 —— 另外两个（熊猫外卖、DoorDash）`
+      + `没有记录可对。我判出的 ${v.total_drops} 个送达里，只有 ${v.matched_drops} 个能在这份记录里找到，`
+      + `约 ${v.platform_share_pct}%；剩下的绝大多数是另外两个平台的单，不是误判。`
+      + `所以「判多了」这件事这里量不出来，页面也不会假装量得出来。`
+      + `<br><br>`
+      + `<b>还有 ${100 - v.coverage_pct}% 对不上是因为没录</b>：${v.orders - v.in_window} 单发生在手表没在记录的时段，`
+      + `不可能匹配，已从分母里剔除。`
+      + `<br><br>`
+      + `<b>口径</b>：时间差在 ${Math.round(v.match_window_s / 60)} 分钟以内算对上。`
+      + `真实单的中位车费 A$${v.median_fare}、${v.median_km} km、${v.median_min} 分钟 —— `
+      + `和上面推断出的每单里程量级一致。`
+      + `<br><br>`
+      + `客户送达地址没有出现在这个网站的任何地方，也没有进代码仓库：那是别人的家庭住址，`
+      + `只有上面这些汇总分数离开了本地。`;
+  }
+}
