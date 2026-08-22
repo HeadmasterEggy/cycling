@@ -155,6 +155,7 @@ SECTIONS = {
     'dlv_method':   find_section_by_title('这一脚是在干嘛'),
     'dlv_truth':    find_section_by_title('判得准不准'),
     'dlv_zones':    find_section_by_title('区域排行'),
+    'dlv_chain':    find_section_by_title('接单区还是送达区'),
     'dlv_map':      find_section_by_title('热点地图'),
     'dlv_roads':    find_section_by_title('路段好坏'),
     'dlv_hours':    find_section_by_title('时段规律'),
@@ -165,7 +166,8 @@ SECTIONS = {
 # every asset; the delivery data is another ~150 KB, so pages that show none
 # of these sections do not get the tags at all.
 DELIVERY_SECTIONS = {'dlv_kpis', 'dlv_method', 'dlv_truth', 'dlv_zones',
-                     'dlv_map', 'dlv_roads', 'dlv_hours', 'dlv_profile'}
+                     'dlv_chain', 'dlv_map', 'dlv_roads', 'dlv_hours',
+                     'dlv_profile'}
 # Sections that draw a Leaflet map.
 MAP_SECTIONS = {'map', 'dlv_map'}
 
@@ -368,8 +370,8 @@ PAGES = [
             custom_sub='从 GPS 轨迹反推出的接单节奏 —— 每一次停车都对着地图判断是取餐、送达还是等红灯，再看哪个区活最多、哪个区跑得动、哪几段路最费时间、几点该在哪儿。没有平台数据，全部是从停车、速度和 OpenStreetMap 里读出来的。',
             custom_meta='配送 · Delivery'),
         'intro': '',
-        'sections': ['dlv_kpis', 'dlv_method', 'dlv_truth', 'dlv_zones', 'dlv_map',
-                     'dlv_roads', 'dlv_hours', 'dlv_profile'],
+        'sections': ['dlv_kpis', 'dlv_method', 'dlv_truth', 'dlv_zones', 'dlv_chain',
+                     'dlv_map', 'dlv_roads', 'dlv_hours', 'dlv_profile'],
         'has_filter': False,
         # Delivery analysis is Sydney-only by construction — a city picker
         # here would offer three choices that all empty the page.
@@ -419,8 +421,8 @@ ALL_TITLES_ORDER = [
     'hrv', 'rhr', 'resp', 'sleep', 'walking_reserve', 'recovery_composite',
     'elev_gallery', 'ascent_descent',
     'ride_explorer', 'mets', 'departure', 'rides_table',
-    'dlv_kpis', 'dlv_method', 'dlv_truth', 'dlv_zones', 'dlv_map',
-    'dlv_roads', 'dlv_hours', 'dlv_profile',
+    'dlv_kpis', 'dlv_method', 'dlv_truth', 'dlv_zones', 'dlv_chain',
+    'dlv_map', 'dlv_roads', 'dlv_hours', 'dlv_profile',
 ]
 all_body = "\n\n".join(SECTIONS[s] for s in ALL_TITLES_ORDER)
 all_html = PAGE_TEMPLATE.format(

@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-08-21T14:59:23+00:00",
+  "generated_at": "2026-08-22T04:26:03+00:00",
   "city": "Sydney",
   "tz": "Australia/Sydney",
   "stop_speed_ms": 0.7,
@@ -16,29 +16,29 @@
   },
   "flow_anchors": {
    "_pace": {
-    "good": 3.812,
-    "bad": 5.604,
-    "city": 4.57
+    "good": 3.778,
+    "bad": 5.609,
+    "city": 4.584
    },
    "_light_s_km": {
-    "good": 24.035,
-    "bad": 74.228,
-    "city": 47.382
+    "good": 23.956,
+    "bad": 74.894,
+    "city": 47.439
    },
    "_climb_km": {
-    "good": 4.352,
-    "bad": 11.124,
-    "city": 8.503
+    "good": 4.354,
+    "bad": 11.12,
+    "city": 8.56
    },
    "_stopgo": {
-    "good": 0.089,
+    "good": 0.087,
     "bad": 0.309,
     "city": 0.19
    }
   },
   "worth_basis": {
    "city_rate": 5.07,
-   "city_flow": 51.6
+   "city_flow": 50.8
   },
   "rank_min_km": 5.0,
   "rank_min_shifts": 4,
@@ -141,18 +141,18 @@
    "jobs": 41,
    "lights": 56,
    "shifts": 20,
-   "hours": 6.57,
+   "hours": 6.58,
    "km": 53.31,
    "med_speed": 15.6,
    "lights_per_km": 1.05,
    "climb_per_km": 5.6,
    "crawl_share": 0.309,
-   "light_min_per_km": 0.77,
+   "light_min_per_km": 0.78,
    "dwell_med": 118,
    "pickup_wait_med": 123,
    "leg_min_med": 24.8,
    "orders_per_hour": 0.91,
-   "jobs_per_hour": 6.24,
+   "jobs_per_hour": 6.23,
    "km_per_order": 8.89,
    "hour_hist": [
     0,
@@ -189,15 +189,27 @@
    "road_km": 7.4,
    "pop_density": 15971.0,
    "ranked": true,
+   "as_pickup": {
+    "legs": 12,
+    "leg_min": 7.3,
+    "leg_km": 1.17
+   },
+   "as_drop": {
+    "legs": 3,
+    "dead_min": 11.9,
+    "dead_km": 0.38,
+    "same_pct": 100,
+    "next_zone": null
+   },
    "flow_parts": {
-    "pace": 3.1,
-    "lights": 55.3,
+    "pace": 3.0,
+    "lights": 55.1,
     "climb": 78.6,
     "stopgo": 2.9
    },
-   "flow": 32.8,
-   "rate_shrunk": 6.12,
-   "worth": 3.89,
+   "flow": 32.7,
+   "rate_shrunk": 6.11,
+   "worth": 3.93,
    "rank": 1,
    "ring": [
     [
@@ -259,116 +271,6 @@
    ]
   },
   {
-   "name": "Ultimo",
-   "label": "Ultimo",
-   "lga": "Sydney",
-   "c": [
-    151.19845,
-    -33.87941
-   ],
-   "orders": 15,
-   "pickups": 24,
-   "jobs": 39,
-   "lights": 66,
-   "shifts": 21,
-   "hours": 7.0,
-   "km": 58.41,
-   "med_speed": 17.6,
-   "lights_per_km": 1.13,
-   "climb_per_km": 8.5,
-   "crawl_share": 0.235,
-   "light_min_per_km": 1.04,
-   "dwell_med": 147,
-   "pickup_wait_med": 98,
-   "leg_min_med": 28.3,
-   "orders_per_hour": 2.14,
-   "jobs_per_hour": 5.57,
-   "km_per_order": 3.89,
-   "hour_hist": [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    4,
-    2,
-    1,
-    5,
-    2,
-    6,
-    1,
-    5,
-    5,
-    1,
-    7,
-    0,
-    0
-   ],
-   "area_km2": 0.56,
-   "food": 84,
-   "prepared": 75,
-   "prep_per_km2": 134.4,
-   "signals": 106,
-   "sig_per_km": 10.1,
-   "road_km": 10.5,
-   "pop_density": 13232.0,
-   "ranked": true,
-   "flow_parts": {
-    "pace": 22.0,
-    "lights": 25.6,
-    "climb": 38.7,
-    "stopgo": 34.6
-   },
-   "flow": 28.6,
-   "rate_shrunk": 5.52,
-   "worth": 3.06,
-   "rank": 2,
-   "ring": [
-    [
-     151.19788,
-     -33.87445
-    ],
-    [
-     151.20197,
-     -33.8812
-    ],
-    [
-     151.20171,
-     -33.88131
-    ],
-    [
-     151.2027,
-     -33.88392
-    ],
-    [
-     151.19493,
-     -33.88437
-    ],
-    [
-     151.19453,
-     -33.87951
-    ],
-    [
-     151.19572,
-     -33.87905
-    ],
-    [
-     151.194,
-     -33.87609
-    ],
-    [
-     151.19788,
-     -33.87445
-    ]
-   ]
-  },
-  {
    "name": "Chippendale",
    "label": "Chippendale",
    "lga": "Sydney",
@@ -376,24 +278,24 @@
     151.19999,
     -33.88626
    ],
-   "orders": 11,
-   "pickups": 27,
-   "jobs": 38,
-   "lights": 68,
+   "orders": 12,
+   "pickups": 29,
+   "jobs": 41,
+   "lights": 67,
    "shifts": 24,
-   "hours": 6.24,
-   "km": 52.61,
+   "hours": 6.38,
+   "km": 53.08,
    "med_speed": 18.4,
-   "lights_per_km": 1.29,
+   "lights_per_km": 1.26,
    "climb_per_km": 6.0,
-   "crawl_share": 0.229,
+   "crawl_share": 0.234,
    "light_min_per_km": 1.08,
-   "dwell_med": 108,
-   "pickup_wait_med": 135,
-   "leg_min_med": 37.1,
-   "orders_per_hour": 1.76,
-   "jobs_per_hour": 6.09,
-   "km_per_order": 4.78,
+   "dwell_med": 126,
+   "pickup_wait_med": 136,
+   "leg_min_med": 31.1,
+   "orders_per_hour": 1.88,
+   "jobs_per_hour": 6.42,
+   "km_per_order": 4.42,
    "hour_hist": [
     0,
     0,
@@ -406,16 +308,16 @@
     0,
     2,
     0,
-    1,
+    3,
     0,
     0,
     4,
     1,
+    7,
     6,
-    6,
-    8,
+    7,
     3,
-    1,
+    2,
     5,
     1,
     0
@@ -429,16 +331,28 @@
    "road_km": 9.6,
    "pop_density": 16810.0,
    "ranked": true,
-   "flow_parts": {
-    "pace": 25.1,
-    "lights": 21.1,
-    "climb": 73.0,
-    "stopgo": 37.2
+   "as_pickup": {
+    "legs": 11,
+    "leg_min": 4.9,
+    "leg_km": 1.16
    },
-   "flow": 35.8,
-   "rate_shrunk": 5.98,
-   "worth": 4.15,
-   "rank": 3,
+   "as_drop": {
+    "legs": 5,
+    "dead_min": 2.5,
+    "dead_km": 0.37,
+    "same_pct": 60,
+    "next_zone": "Redfern"
+   },
+   "flow_parts": {
+    "pace": 21.0,
+    "lights": 21.8,
+    "climb": 73.5,
+    "stopgo": 34.9
+   },
+   "flow": 34.2,
+   "rate_shrunk": 6.28,
+   "worth": 4.23,
+   "rank": 2,
    "ring": [
     [
      151.1989,
@@ -487,6 +401,128 @@
    ]
   },
   {
+   "name": "Ultimo",
+   "label": "Ultimo",
+   "lga": "Sydney",
+   "c": [
+    151.19845,
+    -33.87941
+   ],
+   "orders": 15,
+   "pickups": 21,
+   "jobs": 36,
+   "lights": 66,
+   "shifts": 21,
+   "hours": 6.85,
+   "km": 57.94,
+   "med_speed": 17.6,
+   "lights_per_km": 1.14,
+   "climb_per_km": 8.6,
+   "crawl_share": 0.23,
+   "light_min_per_km": 1.02,
+   "dwell_med": 147,
+   "pickup_wait_med": 93,
+   "leg_min_med": 28.3,
+   "orders_per_hour": 2.19,
+   "jobs_per_hour": 5.26,
+   "km_per_order": 3.86,
+   "hour_hist": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    3,
+    2,
+    1,
+    5,
+    2,
+    5,
+    1,
+    5,
+    5,
+    0,
+    7,
+    0,
+    0
+   ],
+   "area_km2": 0.56,
+   "food": 84,
+   "prepared": 75,
+   "prep_per_km2": 134.4,
+   "signals": 106,
+   "sig_per_km": 10.1,
+   "road_km": 10.5,
+   "pop_density": 13232.0,
+   "ranked": true,
+   "as_pickup": {
+    "legs": 10,
+    "leg_min": 4.9,
+    "leg_km": 1.1
+   },
+   "as_drop": {
+    "legs": 8,
+    "dead_min": 4.3,
+    "dead_km": 0.8,
+    "same_pct": 38,
+    "next_zone": "Glebe"
+   },
+   "flow_parts": {
+    "pace": 25.8,
+    "lights": 28.3,
+    "climb": 37.8,
+    "stopgo": 36.2
+   },
+   "flow": 30.8,
+   "rate_shrunk": 5.24,
+   "worth": 3.18,
+   "rank": 3,
+   "ring": [
+    [
+     151.19788,
+     -33.87445
+    ],
+    [
+     151.20197,
+     -33.8812
+    ],
+    [
+     151.20171,
+     -33.88131
+    ],
+    [
+     151.2027,
+     -33.88392
+    ],
+    [
+     151.19493,
+     -33.88437
+    ],
+    [
+     151.19453,
+     -33.87951
+    ],
+    [
+     151.19572,
+     -33.87905
+    ],
+    [
+     151.194,
+     -33.87609
+    ],
+    [
+     151.19788,
+     -33.87445
+    ]
+   ]
+  },
+  {
    "name": "Newtown",
    "label": "Newtown",
    "lga": "Inner West",
@@ -497,12 +533,12 @@
    "orders": 13,
    "pickups": 16,
    "jobs": 29,
-   "lights": 27,
+   "lights": 28,
    "shifts": 21,
-   "hours": 5.77,
-   "km": 46.79,
+   "hours": 5.78,
+   "km": 46.83,
    "med_speed": 19.4,
-   "lights_per_km": 0.58,
+   "lights_per_km": 0.6,
    "climb_per_km": 11.1,
    "crawl_share": 0.228,
    "light_min_per_km": 0.52,
@@ -510,7 +546,7 @@
    "pickup_wait_med": 210,
    "leg_min_med": 14.2,
    "orders_per_hour": 2.25,
-   "jobs_per_hour": 5.03,
+   "jobs_per_hour": 5.02,
    "km_per_order": 3.6,
    "hour_hist": [
     0,
@@ -547,13 +583,25 @@
    "road_km": 33.3,
    "pop_density": 9363.0,
    "ranked": true,
-   "flow_parts": {
-    "pace": 61.2,
-    "lights": 84.2,
-    "climb": 2.3,
-    "stopgo": 37.6
+   "as_pickup": {
+    "legs": 12,
+    "leg_min": 8.8,
+    "leg_km": 1.77
    },
-   "flow": 51.6,
+   "as_drop": {
+    "legs": 3,
+    "dead_min": 8.9,
+    "dead_km": 1.14,
+    "same_pct": 67,
+    "next_zone": "Chippendale"
+   },
+   "flow_parts": {
+    "pace": 59.7,
+    "lights": 83.3,
+    "climb": 2.3,
+    "stopgo": 37.3
+   },
+   "flow": 50.8,
    "rate_shrunk": 5.03,
    "worth": 5.03,
    "rank": 4,
@@ -721,23 +769,23 @@
     -33.90035
    ],
    "orders": 8,
-   "pickups": 18,
-   "jobs": 26,
-   "lights": 38,
+   "pickups": 16,
+   "jobs": 24,
+   "lights": 37,
    "shifts": 18,
-   "hours": 4.75,
-   "km": 46.75,
+   "hours": 4.69,
+   "km": 46.64,
    "med_speed": 21.4,
-   "lights_per_km": 0.81,
-   "climb_per_km": 6.3,
-   "crawl_share": 0.166,
-   "light_min_per_km": 0.79,
+   "lights_per_km": 0.79,
+   "climb_per_km": 6.4,
+   "crawl_share": 0.163,
+   "light_min_per_km": 0.76,
    "dwell_med": 100,
-   "pickup_wait_med": 102,
+   "pickup_wait_med": 88,
    "leg_min_med": 39.9,
-   "orders_per_hour": 1.68,
-   "jobs_per_hour": 5.47,
-   "km_per_order": 5.84,
+   "orders_per_hour": 1.71,
+   "jobs_per_hour": 5.12,
+   "km_per_order": 5.83,
    "hour_hist": [
     0,
     0,
@@ -760,7 +808,7 @@
     2,
     6,
     3,
-    4,
+    2,
     0,
     0
    ],
@@ -773,15 +821,27 @@
    "road_km": 18.4,
    "pop_density": 14495.0,
    "ranked": true,
-   "flow_parts": {
-    "pace": 69.6,
-    "lights": 53.5,
-    "climb": 68.6,
-    "stopgo": 64.3
+   "as_pickup": {
+    "legs": 7,
+    "leg_min": 9.6,
+    "leg_km": 1.91
    },
-   "flow": 63.9,
-   "rate_shrunk": 5.42,
-   "worth": 6.71,
+   "as_drop": {
+    "legs": 5,
+    "dead_min": 4.5,
+    "dead_km": 0.83,
+    "same_pct": 80,
+    "next_zone": "Zetland"
+   },
+   "flow_parts": {
+    "pace": 70.3,
+    "lights": 57.4,
+    "climb": 68.3,
+    "stopgo": 65.1
+   },
+   "flow": 65.4,
+   "rate_shrunk": 5.11,
+   "worth": 6.58,
    "rank": 5,
    "ring": [
     [
@@ -835,366 +895,6 @@
     [
      151.19912,
      -33.89516
-    ]
-   ]
-  },
-  {
-   "name": "Redfern",
-   "label": "Redfern",
-   "lga": "Sydney",
-   "c": [
-    151.20653,
-    -33.89313
-   ],
-   "orders": 7,
-   "pickups": 15,
-   "jobs": 22,
-   "lights": 54,
-   "shifts": 19,
-   "hours": 4.72,
-   "km": 47.89,
-   "med_speed": 19.9,
-   "lights_per_km": 1.13,
-   "climb_per_km": 9.3,
-   "crawl_share": 0.153,
-   "light_min_per_km": 0.89,
-   "dwell_med": 117,
-   "pickup_wait_med": 148,
-   "leg_min_med": 17.9,
-   "orders_per_hour": 1.48,
-   "jobs_per_hour": 4.66,
-   "km_per_order": 6.84,
-   "hour_hist": [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    3,
-    3,
-    0,
-    0,
-    1,
-    0,
-    1,
-    5,
-    2,
-    6,
-    0,
-    1,
-    0
-   ],
-   "area_km2": 1.19,
-   "food": 115,
-   "prepared": 96,
-   "prep_per_km2": 80.9,
-   "signals": 136,
-   "sig_per_km": 6.3,
-   "road_km": 21.6,
-   "pop_density": 11173.0,
-   "ranked": true,
-   "flow_parts": {
-    "pace": 56.3,
-    "lights": 42.1,
-    "climb": 28.2,
-    "stopgo": 70.0
-   },
-   "flow": 49.2,
-   "rate_shrunk": 4.72,
-   "worth": 4.5,
-   "rank": 6,
-   "ring": [
-    [
-     151.19912,
-     -33.89516
-    ],
-    [
-     151.19752,
-     -33.89497
-    ],
-    [
-     151.19788,
-     -33.89286
-    ],
-    [
-     151.19744,
-     -33.89266
-    ],
-    [
-     151.19905,
-     -33.89157
-    ],
-    [
-     151.19679,
-     -33.89217
-    ],
-    [
-     151.19626,
-     -33.89108
-    ],
-    [
-     151.1989,
-     -33.88865
-    ],
-    [
-     151.2078,
-     -33.88991
-    ],
-    [
-     151.21174,
-     -33.89141
-    ],
-    [
-     151.2168,
-     -33.89209
-    ],
-    [
-     151.21568,
-     -33.89762
-    ],
-    [
-     151.20635,
-     -33.89609
-    ],
-    [
-     151.20003,
-     -33.89565
-    ],
-    [
-     151.20002,
-     -33.89525
-    ],
-    [
-     151.19912,
-     -33.89516
-    ]
-   ]
-  },
-  {
-   "name": "Glebe",
-   "label": "Glebe",
-   "lga": "Sydney",
-   "c": [
-    151.18626,
-    -33.87781
-   ],
-   "orders": 13,
-   "pickups": 8,
-   "jobs": 21,
-   "lights": 13,
-   "shifts": 17,
-   "hours": 2.79,
-   "km": 24.52,
-   "med_speed": 21.7,
-   "lights_per_km": 0.53,
-   "climb_per_km": 12.6,
-   "crawl_share": 0.191,
-   "light_min_per_km": 0.45,
-   "dwell_med": 145,
-   "pickup_wait_med": 205,
-   "leg_min_med": 37.3,
-   "orders_per_hour": 4.67,
-   "jobs_per_hour": 7.54,
-   "km_per_order": 1.89,
-   "hour_hist": [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    1,
-    1,
-    0,
-    1,
-    2,
-    2,
-    3,
-    4,
-    1,
-    5,
-    0,
-    0
-   ],
-   "area_km2": 1.67,
-   "food": 75,
-   "prepared": 53,
-   "prep_per_km2": 31.7,
-   "signals": 48,
-   "sig_per_km": 1.8,
-   "road_km": 27.2,
-   "pop_density": 6911.0,
-   "ranked": true,
-   "flow_parts": {
-    "pace": 83.2,
-    "lights": 90.0,
-    "climb": 0.0,
-    "stopgo": 53.5
-   },
-   "flow": 63.1,
-   "rate_shrunk": 7.02,
-   "worth": 8.58,
-   "rank": 7,
-   "ring": [
-    [
-     151.17735,
-     -33.87269
-    ],
-    [
-     151.18047,
-     -33.87121
-    ],
-    [
-     151.18276,
-     -33.87221
-    ],
-    [
-     151.18477,
-     -33.87088
-    ],
-    [
-     151.186,
-     -33.87292
-    ],
-    [
-     151.18812,
-     -33.87358
-    ],
-    [
-     151.18934,
-     -33.87584
-    ],
-    [
-     151.18959,
-     -33.87515
-    ],
-    [
-     151.18924,
-     -33.87477
-    ],
-    [
-     151.18957,
-     -33.87456
-    ],
-    [
-     151.19009,
-     -33.8751
-    ],
-    [
-     151.19051,
-     -33.87482
-    ],
-    [
-     151.19014,
-     -33.87419
-    ],
-    [
-     151.19057,
-     -33.87463
-    ],
-    [
-     151.19186,
-     -33.87376
-    ],
-    [
-     151.19288,
-     -33.8742
-    ],
-    [
-     151.19572,
-     -33.87905
-    ],
-    [
-     151.19453,
-     -33.87951
-    ],
-    [
-     151.195,
-     -33.88431
-    ],
-    [
-     151.18716,
-     -33.88472
-    ],
-    [
-     151.1865,
-     -33.88388
-    ],
-    [
-     151.18572,
-     -33.88374
-    ],
-    [
-     151.18604,
-     -33.88346
-    ],
-    [
-     151.18531,
-     -33.88265
-    ],
-    [
-     151.18381,
-     -33.88341
-    ],
-    [
-     151.18411,
-     -33.88379
-    ],
-    [
-     151.18373,
-     -33.88401
-    ],
-    [
-     151.18318,
-     -33.88333
-    ],
-    [
-     151.18343,
-     -33.88274
-    ],
-    [
-     151.18233,
-     -33.88228
-    ],
-    [
-     151.18018,
-     -33.87971
-    ],
-    [
-     151.18079,
-     -33.87934
-    ],
-    [
-     151.17952,
-     -33.87801
-    ],
-    [
-     151.17959,
-     -33.87693
-    ],
-    [
-     151.17874,
-     -33.87588
-    ],
-    [
-     151.17686,
-     -33.87603
-    ],
-    [
-     151.17735,
-     -33.87269
     ]
    ]
   },
@@ -1259,16 +959,28 @@
    "road_km": 52.5,
    "pop_density": 5669.0,
    "ranked": true,
+   "as_pickup": {
+    "legs": 3,
+    "leg_min": 9.8,
+    "leg_km": 1.81
+   },
+   "as_drop": {
+    "legs": 4,
+    "dead_min": 5.0,
+    "dead_km": 0.91,
+    "same_pct": 25,
+    "next_zone": "Haymarket"
+   },
    "flow_parts": {
     "pace": 0.0,
-    "lights": 27.5,
-    "climb": 34.2,
+    "lights": 28.4,
+    "climb": 34.1,
     "stopgo": 0.0
    },
-   "flow": 14.5,
+   "flow": 14.8,
    "rate_shrunk": 3.49,
-   "worth": 0.98,
-   "rank": 8,
+   "worth": 1.02,
+   "rank": 6,
    "ring": [
     [
      151.19788,
@@ -1517,6 +1229,156 @@
    ]
   },
   {
+   "name": "Redfern",
+   "label": "Redfern",
+   "lga": "Sydney",
+   "c": [
+    151.20653,
+    -33.89313
+   ],
+   "orders": 6,
+   "pickups": 14,
+   "jobs": 20,
+   "lights": 54,
+   "shifts": 19,
+   "hours": 4.71,
+   "km": 47.84,
+   "med_speed": 19.9,
+   "lights_per_km": 1.13,
+   "climb_per_km": 9.3,
+   "crawl_share": 0.153,
+   "light_min_per_km": 0.89,
+   "dwell_med": 113,
+   "pickup_wait_med": 144,
+   "leg_min_med": 24.5,
+   "orders_per_hour": 1.27,
+   "jobs_per_hour": 4.25,
+   "km_per_order": 7.97,
+   "hour_hist": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    2,
+    0,
+    0,
+    1,
+    0,
+    1,
+    5,
+    2,
+    6,
+    0,
+    1,
+    0
+   ],
+   "area_km2": 1.19,
+   "food": 115,
+   "prepared": 96,
+   "prep_per_km2": 80.9,
+   "signals": 136,
+   "sig_per_km": 6.3,
+   "road_km": 21.6,
+   "pop_density": 11173.0,
+   "ranked": true,
+   "as_pickup": {
+    "legs": 5,
+    "leg_min": 3.8,
+    "leg_km": 0.73
+   },
+   "as_drop": {
+    "legs": 3,
+    "dead_min": 4.2,
+    "dead_km": 0.95,
+    "same_pct": 33,
+    "next_zone": "Alexandria"
+   },
+   "flow_parts": {
+    "pace": 55.2,
+    "lights": 42.6,
+    "climb": 28.0,
+    "stopgo": 69.5
+   },
+   "flow": 48.8,
+   "rate_shrunk": 4.36,
+   "worth": 4.19,
+   "rank": 7,
+   "ring": [
+    [
+     151.19912,
+     -33.89516
+    ],
+    [
+     151.19752,
+     -33.89497
+    ],
+    [
+     151.19788,
+     -33.89286
+    ],
+    [
+     151.19744,
+     -33.89266
+    ],
+    [
+     151.19905,
+     -33.89157
+    ],
+    [
+     151.19679,
+     -33.89217
+    ],
+    [
+     151.19626,
+     -33.89108
+    ],
+    [
+     151.1989,
+     -33.88865
+    ],
+    [
+     151.2078,
+     -33.88991
+    ],
+    [
+     151.21174,
+     -33.89141
+    ],
+    [
+     151.2168,
+     -33.89209
+    ],
+    [
+     151.21568,
+     -33.89762
+    ],
+    [
+     151.20635,
+     -33.89609
+    ],
+    [
+     151.20003,
+     -33.89565
+    ],
+    [
+     151.20002,
+     -33.89525
+    ],
+    [
+     151.19912,
+     -33.89516
+    ]
+   ]
+  },
+  {
    "name": "Zetland",
    "label": "Zetland",
    "lga": "Sydney",
@@ -1527,21 +1389,21 @@
    "orders": 13,
    "pickups": 7,
    "jobs": 20,
-   "lights": 25,
+   "lights": 24,
    "shifts": 16,
-   "hours": 3.93,
-   "km": 38.04,
+   "hours": 3.92,
+   "km": 37.97,
    "med_speed": 19.4,
-   "lights_per_km": 0.66,
+   "lights_per_km": 0.63,
    "climb_per_km": 4.4,
    "crawl_share": 0.191,
-   "light_min_per_km": 0.48,
+   "light_min_per_km": 0.47,
    "dwell_med": 93,
    "pickup_wait_med": 128,
    "leg_min_med": 8.5,
    "orders_per_hour": 3.31,
-   "jobs_per_hour": 5.09,
-   "km_per_order": 2.93,
+   "jobs_per_hour": 5.1,
+   "km_per_order": 2.92,
    "hour_hist": [
     0,
     0,
@@ -1577,16 +1439,28 @@
    "road_km": 16.8,
    "pop_density": 15680.0,
    "ranked": true,
-   "flow_parts": {
-    "pace": 42.2,
-    "lights": 87.3,
-    "climb": 95.5,
-    "stopgo": 53.5
+   "as_pickup": {
+    "legs": 3,
+    "leg_min": 11.7,
+    "leg_km": 2.76
    },
-   "flow": 67.5,
-   "rate_shrunk": 5.09,
-   "worth": 6.65,
-   "rank": 9,
+   "as_drop": {
+    "legs": 6,
+    "dead_min": 5.0,
+    "dead_km": 0.97,
+    "same_pct": 33,
+    "next_zone": "Rosebery"
+   },
+   "flow_parts": {
+    "pace": 41.9,
+    "lights": 88.5,
+    "climb": 95.4,
+    "stopgo": 53.2
+   },
+   "flow": 67.7,
+   "rate_shrunk": 5.1,
+   "worth": 6.79,
+   "rank": 8,
    "ring": [
     [
      151.20234,
@@ -1635,6 +1509,240 @@
    ]
   },
   {
+   "name": "Glebe",
+   "label": "Glebe",
+   "lga": "Sydney",
+   "c": [
+    151.18626,
+    -33.87781
+   ],
+   "orders": 12,
+   "pickups": 8,
+   "jobs": 20,
+   "lights": 13,
+   "shifts": 17,
+   "hours": 2.77,
+   "km": 24.49,
+   "med_speed": 21.7,
+   "lights_per_km": 0.53,
+   "climb_per_km": 12.6,
+   "crawl_share": 0.19,
+   "light_min_per_km": 0.45,
+   "dwell_med": 166,
+   "pickup_wait_med": 205,
+   "leg_min_med": 37.3,
+   "orders_per_hour": 4.33,
+   "jobs_per_hour": 7.21,
+   "km_per_order": 2.04,
+   "hour_hist": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    2,
+    2,
+    3,
+    4,
+    1,
+    5,
+    0,
+    0
+   ],
+   "area_km2": 1.67,
+   "food": 75,
+   "prepared": 53,
+   "prep_per_km2": 31.7,
+   "signals": 48,
+   "sig_per_km": 1.8,
+   "road_km": 27.2,
+   "pop_density": 6911.0,
+   "ranked": true,
+   "as_pickup": {
+    "legs": 3,
+    "leg_min": 10.1,
+    "leg_km": 1.62
+   },
+   "as_drop": {
+    "legs": 5,
+    "dead_min": 5.3,
+    "dead_km": 1.34,
+    "same_pct": 0,
+    "next_zone": "Ultimo"
+   },
+   "flow_parts": {
+    "pace": 81.7,
+    "lights": 90.0,
+    "climb": 0.0,
+    "stopgo": 53.7
+   },
+   "flow": 62.6,
+   "rate_shrunk": 6.75,
+   "worth": 8.32,
+   "rank": 9,
+   "ring": [
+    [
+     151.17735,
+     -33.87269
+    ],
+    [
+     151.18047,
+     -33.87121
+    ],
+    [
+     151.18276,
+     -33.87221
+    ],
+    [
+     151.18477,
+     -33.87088
+    ],
+    [
+     151.186,
+     -33.87292
+    ],
+    [
+     151.18812,
+     -33.87358
+    ],
+    [
+     151.18934,
+     -33.87584
+    ],
+    [
+     151.18959,
+     -33.87515
+    ],
+    [
+     151.18924,
+     -33.87477
+    ],
+    [
+     151.18957,
+     -33.87456
+    ],
+    [
+     151.19009,
+     -33.8751
+    ],
+    [
+     151.19051,
+     -33.87482
+    ],
+    [
+     151.19014,
+     -33.87419
+    ],
+    [
+     151.19057,
+     -33.87463
+    ],
+    [
+     151.19186,
+     -33.87376
+    ],
+    [
+     151.19288,
+     -33.8742
+    ],
+    [
+     151.19572,
+     -33.87905
+    ],
+    [
+     151.19453,
+     -33.87951
+    ],
+    [
+     151.195,
+     -33.88431
+    ],
+    [
+     151.18716,
+     -33.88472
+    ],
+    [
+     151.1865,
+     -33.88388
+    ],
+    [
+     151.18572,
+     -33.88374
+    ],
+    [
+     151.18604,
+     -33.88346
+    ],
+    [
+     151.18531,
+     -33.88265
+    ],
+    [
+     151.18381,
+     -33.88341
+    ],
+    [
+     151.18411,
+     -33.88379
+    ],
+    [
+     151.18373,
+     -33.88401
+    ],
+    [
+     151.18318,
+     -33.88333
+    ],
+    [
+     151.18343,
+     -33.88274
+    ],
+    [
+     151.18233,
+     -33.88228
+    ],
+    [
+     151.18018,
+     -33.87971
+    ],
+    [
+     151.18079,
+     -33.87934
+    ],
+    [
+     151.17952,
+     -33.87801
+    ],
+    [
+     151.17959,
+     -33.87693
+    ],
+    [
+     151.17874,
+     -33.87588
+    ],
+    [
+     151.17686,
+     -33.87603
+    ],
+    [
+     151.17735,
+     -33.87269
+    ]
+   ]
+  },
+  {
    "name": "Surry Hills",
    "label": "Surry Hills",
    "lga": "Sydney",
@@ -1643,23 +1751,23 @@
     -33.88447
    ],
    "orders": 10,
-   "pickups": 6,
-   "jobs": 16,
-   "lights": 20,
+   "pickups": 7,
+   "jobs": 17,
+   "lights": 21,
    "shifts": 13,
-   "hours": 2.8,
-   "km": 24.92,
+   "hours": 2.82,
+   "km": 25.01,
    "med_speed": 19.1,
-   "lights_per_km": 0.8,
+   "lights_per_km": 0.84,
    "climb_per_km": 11.8,
    "crawl_share": 0.19,
-   "light_min_per_km": 0.75,
+   "light_min_per_km": 0.76,
    "dwell_med": 137,
-   "pickup_wait_med": 236,
+   "pickup_wait_med": 198,
    "leg_min_med": 16.3,
-   "orders_per_hour": 3.57,
-   "jobs_per_hour": 5.71,
-   "km_per_order": 2.49,
+   "orders_per_hour": 3.55,
+   "jobs_per_hour": 6.04,
+   "km_per_order": 2.5,
    "hour_hist": [
     0,
     0,
@@ -1673,7 +1781,7 @@
     0,
     1,
     0,
-    1,
+    2,
     1,
     0,
     0,
@@ -1695,15 +1803,27 @@
    "road_km": 29.9,
    "pop_density": 11990.0,
    "ranked": true,
-   "flow_parts": {
-    "pace": 61.4,
-    "lights": 58.1,
-    "climb": 0.0,
-    "stopgo": 53.8
+   "as_pickup": {
+    "legs": 2,
+    "leg_min": 15.4,
+    "leg_km": 2.42
    },
-   "flow": 46.8,
-   "rate_shrunk": 5.57,
-   "worth": 5.06,
+   "as_drop": {
+    "legs": 4,
+    "dead_min": 12.4,
+    "dead_km": 2.45,
+    "same_pct": 25,
+    "next_zone": "Erskineville"
+   },
+   "flow_parts": {
+    "pace": 59.6,
+    "lights": 56.9,
+    "climb": 0.0,
+    "stopgo": 53.6
+   },
+   "flow": 45.9,
+   "rate_shrunk": 5.84,
+   "worth": 5.27,
    "rank": 10,
    "ring": [
     [
@@ -1837,15 +1957,27 @@
    "road_km": 31.3,
    "pop_density": 6807.0,
    "ranked": true,
-   "flow_parts": {
-    "pace": 79.4,
-    "lights": 76.6,
-    "climb": 57.7,
-    "stopgo": 55.5
+   "as_pickup": {
+    "legs": 4,
+    "leg_min": 14.4,
+    "leg_km": 1.36
    },
-   "flow": 70.0,
+   "as_drop": {
+    "legs": 2,
+    "dead_min": 8.3,
+    "dead_km": 1.47,
+    "same_pct": 100,
+    "next_zone": null
+   },
+   "flow_parts": {
+    "pace": 77.9,
+    "lights": 76.8,
+    "climb": 57.5,
+    "stopgo": 55.1
+   },
+   "flow": 69.4,
    "rate_shrunk": 6.06,
-   "worth": 8.22,
+   "worth": 8.27,
    "rank": 11,
    "ring": [
     [
@@ -1955,23 +2087,23 @@
     -33.88889
    ],
    "orders": 11,
-   "pickups": 0,
-   "jobs": 11,
+   "pickups": 1,
+   "jobs": 12,
    "lights": 29,
    "shifts": 18,
    "hours": 3.14,
-   "km": 33.71,
+   "km": 33.75,
    "med_speed": 20.2,
    "lights_per_km": 0.86,
-   "climb_per_km": 9.1,
+   "climb_per_km": 9.2,
    "crawl_share": 0.141,
    "light_min_per_km": 0.86,
    "dwell_med": 153,
-   "pickup_wait_med": 0,
+   "pickup_wait_med": 136,
    "leg_min_med": 11.9,
-   "orders_per_hour": 3.51,
-   "jobs_per_hour": 3.51,
-   "km_per_order": 3.06,
+   "orders_per_hour": 3.5,
+   "jobs_per_hour": 3.82,
+   "km_per_order": 3.07,
    "hour_hist": [
     0,
     0,
@@ -1991,7 +2123,7 @@
     2,
     0,
     2,
-    1,
+    2,
     2,
     1,
     0,
@@ -2007,15 +2139,23 @@
    "road_km": 18.8,
    "pop_density": 6203.0,
    "ranked": true,
-   "flow_parts": {
-    "pace": 64.8,
-    "lights": 46.1,
-    "climb": 30.0,
-    "stopgo": 74.5
+   "as_pickup": null,
+   "as_drop": {
+    "legs": 4,
+    "dead_min": 6.7,
+    "dead_km": 1.34,
+    "same_pct": 0,
+    "next_zone": "Newtown"
    },
-   "flow": 54.3,
-   "rate_shrunk": 3.81,
-   "worth": 4.01,
+   "flow_parts": {
+    "pace": 63.6,
+    "lights": 46.8,
+    "climb": 29.8,
+    "stopgo": 73.8
+   },
+   "flow": 54.0,
+   "rate_shrunk": 4.06,
+   "worth": 4.32,
    "rank": 12,
    "ring": [
     [
@@ -2129,282 +2269,6 @@
    ]
   },
   {
-   "name": "Darlinghurst",
-   "label": "Darlinghurst",
-   "lga": "Sydney",
-   "c": [
-    151.22078,
-    -33.8794
-   ],
-   "orders": 2,
-   "pickups": 9,
-   "jobs": 11,
-   "lights": 8,
-   "shifts": 6,
-   "hours": 1.5,
-   "km": 10.71,
-   "med_speed": 17.8,
-   "lights_per_km": 0.75,
-   "climb_per_km": 16.1,
-   "crawl_share": 0.244,
-   "light_min_per_km": 0.42,
-   "dwell_med": 64,
-   "pickup_wait_med": 219,
-   "leg_min_med": 56.9,
-   "orders_per_hour": 1.33,
-   "jobs_per_hour": 7.32,
-   "km_per_order": 5.35,
-   "hour_hist": [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    2,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    7,
-    0,
-    0,
-    0,
-    0
-   ],
-   "area_km2": 0.86,
-   "food": 188,
-   "prepared": 168,
-   "prep_per_km2": 195.3,
-   "signals": 202,
-   "sig_per_km": 7.7,
-   "road_km": 26.2,
-   "pop_density": 12388.0,
-   "ranked": true,
-   "flow_parts": {
-    "pace": 56.2,
-    "lights": 87.5,
-    "climb": 0.0,
-    "stopgo": 34.8
-   },
-   "flow": 49.9,
-   "rate_shrunk": 6.57,
-   "worth": 6.35,
-   "rank": 13,
-   "ring": [
-    [
-     151.21213,
-     -33.87686
-    ],
-    [
-     151.21259,
-     -33.87375
-    ],
-    [
-     151.22138,
-     -33.87513
-    ],
-    [
-     151.22291,
-     -33.8758
-    ],
-    [
-     151.22775,
-     -33.87629
-    ],
-    [
-     151.22744,
-     -33.87663
-    ],
-    [
-     151.22942,
-     -33.87693
-    ],
-    [
-     151.22784,
-     -33.87906
-    ],
-    [
-     151.22479,
-     -33.87903
-    ],
-    [
-     151.22137,
-     -33.88137
-    ],
-    [
-     151.21917,
-     -33.88164
-    ],
-    [
-     151.2182,
-     -33.88504
-    ],
-    [
-     151.21711,
-     -33.88116
-    ],
-    [
-     151.21487,
-     -33.88085
-    ],
-    [
-     151.21504,
-     -33.88007
-    ],
-    [
-     151.21394,
-     -33.87965
-    ],
-    [
-     151.21429,
-     -33.87844
-    ],
-    [
-     151.21213,
-     -33.87686
-    ]
-   ]
-  },
-  {
-   "name": "Darlington",
-   "label": "Darlington",
-   "lga": "Sydney",
-   "c": [
-    151.19334,
-    -33.89089
-   ],
-   "orders": 5,
-   "pickups": 5,
-   "jobs": 10,
-   "lights": 19,
-   "shifts": 23,
-   "hours": 1.97,
-   "km": 23.5,
-   "med_speed": 21.8,
-   "lights_per_km": 0.81,
-   "climb_per_km": 8.9,
-   "crawl_share": 0.135,
-   "light_min_per_km": 0.77,
-   "dwell_med": 96,
-   "pickup_wait_med": 119,
-   "leg_min_med": 10.1,
-   "orders_per_hour": 2.53,
-   "jobs_per_hour": 5.07,
-   "km_per_order": 4.7,
-   "hour_hist": [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    2,
-    1,
-    0,
-    4,
-    0,
-    2,
-    0,
-    1,
-    0,
-    0
-   ],
-   "area_km2": 0.38,
-   "food": 25,
-   "prepared": 23,
-   "prep_per_km2": 60.7,
-   "signals": 46,
-   "sig_per_km": 6.7,
-   "road_km": 6.9,
-   "pop_density": 6820.0,
-   "ranked": true,
-   "flow_parts": {
-    "pace": 78.9,
-    "lights": 55.8,
-    "climb": 33.7,
-    "stopgo": 76.0
-   },
-   "flow": 62.9,
-   "rate_shrunk": 5.07,
-   "worth": 6.18,
-   "rank": 14,
-   "ring": [
-    [
-     151.18842,
-     -33.89129
-    ],
-    [
-     151.19048,
-     -33.88925
-    ],
-    [
-     151.19317,
-     -33.88774
-    ],
-    [
-     151.1989,
-     -33.88865
-    ],
-    [
-     151.19626,
-     -33.89108
-    ],
-    [
-     151.19667,
-     -33.89184
-    ],
-    [
-     151.19532,
-     -33.89214
-    ],
-    [
-     151.19552,
-     -33.89259
-    ],
-    [
-     151.19495,
-     -33.89276
-    ],
-    [
-     151.19485,
-     -33.89229
-    ],
-    [
-     151.18929,
-     -33.89405
-    ],
-    [
-     151.18854,
-     -33.89189
-    ],
-    [
-     151.18779,
-     -33.8919
-    ],
-    [
-     151.18842,
-     -33.89129
-    ]
-   ]
-  },
-  {
    "name": "Alexandria",
    "label": "Alexandria",
    "lga": "Sydney",
@@ -2413,22 +2277,22 @@
     -33.9082
    ],
    "orders": 5,
-   "pickups": 4,
-   "jobs": 9,
+   "pickups": 6,
+   "jobs": 11,
    "lights": 67,
    "shifts": 26,
-   "hours": 5.18,
-   "km": 59.78,
+   "hours": 5.23,
+   "km": 59.82,
    "med_speed": 21.9,
    "lights_per_km": 1.12,
    "climb_per_km": 4.4,
-   "crawl_share": 0.103,
-   "light_min_per_km": 1.24,
+   "crawl_share": 0.106,
+   "light_min_per_km": 1.25,
    "dwell_med": 255,
-   "pickup_wait_med": 160,
+   "pickup_wait_med": 141,
    "leg_min_med": 8.3,
    "orders_per_hour": 0.96,
-   "jobs_per_hour": 1.74,
+   "jobs_per_hour": 2.1,
    "km_per_order": 11.96,
    "hour_hist": [
     0,
@@ -2452,7 +2316,7 @@
     3,
     0,
     0,
-    1,
+    3,
     0,
     0
    ],
@@ -2465,16 +2329,28 @@
    "road_km": 29.8,
    "pop_density": 2726.0,
    "ranked": true,
+   "as_pickup": {
+    "legs": 4,
+    "leg_min": 8.1,
+    "leg_km": 1.97
+   },
+   "as_drop": {
+    "legs": 2,
+    "dead_min": 20.6,
+    "dead_km": 1.76,
+    "same_pct": 50,
+    "next_zone": "Chippendale"
+   },
    "flow_parts": {
-    "pace": 57.7,
+    "pace": 56.0,
     "lights": 2.6,
     "climb": 96.3,
-    "stopgo": 91.5
+    "stopgo": 89.6
    },
-   "flow": 56.1,
-   "rate_shrunk": 2.16,
-   "worth": 2.35,
-   "rank": 15,
+   "flow": 55.1,
+   "rate_shrunk": 2.47,
+   "worth": 2.68,
+   "rank": 13,
    "ring": [
     [
      151.18083,
@@ -2595,6 +2471,302 @@
    ]
   },
   {
+   "name": "Darlinghurst",
+   "label": "Darlinghurst",
+   "lga": "Sydney",
+   "c": [
+    151.22078,
+    -33.8794
+   ],
+   "orders": 2,
+   "pickups": 9,
+   "jobs": 11,
+   "lights": 8,
+   "shifts": 6,
+   "hours": 1.5,
+   "km": 10.71,
+   "med_speed": 17.8,
+   "lights_per_km": 0.75,
+   "climb_per_km": 16.1,
+   "crawl_share": 0.244,
+   "light_min_per_km": 0.42,
+   "dwell_med": 64,
+   "pickup_wait_med": 219,
+   "leg_min_med": 56.9,
+   "orders_per_hour": 1.33,
+   "jobs_per_hour": 7.32,
+   "km_per_order": 5.35,
+   "hour_hist": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    7,
+    0,
+    0,
+    0,
+    0
+   ],
+   "area_km2": 0.86,
+   "food": 188,
+   "prepared": 168,
+   "prep_per_km2": 195.3,
+   "signals": 202,
+   "sig_per_km": 7.7,
+   "road_km": 26.2,
+   "pop_density": 12388.0,
+   "ranked": true,
+   "as_pickup": {
+    "legs": 2,
+    "leg_min": 6.5,
+    "leg_km": 1.51
+   },
+   "as_drop": {
+    "legs": 1,
+    "dead_min": 8.8,
+    "dead_km": 1.32,
+    "same_pct": 100,
+    "next_zone": null
+   },
+   "flow_parts": {
+    "pace": 55.1,
+    "lights": 87.6,
+    "climb": 0.0,
+    "stopgo": 34.6
+   },
+   "flow": 49.5,
+   "rate_shrunk": 6.57,
+   "worth": 6.4,
+   "rank": 14,
+   "ring": [
+    [
+     151.21213,
+     -33.87686
+    ],
+    [
+     151.21259,
+     -33.87375
+    ],
+    [
+     151.22138,
+     -33.87513
+    ],
+    [
+     151.22291,
+     -33.8758
+    ],
+    [
+     151.22775,
+     -33.87629
+    ],
+    [
+     151.22744,
+     -33.87663
+    ],
+    [
+     151.22942,
+     -33.87693
+    ],
+    [
+     151.22784,
+     -33.87906
+    ],
+    [
+     151.22479,
+     -33.87903
+    ],
+    [
+     151.22137,
+     -33.88137
+    ],
+    [
+     151.21917,
+     -33.88164
+    ],
+    [
+     151.2182,
+     -33.88504
+    ],
+    [
+     151.21711,
+     -33.88116
+    ],
+    [
+     151.21487,
+     -33.88085
+    ],
+    [
+     151.21504,
+     -33.88007
+    ],
+    [
+     151.21394,
+     -33.87965
+    ],
+    [
+     151.21429,
+     -33.87844
+    ],
+    [
+     151.21213,
+     -33.87686
+    ]
+   ]
+  },
+  {
+   "name": "Darlington",
+   "label": "Darlington",
+   "lga": "Sydney",
+   "c": [
+    151.19334,
+    -33.89089
+   ],
+   "orders": 5,
+   "pickups": 5,
+   "jobs": 10,
+   "lights": 20,
+   "shifts": 23,
+   "hours": 1.99,
+   "km": 23.55,
+   "med_speed": 21.8,
+   "lights_per_km": 0.85,
+   "climb_per_km": 8.9,
+   "crawl_share": 0.136,
+   "light_min_per_km": 0.79,
+   "dwell_med": 96,
+   "pickup_wait_med": 119,
+   "leg_min_med": 10.1,
+   "orders_per_hour": 2.52,
+   "jobs_per_hour": 5.03,
+   "km_per_order": 4.71,
+   "hour_hist": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    1,
+    0,
+    4,
+    0,
+    2,
+    0,
+    1,
+    0,
+    0
+   ],
+   "area_km2": 0.38,
+   "food": 25,
+   "prepared": 23,
+   "prep_per_km2": 60.7,
+   "signals": 46,
+   "sig_per_km": 6.7,
+   "road_km": 6.9,
+   "pop_density": 6820.0,
+   "ranked": true,
+   "as_pickup": null,
+   "as_drop": {
+    "legs": 1,
+    "dead_min": 5.0,
+    "dead_km": 1.4,
+    "same_pct": 0,
+    "next_zone": "Erskineville"
+   },
+   "flow_parts": {
+    "pace": 76.2,
+    "lights": 53.9,
+    "climb": 33.7,
+    "stopgo": 75.2
+   },
+   "flow": 61.3,
+   "rate_shrunk": 5.04,
+   "worth": 6.08,
+   "rank": 15,
+   "ring": [
+    [
+     151.18842,
+     -33.89129
+    ],
+    [
+     151.19048,
+     -33.88925
+    ],
+    [
+     151.19317,
+     -33.88774
+    ],
+    [
+     151.1989,
+     -33.88865
+    ],
+    [
+     151.19626,
+     -33.89108
+    ],
+    [
+     151.19667,
+     -33.89184
+    ],
+    [
+     151.19532,
+     -33.89214
+    ],
+    [
+     151.19552,
+     -33.89259
+    ],
+    [
+     151.19495,
+     -33.89276
+    ],
+    [
+     151.19485,
+     -33.89229
+    ],
+    [
+     151.18929,
+     -33.89405
+    ],
+    [
+     151.18854,
+     -33.89189
+    ],
+    [
+     151.18779,
+     -33.8919
+    ],
+    [
+     151.18842,
+     -33.89129
+    ]
+   ]
+  },
+  {
    "name": "Mascot",
    "label": "Mascot",
    "lga": "Botany Bay",
@@ -2605,21 +2777,21 @@
    "orders": 5,
    "pickups": 3,
    "jobs": 8,
-   "lights": 28,
+   "lights": 29,
    "shifts": 15,
-   "hours": 3.51,
-   "km": 32.94,
-   "med_speed": 20.7,
-   "lights_per_km": 0.85,
+   "hours": 3.53,
+   "km": 32.99,
+   "med_speed": 20.6,
+   "lights_per_km": 0.88,
    "climb_per_km": 3.9,
    "crawl_share": 0.206,
-   "light_min_per_km": 0.85,
+   "light_min_per_km": 0.89,
    "dwell_med": 111,
    "pickup_wait_med": 96,
    "leg_min_med": null,
    "orders_per_hour": 1.42,
-   "jobs_per_hour": 2.28,
-   "km_per_order": 6.59,
+   "jobs_per_hour": 2.26,
+   "km_per_order": 6.6,
    "hour_hist": [
     0,
     0,
@@ -2655,15 +2827,27 @@
    "road_km": 75.1,
    "pop_density": 1605.7,
    "ranked": true,
-   "flow_parts": {
-    "pace": 7.5,
-    "lights": 46.4,
-    "climb": 100.0,
-    "stopgo": 47.2
+   "as_pickup": {
+    "legs": 1,
+    "leg_min": 41.0,
+    "leg_km": 8.26
    },
-   "flow": 44.0,
-   "rate_shrunk": 2.77,
-   "worth": 2.36,
+   "as_drop": {
+    "legs": 2,
+    "dead_min": 7.0,
+    "dead_km": 1.29,
+    "same_pct": 100,
+    "next_zone": null
+   },
+   "flow_parts": {
+    "pace": 5.9,
+    "lights": 43.6,
+    "climb": 100.0,
+    "stopgo": 46.8
+   },
+   "flow": 42.6,
+   "rate_shrunk": 2.75,
+   "worth": 2.31,
    "rank": 16,
    "ring": [
     [
@@ -2989,15 +3173,23 @@
    "road_km": 29.0,
    "pop_density": 4501.0,
    "ranked": true,
+   "as_pickup": null,
+   "as_drop": {
+    "legs": 2,
+    "dead_min": 6.7,
+    "dead_km": 1.74,
+    "same_pct": 0,
+    "next_zone": "Kingsford"
+   },
    "flow_parts": {
     "pace": 100.0,
-    "lights": 97.4,
-    "climb": 69.5,
+    "lights": 97.3,
+    "climb": 69.4,
     "stopgo": 100.0
    },
-   "flow": 93.2,
+   "flow": 93.1,
    "rate_shrunk": 4.41,
-   "worth": 7.96,
+   "worth": 8.08,
    "rank": 17,
    "ring": [
     [
@@ -3141,21 +3333,21 @@
    "orders": 6,
    "pickups": 1,
    "jobs": 7,
-   "lights": 20,
+   "lights": 23,
    "shifts": 14,
-   "hours": 1.97,
-   "km": 18.67,
+   "hours": 2.02,
+   "km": 18.8,
    "med_speed": 22.0,
-   "lights_per_km": 1.07,
+   "lights_per_km": 1.22,
    "climb_per_km": 8.6,
-   "crawl_share": 0.112,
-   "light_min_per_km": 1.64,
+   "crawl_share": 0.116,
+   "light_min_per_km": 1.74,
    "dwell_med": 114,
    "pickup_wait_med": 212,
    "leg_min_med": 12.0,
-   "orders_per_hour": 3.05,
-   "jobs_per_hour": 3.56,
-   "km_per_order": 3.11,
+   "orders_per_hour": 2.97,
+   "jobs_per_hour": 3.47,
+   "km_per_order": 3.13,
    "hour_hist": [
     0,
     0,
@@ -3191,15 +3383,23 @@
    "road_km": 35.1,
    "pop_density": 2114.0,
    "ranked": true,
-   "flow_parts": {
-    "pace": 14.5,
-    "lights": 0.0,
-    "climb": 37.3,
-    "stopgo": 84.5
+   "as_pickup": null,
+   "as_drop": {
+    "legs": 2,
+    "dead_min": 9.8,
+    "dead_km": 1.85,
+    "same_pct": 0,
+    "next_zone": "Newtown"
    },
-   "flow": 27.6,
-   "rate_shrunk": 3.98,
-   "worth": 2.13,
+   "flow_parts": {
+    "pace": 8.8,
+    "lights": 0.0,
+    "climb": 37.8,
+    "stopgo": 82.4
+   },
+   "flow": 25.4,
+   "rate_shrunk": 3.9,
+   "worth": 1.95,
    "rank": 18,
    "ring": [
     [
@@ -3329,15 +3529,23 @@
    "road_km": 18.1,
    "pop_density": 13611.0,
    "ranked": true,
-   "flow_parts": {
-    "pace": 63.7,
-    "lights": 30.2,
-    "climb": 32.3,
-    "stopgo": 69.1
+   "as_pickup": null,
+   "as_drop": {
+    "legs": 2,
+    "dead_min": 14.6,
+    "dead_km": 2.79,
+    "same_pct": 0,
+    "next_zone": "Haymarket"
    },
-   "flow": 49.0,
+   "flow_parts": {
+    "pace": 62.4,
+    "lights": 31.1,
+    "climb": 32.0,
+    "stopgo": 68.7
+   },
+   "flow": 48.7,
    "rate_shrunk": 6.52,
-   "worth": 6.19,
+   "worth": 6.25,
    "rank": 19,
    "ring": [
     [
@@ -3469,20 +3677,20 @@
    "orders": 3,
    "pickups": 3,
    "jobs": 6,
-   "lights": 23,
+   "lights": 22,
    "shifts": 14,
-   "hours": 2.32,
-   "km": 32.83,
+   "hours": 2.3,
+   "km": 32.82,
    "med_speed": 23.3,
-   "lights_per_km": 0.7,
-   "climb_per_km": 2.8,
-   "crawl_share": 0.089,
-   "light_min_per_km": 0.65,
+   "lights_per_km": 0.67,
+   "climb_per_km": 2.9,
+   "crawl_share": 0.087,
+   "light_min_per_km": 0.62,
    "dwell_med": 151,
    "pickup_wait_med": 74,
    "leg_min_med": null,
-   "orders_per_hour": 1.29,
-   "jobs_per_hour": 2.58,
+   "orders_per_hour": 1.3,
+   "jobs_per_hour": 2.61,
    "km_per_order": 10.94,
    "hour_hist": [
     0,
@@ -3519,15 +3727,27 @@
    "road_km": 30.1,
    "pop_density": 7012.0,
    "ranked": true,
+   "as_pickup": {
+    "legs": 1,
+    "leg_min": 7.1,
+    "leg_km": 2.69
+   },
+   "as_drop": {
+    "legs": 1,
+    "dead_min": 14.1,
+    "dead_km": 3.7,
+    "same_pct": 0,
+    "next_zone": "Waterloo"
+   },
    "flow_parts": {
-    "pace": 96.5,
-    "lights": 68.6,
+    "pace": 96.3,
+    "lights": 72.1,
     "climb": 100.0,
     "stopgo": 96.1
    },
-   "flow": 89.3,
-   "rate_shrunk": 3.19,
-   "worth": 5.52,
+   "flow": 90.2,
+   "rate_shrunk": 3.21,
+   "worth": 5.71,
    "rank": 20,
    "ring": [
     [
@@ -3645,13 +3865,21 @@
    "road_km": 28.6,
    "pop_density": 7792.0,
    "ranked": false,
-   "flow_parts": {
-    "pace": 84.0,
-    "lights": 76.2,
-    "climb": 0.0,
-    "stopgo": 57.6
+   "as_pickup": null,
+   "as_drop": {
+    "legs": 1,
+    "dead_min": 2.5,
+    "dead_km": 0.25,
+    "same_pct": 100,
+    "next_zone": null
    },
-   "flow": 60.3,
+   "flow_parts": {
+    "pace": 82.3,
+    "lights": 76.4,
+    "climb": 0.0,
+    "stopgo": 57.3
+   },
+   "flow": 59.7,
    "rate_shrunk": 5.8,
    "worth": null,
    "rank": 21,
@@ -3757,21 +3985,21 @@
    "orders": 2,
    "pickups": 3,
    "jobs": 5,
-   "lights": 11,
+   "lights": 8,
    "shifts": 17,
-   "hours": 1.76,
-   "km": 24.87,
+   "hours": 1.72,
+   "km": 24.76,
    "med_speed": 21.8,
-   "lights_per_km": 0.44,
+   "lights_per_km": 0.32,
    "climb_per_km": 9.3,
-   "crawl_share": 0.073,
-   "light_min_per_km": 0.3,
+   "crawl_share": 0.067,
+   "light_min_per_km": 0.23,
    "dwell_med": 185,
    "pickup_wait_med": 99,
    "leg_min_med": 28.1,
-   "orders_per_hour": 1.14,
-   "jobs_per_hour": 2.84,
-   "km_per_order": 12.44,
+   "orders_per_hour": 1.16,
+   "jobs_per_hour": 2.91,
+   "km_per_order": 12.38,
    "hour_hist": [
     0,
     0,
@@ -3807,15 +4035,21 @@
    "road_km": 13.1,
    "pop_density": 11922.0,
    "ranked": true,
+   "as_pickup": {
+    "legs": 1,
+    "leg_min": 4.9,
+    "leg_km": 1.29
+   },
+   "as_drop": null,
    "flow_parts": {
     "pace": 100.0,
     "lights": 100.0,
-    "climb": 28.5,
+    "climb": 28.0,
     "stopgo": 100.0
    },
-   "flow": 85.7,
-   "rate_shrunk": 3.51,
-   "worth": 5.82,
+   "flow": 85.6,
+   "rate_shrunk": 3.57,
+   "worth": 6.01,
    "rank": 22,
    "ring": [
     [
@@ -3957,15 +4191,17 @@
    "road_km": 24.7,
    "pop_density": 6439.0,
    "ranked": true,
+   "as_pickup": null,
+   "as_drop": null,
    "flow_parts": {
-    "pace": 89.9,
-    "lights": 98.0,
-    "climb": 15.5,
-    "stopgo": 71.8
+    "pace": 88.1,
+    "lights": 97.9,
+    "climb": 15.2,
+    "stopgo": 71.3
    },
-   "flow": 74.0,
+   "flow": 73.2,
    "rate_shrunk": 5.07,
-   "worth": 7.27,
+   "worth": 7.31,
    "rank": 23,
    "ring": [
     [
@@ -4058,24 +4294,24 @@
     151.18079,
     -33.88032
    ],
-   "orders": 3,
+   "orders": 4,
    "pickups": 0,
-   "jobs": 3,
+   "jobs": 4,
    "lights": 3,
    "shifts": 8,
-   "hours": 0.63,
-   "km": 8.15,
+   "hours": 0.64,
+   "km": 8.18,
    "med_speed": 23.2,
    "lights_per_km": 0.37,
    "climb_per_km": 11.3,
-   "crawl_share": 0.117,
+   "crawl_share": 0.122,
    "light_min_per_km": 0.4,
-   "dwell_med": 192,
+   "dwell_med": 128,
    "pickup_wait_med": 0,
    "leg_min_med": 29.2,
-   "orders_per_hour": 4.76,
-   "jobs_per_hour": 4.76,
-   "km_per_order": 2.72,
+   "orders_per_hour": 6.23,
+   "jobs_per_hour": 6.23,
+   "km_per_order": 2.05,
    "hour_hist": [
     0,
     0,
@@ -4092,7 +4328,7 @@
     0,
     0,
     0,
-    1,
+    2,
     0,
     0,
     0,
@@ -4111,15 +4347,23 @@
    "road_km": 7.7,
    "pop_density": 11033.0,
    "ranked": true,
-   "flow_parts": {
-    "pace": 97.5,
-    "lights": 87.5,
-    "climb": 8.6,
-    "stopgo": 78.2
+   "as_pickup": null,
+   "as_drop": {
+    "legs": 1,
+    "dead_min": 16.1,
+    "dead_km": 3.9,
+    "same_pct": 0,
+    "next_zone": "Sydney CBD"
    },
-   "flow": 73.4,
-   "rate_shrunk": 4.93,
-   "worth": 7.01,
+   "flow_parts": {
+    "pace": 95.1,
+    "lights": 87.6,
+    "climb": 8.6,
+    "stopgo": 76.2
+   },
+   "flow": 72.3,
+   "rate_shrunk": 5.6,
+   "worth": 7.98,
    "rank": 24,
    "ring": [
     [
@@ -4289,13 +4533,19 @@
    "road_km": 49.5,
    "pop_density": 6782.0,
    "ranked": false,
-   "flow_parts": {
-    "pace": 58.4,
-    "lights": 15.5,
-    "climb": 19.1,
-    "stopgo": 75.5
+   "as_pickup": {
+    "legs": 1,
+    "leg_min": 14.8,
+    "leg_km": 3.38
    },
-   "flow": 41.6,
+   "as_drop": null,
+   "flow_parts": {
+    "pace": 57.1,
+    "lights": 16.5,
+    "climb": 18.7,
+    "stopgo": 75.0
+   },
+   "flow": 41.3,
    "rate_shrunk": 4.26,
    "worth": null,
    "rank": 25,
@@ -4495,13 +4745,21 @@
    "road_km": 20.7,
    "pop_density": 6404.0,
    "ranked": false,
-   "flow_parts": {
-    "pace": 53.4,
-    "lights": 37.9,
-    "climb": 0.0,
-    "stopgo": 67.7
+   "as_pickup": null,
+   "as_drop": {
+    "legs": 1,
+    "dead_min": 3.7,
+    "dead_km": 0.57,
+    "same_pct": 0,
+    "next_zone": "Leichhardt"
    },
-   "flow": 41.0,
+   "flow_parts": {
+    "pace": 52.3,
+    "lights": 38.6,
+    "climb": 0.0,
+    "stopgo": 67.4
+   },
+   "flow": 40.7,
    "rate_shrunk": 4.69,
    "worth": null,
    "rank": 26,
@@ -4689,13 +4947,21 @@
    "road_km": 57.8,
    "pop_density": 5470.0,
    "ranked": false,
-   "flow_parts": {
-    "pace": 79.1,
-    "lights": 76.4,
-    "climb": 84.6,
-    "stopgo": 51.8
+   "as_pickup": null,
+   "as_drop": {
+    "legs": 1,
+    "dead_min": 5.5,
+    "dead_km": 1.64,
+    "same_pct": 0,
+    "next_zone": "Kingsford"
    },
-   "flow": 74.5,
+   "flow_parts": {
+    "pace": 77.3,
+    "lights": 76.5,
+    "climb": 84.2,
+    "stopgo": 51.6
+   },
+   "flow": 73.8,
    "rate_shrunk": 4.89,
    "worth": null,
    "rank": 27,
@@ -4903,13 +5169,15 @@
    "road_km": 77.0,
    "pop_density": 5196.0,
    "ranked": false,
+   "as_pickup": null,
+   "as_drop": null,
    "flow_parts": {
-    "pace": 65.3,
-    "lights": 40.5,
-    "climb": 68.2,
-    "stopgo": 64.4
+    "pace": 63.8,
+    "lights": 41.2,
+    "climb": 67.8,
+    "stopgo": 64.1
    },
-   "flow": 58.8,
+   "flow": 58.3,
    "rate_shrunk": 4.97,
    "worth": null,
    "rank": 28,
@@ -5149,13 +5417,15 @@
    "road_km": 36.1,
    "pop_density": 4446.0,
    "ranked": false,
+   "as_pickup": null,
+   "as_drop": null,
    "flow_parts": {
-    "pace": 90.3,
+    "pace": 88.3,
     "lights": 86.7,
-    "climb": 33.4,
-    "stopgo": 54.4
+    "climb": 33.1,
+    "stopgo": 54.1
    },
-   "flow": 71.4,
+   "flow": 70.6,
    "rate_shrunk": 5.25,
    "worth": null,
    "rank": 29,
@@ -5359,13 +5629,21 @@
    "road_km": 3.5,
    "pop_density": 3145.0,
    "ranked": false,
-   "flow_parts": {
-    "pace": 30.1,
-    "lights": 68.2,
-    "climb": 51.8,
-    "stopgo": 4.6
+   "as_pickup": null,
+   "as_drop": {
+    "legs": 1,
+    "dead_min": 9.4,
+    "dead_km": 0.7,
+    "same_pct": 0,
+    "next_zone": "Sydney CBD"
    },
-   "flow": 40.5,
+   "flow_parts": {
+    "pace": 29.2,
+    "lights": 68.4,
+    "climb": 51.2,
+    "stopgo": 4.7
+   },
+   "flow": 40.2,
    "rate_shrunk": 5.8,
    "worth": null,
    "rank": 30,
@@ -5485,13 +5763,21 @@
    "road_km": 66.0,
    "pop_density": 4613.0,
    "ranked": false,
-   "flow_parts": {
-    "pace": 75.7,
-    "lights": 71.5,
-    "climb": 32.3,
-    "stopgo": 75.6
+   "as_pickup": null,
+   "as_drop": {
+    "legs": 1,
+    "dead_min": 0.5,
+    "dead_km": 0.06,
+    "same_pct": 100,
+    "next_zone": null
    },
-   "flow": 65.8,
+   "flow_parts": {
+    "pace": 73.9,
+    "lights": 71.7,
+    "climb": 31.8,
+    "stopgo": 75.2
+   },
+   "flow": 65.1,
    "rate_shrunk": 5.79,
    "worth": null,
    "rank": 31,
@@ -5771,13 +6057,15 @@
    "road_km": 19.6,
    "pop_density": 5388.0,
    "ranked": false,
+   "as_pickup": null,
+   "as_drop": null,
    "flow_parts": {
-    "pace": 94.4,
-    "lights": 80.8,
-    "climb": 68.9,
-    "stopgo": 78.4
+    "pace": 92.2,
+    "lights": 80.9,
+    "climb": 68.4,
+    "stopgo": 78.1
    },
-   "flow": 82.6,
+   "flow": 81.7,
    "rate_shrunk": 5.9,
    "worth": null,
    "rank": 32,
@@ -5885,6 +6173,120 @@
    ]
   },
   {
+   "name": "Beaconsfield",
+   "label": "Beaconsfield",
+   "lga": "Sydney",
+   "c": [
+    151.20017,
+    -33.91151
+   ],
+   "orders": 2,
+   "pickups": 0,
+   "jobs": 2,
+   "lights": 2,
+   "shifts": 5,
+   "hours": 0.17,
+   "km": 1.36,
+   "med_speed": 23.3,
+   "lights_per_km": 1.47,
+   "climb_per_km": 7.8,
+   "crawl_share": 0.256,
+   "light_min_per_km": 1.35,
+   "dwell_med": 88,
+   "pickup_wait_med": 0,
+   "leg_min_med": null,
+   "orders_per_hour": 11.67,
+   "jobs_per_hour": 11.67,
+   "km_per_order": 0.68,
+   "hour_hist": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "area_km2": 0.17,
+   "food": 10,
+   "prepared": 9,
+   "prep_per_km2": 52.0,
+   "signals": 5,
+   "sig_per_km": 1.7,
+   "road_km": 3.0,
+   "pop_density": 7736.0,
+   "ranked": false,
+   "as_pickup": null,
+   "as_drop": {
+    "legs": 1,
+    "dead_min": 14.4,
+    "dead_km": 2.54,
+    "same_pct": 0,
+    "next_zone": "Waterloo"
+   },
+   "flow_parts": {
+    "pace": 45.9,
+    "lights": 33.4,
+    "climb": 41.4,
+    "stopgo": 44.3
+   },
+   "flow": 41.2,
+   "rate_shrunk": 6.29,
+   "worth": null,
+   "rank": 33,
+   "ring": [
+    [
+     151.20234,
+     -33.91016
+    ],
+    [
+     151.20082,
+     -33.91465
+    ],
+    [
+     151.19755,
+     -33.91328
+    ],
+    [
+     151.20001,
+     -33.91001
+    ],
+    [
+     151.19914,
+     -33.90965
+    ],
+    [
+     151.20024,
+     -33.90838
+    ],
+    [
+     151.20279,
+     -33.90873
+    ],
+    [
+     151.20234,
+     -33.91016
+    ]
+   ]
+  },
+  {
    "name": "Barangaroo",
    "label": "Barangaroo",
    "lga": "Sydney",
@@ -5945,16 +6347,18 @@
    "road_km": 1.0,
    "pop_density": 1000.0,
    "ranked": false,
+   "as_pickup": null,
+   "as_drop": null,
    "flow_parts": {
-    "pace": 58.7,
+    "pace": 57.2,
     "lights": 82.2,
-    "climb": 74.8,
-    "stopgo": 48.1
+    "climb": 74.2,
+    "stopgo": 48.0
    },
-   "flow": 66.6,
+   "flow": 66.0,
    "rate_shrunk": 6.27,
    "worth": null,
-   "rank": 33,
+   "rank": 34,
    "ring": [
     [
      151.20113,
@@ -6007,112 +6411,6 @@
    ]
   },
   {
-   "name": "Beaconsfield",
-   "label": "Beaconsfield",
-   "lga": "Sydney",
-   "c": [
-    151.20017,
-    -33.91151
-   ],
-   "orders": 2,
-   "pickups": 0,
-   "jobs": 2,
-   "lights": 1,
-   "shifts": 5,
-   "hours": 0.16,
-   "km": 1.34,
-   "med_speed": 23.3,
-   "lights_per_km": 0.75,
-   "climb_per_km": 7.9,
-   "crawl_share": 0.235,
-   "light_min_per_km": 1.16,
-   "dwell_med": 88,
-   "pickup_wait_med": 0,
-   "leg_min_med": null,
-   "orders_per_hour": 12.2,
-   "jobs_per_hour": 12.2,
-   "km_per_order": 0.67,
-   "hour_hist": [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    2,
-    0,
-    0,
-    0,
-    0,
-    0
-   ],
-   "area_km2": 0.17,
-   "food": 10,
-   "prepared": 9,
-   "prep_per_km2": 52.0,
-   "signals": 5,
-   "sig_per_km": 1.7,
-   "road_km": 3.0,
-   "pop_density": 7736.0,
-   "ranked": false,
-   "flow_parts": {
-    "pace": 51.2,
-    "lights": 39.8,
-    "climb": 41.4,
-    "stopgo": 47.5
-   },
-   "flow": 45.4,
-   "rate_shrunk": 6.32,
-   "worth": null,
-   "rank": 34,
-   "ring": [
-    [
-     151.20234,
-     -33.91016
-    ],
-    [
-     151.20082,
-     -33.91465
-    ],
-    [
-     151.19755,
-     -33.91328
-    ],
-    [
-     151.20001,
-     -33.91001
-    ],
-    [
-     151.19914,
-     -33.90965
-    ],
-    [
-     151.20024,
-     -33.90838
-    ],
-    [
-     151.20279,
-     -33.90873
-    ],
-    [
-     151.20234,
-     -33.91016
-    ]
-   ]
-  },
-  {
    "name": "Eveleigh",
    "label": "Eveleigh",
    "lga": "Sydney",
@@ -6123,21 +6421,21 @@
    "orders": 1,
    "pickups": 0,
    "jobs": 1,
-   "lights": 2,
+   "lights": 1,
    "shifts": 18,
-   "hours": 0.78,
-   "km": 15.83,
+   "hours": 0.77,
+   "km": 15.78,
    "med_speed": 23.8,
-   "lights_per_km": 0.13,
+   "lights_per_km": 0.06,
    "climb_per_km": 4.4,
-   "crawl_share": 0.033,
-   "light_min_per_km": 0.09,
+   "crawl_share": 0.031,
+   "light_min_per_km": 0.06,
    "dwell_med": 75,
    "pickup_wait_med": 0,
    "leg_min_med": 10.0,
-   "orders_per_hour": 1.28,
-   "jobs_per_hour": 1.28,
-   "km_per_order": 15.83,
+   "orders_per_hour": 1.3,
+   "jobs_per_hour": 1.3,
+   "km_per_order": 15.78,
    "hour_hist": [
     0,
     0,
@@ -6173,15 +6471,23 @@
    "road_km": 2.8,
    "pop_density": 1143.0,
    "ranked": true,
+   "as_pickup": null,
+   "as_drop": {
+    "legs": 1,
+    "dead_min": 5.2,
+    "dead_km": 1.47,
+    "same_pct": 0,
+    "next_zone": "Newtown"
+   },
    "flow_parts": {
     "pace": 100.0,
     "lights": 100.0,
-    "climb": 90.1,
+    "climb": 89.9,
     "stopgo": 100.0
    },
    "flow": 98.0,
-   "rate_shrunk": 3.14,
-   "worth": 5.96,
+   "rate_shrunk": 3.16,
+   "worth": 6.1,
    "rank": 35,
    "ring": [
     [
@@ -6343,13 +6649,15 @@
    "road_km": 43.1,
    "pop_density": 4100.0,
    "ranked": false,
+   "as_pickup": null,
+   "as_drop": null,
    "flow_parts": {
-    "pace": 95.0,
-    "lights": 81.0,
-    "climb": 50.8,
-    "stopgo": 87.5
+    "pace": 93.0,
+    "lights": 81.1,
+    "climb": 50.4,
+    "stopgo": 87.0
    },
-   "flow": 80.9,
+   "flow": 80.0,
    "rate_shrunk": 4.52,
    "worth": null,
    "rank": 36,
@@ -6637,13 +6945,19 @@
    "road_km": 18.1,
    "pop_density": 6291.0,
    "ranked": false,
-   "flow_parts": {
-    "pace": 72.5,
-    "lights": 39.5,
-    "climb": 42.1,
-    "stopgo": 68.3
+   "as_pickup": {
+    "legs": 1,
+    "leg_min": 15.3,
+    "leg_km": 3.27
    },
-   "flow": 56.4,
+   "as_drop": null,
+   "flow_parts": {
+    "pace": 70.9,
+    "lights": 40.2,
+    "climb": 41.7,
+    "stopgo": 67.9
+   },
+   "flow": 55.9,
    "rate_shrunk": 4.74,
    "worth": null,
    "rank": 37,
@@ -6839,13 +7153,15 @@
    "road_km": 18.0,
    "pop_density": 3180.0,
    "ranked": false,
+   "as_pickup": null,
+   "as_drop": null,
    "flow_parts": {
     "pace": 100.0,
     "lights": 100.0,
-    "climb": 73.6,
-    "stopgo": 95.5
+    "climb": 73.2,
+    "stopgo": 95.0
    },
-   "flow": 93.9,
+   "flow": 93.7,
    "rate_shrunk": 4.85,
    "worth": null,
    "rank": 38,
@@ -6969,13 +7285,19 @@
    "road_km": 17.3,
    "pop_density": 6024.0,
    "ranked": false,
+   "as_pickup": {
+    "legs": 1,
+    "leg_min": 9.3,
+    "leg_km": 3.09
+   },
+   "as_drop": null,
    "flow_parts": {
     "pace": 100.0,
-    "lights": 96.5,
-    "climb": 15.2,
-    "stopgo": 87.3
+    "lights": 96.3,
+    "climb": 14.7,
+    "stopgo": 86.8
    },
-   "flow": 79.8,
+   "flow": 79.5,
    "rate_shrunk": 4.84,
    "worth": null,
    "rank": 39,
@@ -7131,13 +7453,15 @@
    "road_km": 25.1,
    "pop_density": 1935.0,
    "ranked": false,
+   "as_pickup": null,
+   "as_drop": null,
    "flow_parts": {
     "pace": 100.0,
-    "lights": 95.2,
-    "climb": 52.4,
-    "stopgo": 91.5
+    "lights": 95.0,
+    "climb": 52.0,
+    "stopgo": 91.0
    },
-   "flow": 87.6,
+   "flow": 87.4,
    "rate_shrunk": 5.0,
    "worth": null,
    "rank": 40,
@@ -7277,13 +7601,21 @@
    "road_km": 10.0,
    "pop_density": 6293.0,
    "ranked": false,
-   "flow_parts": {
-    "pace": 76.5,
-    "lights": 72.8,
-    "climb": 14.2,
-    "stopgo": 64.4
+   "as_pickup": null,
+   "as_drop": {
+    "legs": 1,
+    "dead_min": 4.7,
+    "dead_km": 1.09,
+    "same_pct": 0,
+    "next_zone": "Summer Hill"
    },
-   "flow": 60.8,
+   "flow_parts": {
+    "pace": 74.6,
+    "lights": 73.0,
+    "climb": 13.6,
+    "stopgo": 64.1
+   },
+   "flow": 60.1,
    "rate_shrunk": 5.0,
    "worth": null,
    "rank": 41,
@@ -7431,13 +7763,21 @@
    "road_km": 31.9,
    "pop_density": 4305.0,
    "ranked": false,
-   "flow_parts": {
-    "pace": 85.4,
-    "lights": 66.5,
-    "climb": 25.0,
-    "stopgo": 77.2
+   "as_pickup": null,
+   "as_drop": {
+    "legs": 1,
+    "dead_min": 10.0,
+    "dead_km": 3.32,
+    "same_pct": 0,
+    "next_zone": "Ashfield"
    },
-   "flow": 66.6,
+   "flow_parts": {
+    "pace": 83.4,
+    "lights": 66.8,
+    "climb": 24.5,
+    "stopgo": 76.8
+   },
+   "flow": 65.8,
    "rate_shrunk": 5.04,
    "worth": null,
    "rank": 42,
@@ -7617,13 +7957,15 @@
    "road_km": 9.7,
    "pop_density": 10240.0,
    "ranked": false,
+   "as_pickup": null,
+   "as_drop": null,
    "flow_parts": {
-    "pace": 91.4,
-    "lights": 95.2,
-    "climb": 17.5,
-    "stopgo": 75.9
+    "pace": 89.3,
+    "lights": 95.1,
+    "climb": 17.0,
+    "stopgo": 75.6
    },
-   "flow": 74.9,
+   "flow": 74.0,
    "rate_shrunk": 5.28,
    "worth": null,
    "rank": 43,
@@ -7751,13 +8093,15 @@
    "road_km": 12.0,
    "pop_density": 3276.0,
    "ranked": false,
+   "as_pickup": null,
+   "as_drop": null,
    "flow_parts": {
-    "pace": 94.7,
-    "lights": 66.8,
-    "climb": 44.4,
-    "stopgo": 83.0
+    "pace": 92.4,
+    "lights": 67.1,
+    "climb": 43.9,
+    "stopgo": 82.6
    },
-   "flow": 74.7,
+   "flow": 73.9,
    "rate_shrunk": 5.42,
    "worth": null,
    "rank": 44,
@@ -7929,13 +8273,19 @@
    "road_km": 6.9,
    "pop_density": 11493.0,
    "ranked": false,
-   "flow_parts": {
-    "pace": 73.6,
-    "lights": 87.1,
-    "climb": 23.8,
-    "stopgo": 56.4
+   "as_pickup": {
+    "legs": 1,
+    "leg_min": 6.6,
+    "leg_km": 1.79
    },
-   "flow": 64.3,
+   "as_drop": null,
+   "flow_parts": {
+    "pace": 71.8,
+    "lights": 87.1,
+    "climb": 23.2,
+    "stopgo": 56.2
+   },
+   "flow": 63.6,
    "rate_shrunk": 5.38,
    "worth": null,
    "rank": 45,
@@ -8091,13 +8441,19 @@
    "road_km": 42.9,
    "pop_density": 5830.0,
    "ranked": false,
-   "flow_parts": {
-    "pace": 40.1,
-    "lights": 25.2,
-    "climb": 43.1,
-    "stopgo": 50.1
+   "as_pickup": {
+    "legs": 1,
+    "leg_min": 21.1,
+    "leg_km": 4.06
    },
-   "flow": 38.3,
+   "as_drop": null,
+   "flow_parts": {
+    "pace": 38.9,
+    "lights": 26.0,
+    "climb": 42.4,
+    "stopgo": 49.9
+   },
+   "flow": 38.0,
    "rate_shrunk": 5.53,
    "worth": null,
    "rank": 46,
@@ -8293,13 +8649,15 @@
    "road_km": 17.4,
    "pop_density": 10.0,
    "ranked": false,
+   "as_pickup": null,
+   "as_drop": null,
    "flow_parts": {
-    "pace": 39.0,
+    "pace": 37.9,
     "lights": 0.0,
-    "climb": 40.2,
-    "stopgo": 70.0
+    "climb": 39.7,
+    "stopgo": 69.7
    },
-   "flow": 33.9,
+   "flow": 33.4,
    "rate_shrunk": 4.05,
    "worth": null,
    "rank": 47,
@@ -8366,13 +8724,15 @@
    "road_km": 5.0,
    "pop_density": 8405.0,
    "ranked": false,
+   "as_pickup": null,
+   "as_drop": null,
    "flow_parts": {
-    "pace": 72.8,
-    "lights": 67.0,
-    "climb": 11.9,
-    "stopgo": 67.5
+    "pace": 71.0,
+    "lights": 67.2,
+    "climb": 11.3,
+    "stopgo": 67.3
    },
-   "flow": 58.0,
+   "flow": 57.3,
    "rate_shrunk": 4.47,
    "worth": null,
    "rank": 48,
@@ -8439,13 +8799,15 @@
    "road_km": 5.9,
    "pop_density": 4078.0,
    "ranked": false,
+   "as_pickup": null,
+   "as_drop": null,
    "flow_parts": {
-    "pace": 55.2,
-    "lights": 40.3,
-    "climb": 30.9,
-    "stopgo": 66.2
+    "pace": 53.7,
+    "lights": 41.0,
+    "climb": 30.2,
+    "stopgo": 65.9
    },
-   "flow": 48.1,
+   "flow": 47.6,
    "rate_shrunk": 4.58,
    "worth": null,
    "rank": 49,
@@ -8512,13 +8874,15 @@
    "road_km": 4.6,
    "pop_density": 1564.0,
    "ranked": false,
+   "as_pickup": null,
+   "as_drop": null,
    "flow_parts": {
-    "pace": 31.9,
-    "lights": 8.6,
-    "climb": 52.6,
-    "stopgo": 54.8
+    "pace": 30.8,
+    "lights": 9.7,
+    "climb": 51.8,
+    "stopgo": 54.6
    },
-   "flow": 33.6,
+   "flow": 33.4,
    "rate_shrunk": 4.69,
    "worth": null,
    "rank": 50,
@@ -8585,13 +8949,15 @@
    "road_km": 8.3,
    "pop_density": 15594.0,
    "ranked": false,
+   "as_pickup": null,
+   "as_drop": null,
    "flow_parts": {
-    "pace": 76.9,
-    "lights": 76.7,
-    "climb": 57.5,
-    "stopgo": 66.4
+    "pace": 75.0,
+    "lights": 76.8,
+    "climb": 56.9,
+    "stopgo": 66.2
    },
-   "flow": 71.1,
+   "flow": 70.3,
    "rate_shrunk": 4.75,
    "worth": null,
    "rank": 51,
@@ -8658,13 +9024,15 @@
    "road_km": 11.9,
    "pop_density": 3426.0,
    "ranked": false,
+   "as_pickup": null,
+   "as_drop": null,
    "flow_parts": {
-    "pace": 88.2,
-    "lights": 80.6,
-    "climb": 56.6,
-    "stopgo": 74.6
+    "pace": 86.0,
+    "lights": 80.7,
+    "climb": 56.0,
+    "stopgo": 74.3
    },
-   "flow": 77.3,
+   "flow": 76.4,
    "rate_shrunk": 4.75,
    "worth": null,
    "rank": 52,
@@ -8731,13 +9099,15 @@
    "road_km": 7.3,
    "pop_density": 2386.0,
    "ranked": false,
+   "as_pickup": null,
+   "as_drop": null,
    "flow_parts": {
-    "pace": 79.6,
-    "lights": 76.4,
-    "climb": 60.8,
-    "stopgo": 72.0
+    "pace": 77.6,
+    "lights": 76.5,
+    "climb": 60.2,
+    "stopgo": 71.7
    },
-   "flow": 73.6,
+   "flow": 72.7,
    "rate_shrunk": 4.75,
    "worth": null,
    "rank": 53,
@@ -8804,13 +9174,15 @@
    "road_km": 10.0,
    "pop_density": 4113.0,
    "ranked": false,
+   "as_pickup": null,
+   "as_drop": null,
    "flow_parts": {
-    "pace": 70.1,
-    "lights": 66.5,
-    "climb": 3.6,
-    "stopgo": 63.5
+    "pace": 68.2,
+    "lights": 66.7,
+    "climb": 2.8,
+    "stopgo": 63.3
    },
-   "flow": 54.6,
+   "flow": 53.8,
    "rate_shrunk": 4.94,
    "worth": null,
    "rank": 54,
@@ -8877,13 +9249,15 @@
    "road_km": 3.0,
    "pop_density": 5205.0,
    "ranked": false,
+   "as_pickup": null,
+   "as_drop": null,
    "flow_parts": {
-    "pace": 73.8,
-    "lights": 67.0,
-    "climb": 12.6,
-    "stopgo": 66.1
+    "pace": 71.8,
+    "lights": 67.2,
+    "climb": 11.8,
+    "stopgo": 65.9
    },
-   "flow": 58.3,
+   "flow": 57.5,
    "rate_shrunk": 4.94,
    "worth": null,
    "rank": 55,
@@ -8892,20 +9266,20 @@
  ],
  "ranked_zones": [
   "Haymarket",
-  "Ultimo",
   "Chippendale",
+  "Ultimo",
   "Newtown",
   "Waterloo",
-  "Redfern",
-  "Glebe",
   "Sydney CBD",
+  "Redfern",
   "Zetland",
+  "Glebe",
   "Surry Hills",
   "Kingsford",
   "Camperdown",
+  "Alexandria",
   "Darlinghurst",
   "Darlington",
-  "Alexandria",
   "Mascot",
   "Kensington",
   "St Peters",
@@ -8920,7 +9294,7 @@
   {
    "lat": -33.88431,
    "lon": 151.19672,
-   "zone": "Ultimo",
+   "zone": "Chippendale",
    "kind": "pickup",
    "venue": "Wok Master",
    "visits": 3,
@@ -9271,7 +9645,7 @@
   {
    "lat": -33.89619,
    "lon": 151.19911,
-   "zone": "Waterloo",
+   "zone": "Alexandria",
    "kind": "pickup",
    "venue": "Xiang Ji Rice Breakfast Bar",
    "visits": 2,
@@ -11652,7 +12026,7 @@
   {
    "lat": -33.88431,
    "lon": 151.19672,
-   "zone": "Ultimo",
+   "zone": "Chippendale",
    "waits": 17,
    "shifts": 10,
    "wait_med": 63,
@@ -11842,7 +12216,7 @@
   {
    "lat": -33.89619,
    "lon": 151.19911,
-   "zone": "Waterloo",
+   "zone": "Alexandria",
    "waits": 5,
    "shifts": 3,
    "wait_med": 62,
@@ -12062,7 +12436,7 @@
   {
    "lat": -33.91536,
    "lon": 151.18467,
-   "zone": "Alexandria",
+   "zone": "St Peters",
    "waits": 3,
    "shifts": 3,
    "wait_med": 49,
@@ -19854,7 +20228,7 @@
    "pickups": 6,
    "lights": 28,
    "orders_per_hour": 0.91,
-   "top_zone": "Redfern"
+   "top_zone": "Chippendale"
   },
   {
    "id": "route_2026-05-07_2.11pm",
@@ -19966,7 +20340,7 @@
    "pickups": 7,
    "lights": 36,
    "orders_per_hour": 1.96,
-   "top_zone": "Sydney CBD"
+   "top_zone": "Forest Lodge"
   },
   {
    "id": "route_2026-05-15_8.59pm",
@@ -20151,6 +20525,102 @@
   "median_fare": 7.2,
   "median_km": 3.04,
   "median_min": 17.0
+ },
+ "chain": {
+  "dead_legs": 76,
+  "dead_min_med": 5.7,
+  "dead_km_med": 1.2,
+  "paid_km_med": 1.62,
+  "dead_km_total": 102.9,
+  "paid_km_total": 151.2,
+  "dead_share": 41,
+  "same_zone_pct": 37,
+  "flows": [
+   {
+    "from": "Waterloo",
+    "to": "Waterloo",
+    "n": 4,
+    "same": true
+   },
+   {
+    "from": "Glebe",
+    "to": "Ultimo",
+    "n": 3,
+    "same": false
+   },
+   {
+    "from": "Chippendale",
+    "to": "Chippendale",
+    "n": 3,
+    "same": true
+   },
+   {
+    "from": "Ultimo",
+    "to": "Ultimo",
+    "n": 3,
+    "same": true
+   },
+   {
+    "from": "Haymarket",
+    "to": "Haymarket",
+    "n": 3,
+    "same": true
+   },
+   {
+    "from": "Kingsford",
+    "to": "Kingsford",
+    "n": 2,
+    "same": true
+   },
+   {
+    "from": "Mascot",
+    "to": "Mascot",
+    "n": 2,
+    "same": true
+   },
+   {
+    "from": "Zetland",
+    "to": "Zetland",
+    "n": 2,
+    "same": true
+   },
+   {
+    "from": "St Peters",
+    "to": "Newtown",
+    "n": 2,
+    "same": false
+   },
+   {
+    "from": "Pyrmont",
+    "to": "Haymarket",
+    "n": 2,
+    "same": false
+   },
+   {
+    "from": "Newtown",
+    "to": "Newtown",
+    "n": 2,
+    "same": true
+   },
+   {
+    "from": "Zetland",
+    "to": "Rosebery",
+    "n": 2,
+    "same": false
+   },
+   {
+    "from": "Zetland",
+    "to": "Waterloo",
+    "n": 2,
+    "same": false
+   },
+   {
+    "from": "Camperdown",
+    "to": "Newtown",
+    "n": 2,
+    "same": false
+   }
+  ]
  },
  "samples": {
   "quick_pickups": [

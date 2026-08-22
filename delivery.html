@@ -135,6 +135,35 @@
 
 
 <section class="analysis-section">
+  <div class="section-title">接单区还是送达区<em>·</em>Collect or Deliver</div>
+  <div class="section-sub">同一个区，做「取餐点」和做「送达点」是两件不同的事 —— 而真正决定时薪的是第三件：送完之后，下一单离你有多远</div>
+
+  <div class="dlv-kpis" id="dlvChainSum"></div>
+
+  <div class="analysis-grid dlv-chain-grid">
+    <div class="chart-card">
+      <div class="chart-title">最好接单的区</div>
+      <div class="chart-sub">Where the orders come from · 按取餐次数排 · 送出去越近越能多跑</div>
+      <div class="ch-list" id="dlvPickupRank"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">最好送达的区</div>
+      <div class="chart-sub">Where you land well · 按送完之后的空驶时间排，越短越好</div>
+      <div class="ch-list" id="dlvDropRank"></div>
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-top: 20px;">
+    <div class="chart-title">送完之后，下一单从哪来</div>
+    <div class="chart-sub">Drop-off → next pickup · 蓝色是留在同一个区</div>
+    <div class="ch-flows" id="dlvFlows"></div>
+  </div>
+
+  <div class="dlv-note" id="dlvChainNote"></div>
+</section>
+
+
+<section class="analysis-section">
   <div class="section-title">热点地图<em>·</em>Order Hotspots</div>
   <div class="section-sub">取餐点、送达点和红灯堵点分开画 · 底色可以换成任意一项指标 · 点某个区钻进去只看它 · 拖时间轴看某个时段 —— 已排除每次出勤自己起点/终点 150 米内的停留</div>
   <div class="dlv-map-controls">

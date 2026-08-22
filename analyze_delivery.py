@@ -42,7 +42,7 @@ import argparse
 import json
 import math
 import statistics as st
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from xml.etree import ElementTree as ET
@@ -575,6 +575,89 @@ def build_legs(shifts):
                     legs.append({"min": round(mins, 2), "km_direct": round(km, 3),
                                  "from": src, "to": d, "ride": r["id"]})
     return legs
+
+
+def build_transitions(shifts, subs):
+    """What happens between jobs, and where the next one starts.
+
+    A shift is not a list of orders, it is a chain: collect, deliver, ride to
+    the next collection, repeat. That middle leg earns nothing, and it turns
+    out to be 41% of the distance ridden — which makes "where does the next
+    job start after I drop here" a more useful question about a suburb than
+    anything measured at the drop itself.
+
+    Per zone this records two different roles, because a suburb is rarely good
+    at both: as a place to collect from (how often, how long the restaurant
+    keeps you, how far the delivery then runs) and as a place to deliver into
+    (how far you then have to ride before the next collection, and how often
+    that collection is in the same suburb).
+    """
+    from_zone = defaultdict(list)     # pickup zone  -> delivery legs
+    into_zone = defaultdict(list)     # dropoff zone -> dead legs after it
+    flows = defaultdict(int)          # (dropoff zone, next pickup zone) -> n
+    dead_all, paid_all = [], []
+
+    for r in shifts:
+        seq = sorted([d for d in r["dwells"] if d["kind"] in ("pickup", "dropoff")],
+                     key=lambda d: d["t"])
+        for a, b in zip(seq, seq[1:]):
+            t0 = a["t"].timestamp() + a["secs"]
+            t1 = b["t"].timestamp()
+            mins = (t1 - t0) / 60
+            # A gap longer than this is a break, a re-position across town, or
+            # a stretch the watch did not record — not a leg between two jobs.
+            if not (0 <= mins <= 45):
+                continue
+            km = sum(s["d"] for s in r["samples"] if t0 <= s["t"].timestamp() < t1) / 1000
+            if a["kind"] == "pickup" and b["kind"] == "dropoff":
+                paid_all.append(km)
+                if a["zone"]:
+                    from_zone[a["zone"]].append((mins, km))
+            elif a["kind"] == "dropoff" and b["kind"] == "pickup":
+                dead_all.append(km)
+                if a["zone"]:
+                    into_zone[a["zone"]].append((mins, km, b["zone"]))
+                    flows[(a["zone"], b["zone"])] += 1
+
+    pickup_stats, drop_stats = {}, {}
+    for z, legs in from_zone.items():
+        pickup_stats[z] = {
+            "legs": len(legs),
+            "leg_min": round(st.median([m for m, _ in legs]), 1),
+            "leg_km": round(st.median([k for _, k in legs]), 2),
+        }
+    for z, legs in into_zone.items():
+        same = sum(1 for _, _, nz in legs if nz == z)
+        nxt = Counter(nz for _, _, nz in legs if nz and nz != z)
+        drop_stats[z] = {
+            "legs": len(legs),
+            "dead_min": round(st.median([m for m, _, _ in legs]), 1),
+            "dead_km": round(st.median([k for _, k, _ in legs]), 2),
+            "same_pct": round(100 * same / len(legs)),
+            "next_zone": DISPLAY_NAMES.get(nxt.most_common(1)[0][0], nxt.most_common(1)[0][0]) if nxt else None,
+        }
+
+    dead_km = sum(dead_all)
+    paid_km = sum(paid_all)
+    top_flows = [{"from": DISPLAY_NAMES.get(a, a), "to": DISPLAY_NAMES.get(b, b),
+                  "n": n, "same": a == b}
+                 for (a, b), n in sorted(flows.items(), key=lambda kv: -kv[1])[:14]
+                 if b and n >= 2]
+    summary = {
+        "dead_legs": len(dead_all),
+        "dead_min_med": round(st.median([m for legs in into_zone.values() for m, _, _ in legs]), 1)
+                        if into_zone else None,
+        "dead_km_med": round(st.median(dead_all), 2) if dead_all else None,
+        "paid_km_med": round(st.median(paid_all), 2) if paid_all else None,
+        "dead_km_total": round(dead_km, 1),
+        "paid_km_total": round(paid_km, 1),
+        "dead_share": round(100 * dead_km / (dead_km + paid_km)) if (dead_km + paid_km) else None,
+        "same_zone_pct": round(100 * sum(1 for z, legs in into_zone.items()
+                                         for _, _, nz in legs if nz == z)
+                               / max(1, sum(len(v) for v in into_zone.values()))),
+        "flows": top_flows,
+    }
+    return pickup_stats, drop_stats, summary
 
 
 # -- ground truth -----------------------------------------------------------
@@ -1236,12 +1319,18 @@ def main():
     counts = defaultdict(int)
     for d in all_dwells:
         counts[d["kind"]] += 1
+    for d in all_dwells:
+        d["zone"] = subs.lookup(d["lat"], d["lon"])
     legs = build_legs(shifts)
+    pickup_stats, drop_stats, chain = build_transitions(shifts, subs)
     validation = validate_against_uber(args.uber, shifts, all_dwells, subs)
     print(f"  -> {len(all_dwells)} dwells: {counts['dropoff']} 送达, {counts['pickup']} 取餐, "
           f"{counts['light']} 等灯 ({len(anchors)} repeat pickup points, "
           f"{endpoint_dropped} dropped as shift endpoints)")
     print(f"  -> {len(legs)} pickup→drop-off legs paired")
+    print(f"  -> {chain['dead_legs']} dead legs: median {chain['dead_km_med']} km / "
+          f"{chain['dead_min_med']} min, {chain['dead_share']}% of distance unpaid, "
+          f"{chain['same_zone_pct']}% next job in the same suburb")
     if validation:
         print(f"  -> validated against {validation['orders']} real orders: "
               f"{validation['recall_drop']}% of drop-offs caught, "
@@ -1251,6 +1340,9 @@ def main():
 
     Z = build_zones(shifts, subs, ctx)
     zones = zone_rows(Z, subs, ctx, legs)
+    for z in zones:
+        z["as_pickup"] = pickup_stats.get(z["name"])
+        z["as_drop"] = drop_stats.get(z["name"])
     flow_anchors = score_flow(zones)
     worth_basis = score_worth(zones)
     zones.sort(key=lambda x: (-x["jobs"], -x["hours"]))
@@ -1444,6 +1536,7 @@ def main():
         "corridors": corridors,
         "shifts": shift_rows,
         "validation": validation,
+        "chain": chain,
         "samples": {"quick_pickups": quick_work, "long_lights": long_light},
     }
 

@@ -1279,3 +1279,118 @@ function renderValidation() {
       + `只有上面这些汇总分数离开了本地。`;
   }
 }
+
+// ============ 接单区 vs 送达区 / Collect or deliver ============
+// A suburb is rarely good at both jobs. Haymarket hands out thirty-five
+// orders and takes six; Camperdown takes eleven and hands out none. And the
+// part that decides the hourly rate is neither — it is the unpaid ride
+// between dropping one order and collecting the next.
+function renderChain() {
+  const D = dlvData();
+  if (!D || !D.chain) return;
+  const c = D.chain;
+
+  const sum = document.getElementById('dlvChainSum');
+  if (sum) {
+    const cards = [
+      ['空驶占比', c.dead_share, '%', `送完到下一次取餐之间的里程 —— ${c.dead_km_total} km 不挣钱，载单 ${c.paid_km_total} km`],
+      ['每次空驶', c.dead_km_med, 'km', `中位 ${c.dead_min_med} 分钟 · 共 ${c.dead_legs} 段`],
+      ['下一单还在同区', c.same_zone_pct, '%', `送完之后，下一次取餐仍在同一个 suburb 的比例`],
+      ['载单里程', c.paid_km_med, 'km', `取餐到送达的中位直线距离`],
+    ];
+    sum.innerHTML = cards.map(([label, v, unit, foot]) => `
+      <div class="dlv-kpi">
+        <div class="dlv-kpi-label">${label}</div>
+        <div class="dlv-kpi-value">${v == null ? '—' : v}<span class="dlv-kpi-unit">${unit}</span></div>
+        <div class="dlv-kpi-foot">${dlvEsc(foot)}</div>
+      </div>`).join('');
+  }
+
+  const MIN_LEGS = 4;   // below this the per-zone medians are anecdotes
+  const zones = D.zones.filter(z => z.ranked);
+
+  // ---- best places to collect from ----
+  const pk = document.getElementById('dlvPickupRank');
+  if (pk) {
+    const rows = zones.filter(z => z.pickups >= 3)
+      .sort((a, b) => b.pickups - a.pickups).slice(0, 12);
+    pk.innerHTML = rows.map(z => {
+      const ap = z.as_pickup || {};
+      const thin = (ap.legs || 0) < MIN_LEGS;
+      const wait = z.pickup_wait_med;
+      return `<div class="ch-row" data-zone="${dlvEsc(z.name)}">
+        <div class="ch-name">${dlvEsc(z.label)}<em>${z.pickups} 次取餐</em></div>
+        <div class="ch-stats">
+          <span><i>等餐</i>${wait}s</span>
+          <span class="${thin ? 'ch-thin' : ''}"><i>送出去要</i>${ap.leg_min == null ? '—' : ap.leg_min + ' min'}</span>
+          <span class="${thin ? 'ch-thin' : ''}"><i>送出去多远</i>${ap.leg_km == null ? '—' : ap.leg_km + ' km'}</span>
+          <span><i>餐厅密度</i>${z.prep_per_km2 == null ? '—' : Math.round(z.prep_per_km2)}/km²</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ---- best places to deliver into ----
+  // Both ends, not just the good one. Showing the twelve shortest hid exactly
+  // the suburbs worth avoiding — the whole point of asking where you land
+  // well is also learning where you land badly.
+  const dp = document.getElementById('dlvDropRank');
+  if (dp) {
+    const pool = zones.filter(z => z.orders >= 3 && z.as_drop && z.as_drop.legs >= 3)
+      .sort((a, b) => (a.as_drop.dead_min) - (b.as_drop.dead_min));
+    const best = pool.slice(0, 8);
+    const worst = pool.slice(8);
+    const render = z => {
+      const ad = z.as_drop;
+      const thin = ad.legs < MIN_LEGS;
+      // Long wait but short distance is not the same failure as long wait and
+      // long distance: one is sitting still, the other is riding for nothing.
+      const idling = ad.dead_min >= 8 && ad.dead_km <= 1.0;
+      return `<div class="ch-row${thin ? ' ch-row-thin' : ''}" data-zone="${dlvEsc(z.name)}">
+        <div class="ch-name">${dlvEsc(z.label)}<em>${z.orders} 次送达</em></div>
+        <div class="ch-stats">
+          <span><i>空驶</i>${ad.dead_min} min</span>
+          <span><i>骑了</i>${ad.dead_km} km</span>
+          <span><i>同区续单</i>${ad.same_pct}%</span>
+          <span><i>常去的下一区</i>${dlvEsc(ad.next_zone || '—')}</span>
+        </div>
+        ${idling ? '<div class="ch-flag">时间长但没骑多远 —— 是在原地等单，不是在跑远路</div>' : ''}
+        ${thin ? `<div class="ch-thin-note">只有 ${ad.legs} 段样本</div>` : ''}
+      </div>`;
+    };
+    dp.innerHTML = best.map(render).join('')
+      + (worst.length ? '<div class="ch-split">最难接上下一单的</div>' + worst.map(render).join('') : '');
+  }
+
+  // ---- where the next job actually comes from ----
+  const fl = document.getElementById('dlvFlows');
+  if (fl) {
+    const max = Math.max(...c.flows.map(f => f.n), 1);
+    fl.innerHTML = c.flows.map(f => `
+      <div class="ch-flow${f.same ? ' same' : ''}">
+        <span class="ch-flow-from">${dlvEsc(f.from)}</span>
+        <span class="ch-flow-arrow">→</span>
+        <span class="ch-flow-to">${dlvEsc(f.to)}</span>
+        <span class="ch-flow-bar"><span style="width:${(f.n / max) * 100}%;background:${f.same ? DLV.cyan : DLV.amber}"></span></span>
+        <span class="ch-flow-n">${f.n}</span>
+      </div>`).join('');
+  }
+
+  const note = document.getElementById('dlvChainNote');
+  if (note) {
+    note.innerHTML = `<strong>怎么读这两张表</strong> · `
+      + `一个区很少两头都好。<em>接单区</em>看的是它把单派出去的能力：取餐次数、餐厅让你等多久、`
+      + `以及接了之后要骑多远才送到 —— 送得越近，同样时间里能跑的单越多。`
+      + `<em>送达区</em>看的是完全不同的东西：送完之后，你离下一单有多远。`
+      + `<br><br>`
+      + `<b>空驶是最大的一笔隐形成本</b>：全部里程里有 ${c.dead_share}% 花在「送完了、还没接到下一单」的路上，`
+      + `一分钱不挣。把它压下去比多接一单更划算。`
+      + `<br><br>`
+      + `<b>两种不同的坏</b>：空驶时间长、距离也长，是真的在跑远路；`
+      + `时间长但距离很短，是停在原地等派单 —— 后者换个位置也没用，得换时段。表里标出来了。`
+      + `<br><br>`
+      + `<b>样本很薄</b>：一共只有 ${c.dead_legs} 段空驶可分析，摊到各区每区只有几段，`
+      + `少于 4 段的已经标灰。这一节看趋势可以，别拿单个数字下结论。`
+      + `另外这里只统计相邻两次作业间隔在 45 分钟以内的 —— 更长的那些是休息或跨城转场，不是接单间隙。`;
+  }
+}
