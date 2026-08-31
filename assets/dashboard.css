@@ -1,0 +1,401 @@
+/* ============================================================
+   配送作战台 / Delivery console
+   A single-screen grid instead of a scrolling column. Everything the
+   delivery page says, arranged so the map keeps the middle of the screen
+   and every other panel is something you read *about* the map without
+   losing sight of it.
+
+   Shares the palette and fonts with styles.css; this file only does layout
+   and the denser type scale that a dashboard needs.
+   ============================================================ */
+
+/* The console owns the whole viewport; nothing below it should scroll. */
+body:has(.dash) { overflow: hidden; }
+@media (max-width: 1180px) { body:has(.dash) { overflow: auto; } }
+
+.dash {
+  /* Fills the viewport on a desktop, falls back to normal flow on small
+     screens where cramming nine panels onto one screen helps nobody. */
+  height: 100vh;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: auto 1.55fr 1fr;
+  gap: 1px;
+  padding: 1px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.dash-panel {
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dash-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 12px 6px;
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+.dash-head h2 {
+  font-family: var(--chinese);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+.dash-head em {
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 8.5px;
+  color: var(--text-faint);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.dash-head .dash-note {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+.dash-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 8px 12px 10px; }
+.dash-body.flush { padding: 0; }
+
+/* ---- top bar ------------------------------------------------------- */
+.dash-top {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 14px;
+  overflow-x: auto;
+}
+.dash-brand {
+  display: flex;
+  flex-direction: column;
+  padding: 9px 20px 9px 0;
+  margin-right: 18px;
+  border-right: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+.dash-brand b {
+  font-family: var(--chinese);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--amber);
+  letter-spacing: 0.04em;
+}
+.dash-brand span {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  color: var(--text-faint);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.dash-stats { display: flex; gap: 0; flex: 1 1 auto; }
+.dash-stat { padding: 7px 18px; border-right: 1px solid var(--border); white-space: nowrap; }
+.dash-stat:last-child { border-right: none; }
+.dash-stat i {
+  display: block;
+  font-style: normal;
+  font-family: var(--chinese);
+  font-size: 9.5px;
+  color: var(--text-faint);
+  margin-bottom: 2px;
+}
+.dash-stat b {
+  font-family: var(--mono);
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--text);
+  line-height: 1;
+}
+.dash-stat b u { text-decoration: none; font-size: 9.5px; color: var(--text-faint); margin-left: 3px; }
+.dash-stat.hot b { color: var(--amber-bright); }
+.dash-stat.warn b { color: var(--rose); }
+.dash-links { margin-left: auto; display: flex; gap: 14px; padding-left: 18px; flex: 0 0 auto; }
+.dash-links a {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  text-decoration: none;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 1px;
+}
+.dash-links a:hover { color: var(--amber); border-bottom-color: var(--amber-dim); }
+
+/* ---- placement ----------------------------------------------------- */
+.p-map    { grid-column: 1 / 8;  grid-row: 2 / 3; }
+.p-zones  { grid-column: 8 / 11; grid-row: 2 / 3; }
+.p-chain  { grid-column: 11 / -1; grid-row: 2 / 3; }
+.p-list   { grid-column: 1 / 4;  grid-row: 3 / 4; }
+.p-hours  { grid-column: 4 / 8;  grid-row: 3 / 4; }
+.p-roads  { grid-column: 8 / 11; grid-row: 3 / 4; }
+.p-truth  { grid-column: 11 / -1; grid-row: 3 / 4; }
+
+/* ---- map panel ----------------------------------------------------- */
+.p-map .dash-body { display: flex; flex-direction: column; gap: 0; }
+/* styles.css pins #dlvMap to 600px for the long page; here it has to take
+   whatever the grid row leaves it. */
+.p-map #dlvMap {
+  flex: 1 1 auto;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  border: none;
+  background: #0d0f13;
+}
+.dash-mapbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+.dash-mapbar .dlv-chip { font-size: 10.5px; padding: 3px 9px; gap: 5px; }
+.dash-mapbar .dlv-dot { width: 7px; height: 7px; }
+.dash-mapbar .dlv-mchip { font-size: 10px; padding: 2px 7px; }
+.dash-mapbar .dash-sep { width: 1px; height: 14px; background: var(--border); margin: 0 3px; }
+.dash-mapbar .dlv-reset { font-size: 9.5px; padding: 3px 2px; margin-left: 0; }
+.dash-timebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-top: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+.dash-timebar .dlv-play { width: 22px; height: 22px; font-size: 9px; }
+.dash-timebar input[type=range] { flex: 1 1 auto; }
+.dash-timebar .dlv-time-label { font-size: 10.5px; min-width: 44px; }
+.dash-timebar input[type=range] { flex: 0 1 190px; }
+.dash-mapbar-label {
+  font-family: var(--chinese);
+  font-size: 10px;
+  color: var(--text-faint);
+}
+.p-map #dlvMapLegend {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: nowrap;
+  padding: 0;
+  border: none;
+  margin: 0 0 0 auto;
+  overflow: hidden;
+}
+.p-map #dlvMapLegend .dlv-leg-grad { width: 74px; height: 6px; }
+.p-map #dlvMapLegend .dlv-leg-scale span,
+.p-map #dlvMapLegend .dlv-leg-dots span { font-size: 9.5px; }
+.p-map #dlvMapLegend .dlv-leg-scale em { font-size: 10px; }
+.p-map #dlvMapLegend .dlv-leg-dots i { width: 7px; height: 7px; }
+
+/* Focus bar rides on top of the map rather than pushing it down. */
+.dash-focus {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  z-index: 500;
+  background: rgba(10, 10, 12, 0.94);
+  border: 1px solid var(--amber-dim);
+  border-radius: 6px;
+  padding: 8px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  align-items: center;
+}
+.dash-mapwrap { position: relative; flex: 1 1 auto; min-height: 0; display: flex; }
+.dash-focus .dlv-focus-name { font-size: 12.5px; }
+.dash-focus .dlv-focus-stats span { font-size: 10.5px; }
+.dash-focus .dlv-focus-parts { gap: 10px; }
+.dash-focus .dlv-focus-exit { font-size: 10px; }
+
+/* ---- zone bars ----------------------------------------------------- */
+.dz-row {
+  display: grid;
+  grid-template-columns: 78px 1fr 30px;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 0;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.dz-row:hover { background: var(--surface); }
+.dz-name {
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dz-row:hover .dz-name { color: var(--amber); }
+.dz-track { position: relative; height: 12px; background: var(--surface-2); border-radius: 2px; overflow: hidden; }
+.dz-fill { position: absolute; left: 0; top: 0; bottom: 0; opacity: 0.85; }
+.dz-ci { position: absolute; top: 0; bottom: 0; border-left: 1px solid rgba(255,255,255,.35); border-right: 1px solid rgba(255,255,255,.35); }
+.dz-med { position: absolute; top: -1px; bottom: -1px; width: 1px; background: var(--text-faint); opacity: .8; }
+.dz-val { font-family: var(--mono); font-size: 10.5px; color: var(--text); text-align: right; }
+.dz-legend {
+  display: flex;
+  gap: 12px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-faint);
+  padding-bottom: 6px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.dz-toggle {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-faint);
+  font-family: var(--chinese);
+  font-size: 9.5px;
+  padding: 1px 6px;
+  cursor: pointer;
+}
+.dz-toggle:hover { color: var(--amber); border-color: var(--amber-dim); }
+
+/* ---- chain panel --------------------------------------------------- */
+.dc-dir { margin-bottom: 9px; }
+.dc-dir-head { display: flex; align-items: baseline; gap: 6px; margin-bottom: 3px; }
+.dc-dir-n { font-family: var(--mono); font-size: 15px; line-height: 1; }
+.dc-dir-label { font-size: 10.5px; color: var(--text); }
+.dc-dir-cost { margin-left: auto; font-family: var(--mono); font-size: 9px; color: var(--text-faint); }
+.dc-bar { height: 5px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.dc-bar span { display: block; height: 100%; opacity: 0.85; }
+.dc-split {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-faint);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 10px 0 5px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.dc-zone {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  font-size: 10.5px;
+  cursor: pointer;
+}
+.dc-zone:hover { color: var(--amber); }
+.dc-zone b { font-weight: 400; color: var(--text-dim); flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dc-zone .dc-num { font-family: var(--mono); font-size: 10px; color: var(--text-faint); }
+.dc-pill {
+  font-size: 8.5px;
+  padding: 0 5px;
+  border-radius: 999px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.dc-pill.trap { color: var(--rose); border-color: var(--rose); }
+.dc-pill.hub { color: var(--cyan); border-color: var(--cyan); }
+
+/* ---- hour heatmap -------------------------------------------------- */
+.dh-grid { min-width: 0; }
+.dh-row { display: flex; align-items: center; gap: 1px; margin-bottom: 1px; }
+.dh-label {
+  flex: 0 0 66px;
+  font-size: 9.5px;
+  color: var(--text-dim);
+  text-align: right;
+  padding-right: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.dh-row:hover .dh-label { color: var(--amber); }
+.dh-cell { flex: 1 1 0; height: 13px; border-radius: 1px; min-width: 0; }
+.dh-head .dh-cell { height: auto; background: none !important; font-family: var(--mono); font-size: 8px; color: var(--text-faint); text-align: center; }
+
+/* ---- roads / list -------------------------------------------------- */
+.dr-row { padding: 4px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+.dr-row:last-child { border-bottom: none; }
+.dr-row:hover .dr-name { color: var(--amber); }
+.dr-top { display: flex; align-items: baseline; gap: 6px; }
+.dr-name { font-size: 10.5px; color: var(--text-dim); flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dr-metric { font-family: var(--mono); font-size: 10px; color: var(--amber); }
+.dr-bar { height: 3px; background: var(--surface-2); border-radius: 2px; overflow: hidden; margin-top: 3px; }
+.dr-bar span { display: block; height: 100%; }
+.dr-meta { font-family: var(--mono); font-size: 8.5px; color: var(--text-faint); margin-top: 2px; }
+
+.p-list .dash-body { padding: 0; }
+.p-list .dlv-row { padding: 5px 12px; }
+.p-list .dlv-row-main { font-size: 11px; }
+.p-list .dlv-row-meta { font-size: 9px; }
+.p-list .dlv-rank { font-size: 9px; }
+.dash-tabs { display: flex; border-bottom: 1px solid var(--border); flex: 0 0 auto; }
+.dash-tabs button {
+  flex: 1 1 auto;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-faint);
+  font-family: var(--chinese);
+  font-size: 10.5px;
+  padding: 5px 2px;
+  cursor: pointer;
+}
+.dash-tabs button:hover { color: var(--text); }
+.dash-tabs button.active { color: var(--amber); border-bottom-color: var(--amber); }
+
+/* ---- truth panel --------------------------------------------------- */
+.dt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 9px; }
+.dt-cell { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; }
+.dt-cell i { display: block; font-style: normal; font-size: 9px; color: var(--text-faint); margin-bottom: 2px; }
+.dt-cell b { font-family: var(--mono); font-size: 16px; font-weight: 400; color: var(--amber-bright); line-height: 1; }
+.dt-cell b u { text-decoration: none; font-size: 9px; color: var(--text-faint); }
+.dt-line { font-size: 10px; color: var(--text-dim); line-height: 1.65; margin-bottom: 6px; }
+.dt-line b { color: var(--text); font-weight: 500; }
+.dt-line em { color: var(--amber); font-style: normal; }
+
+/* ---- small screens: give up on one screen, stack it ----------------- */
+@media (max-width: 1180px) {
+  .dash {
+    height: auto;
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: none;
+    grid-auto-rows: min-content;
+    overflow: visible;
+  }
+  /* The base rules pin each panel to an explicit row of the desktop grid.
+     Those have to be released here or every panel lands in row 2 on top of
+     the map — overriding grid-column alone is not enough. */
+  .dash-panel { grid-row: auto; }
+  .p-map   { grid-column: 1 / -1; height: 62vh; }
+  .p-zones { grid-column: 1 / 4; height: 46vh; }
+  .p-chain { grid-column: 4 / -1; height: 46vh; }
+  .p-list  { grid-column: 1 / 4; height: 42vh; }
+  .p-hours { grid-column: 4 / -1; height: 42vh; }
+  .p-roads { grid-column: 1 / 4; height: 40vh; }
+  .p-truth { grid-column: 4 / -1; height: 40vh; }
+}
+@media (max-width: 720px) {
+  .dash { grid-template-columns: 1fr; }
+  .dash-panel { grid-column: 1 / -1 !important; grid-row: auto; }
+  .p-map { height: 56vh; }
+  .dash-brand { margin-right: 10px; padding-right: 12px; }
+  .dash-stat { padding: 7px 12px; }
+}
