@@ -41,6 +41,7 @@ Writes assets/delivery-data.js (window.DELIVERY_DATA) and delivery_data.json.
 import argparse
 import json
 import math
+import random
 import statistics as st
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
@@ -78,17 +79,28 @@ CELL_M = 60           # friction grid cell
 MIN_SHIFT_ORDERS = 2  # fewer than this and the ride was not a work shift
 MIN_SHIFT_MINUTES = 40
 
-# A zone earns a rank only with this much exposure. Below it the numbers are
-# still shown, greyed, because "I have barely been there" is itself a fact.
-RANK_MIN_KM = 5.0
-RANK_MIN_SHIFTS = 4
+# Free-running pace: the 90th percentile of moving speed on flat ground away
+# from a signal, measured across every shift (25.0 km/h). Not a guess about
+# what a bike can do — what this rider actually does when nothing is in the way.
+V_FREE_KMH = 25.0
 
-# Shrinkage priors, in the same units as the exposure they damp. A zone with
-# PRIOR_KM of riding sits halfway between its own measurement and the city's.
-PRIOR_KM = 3.0
+# Empirical cost of climbing, from the speed-versus-grade curve in the data:
+# a +6% grade costs ~0.7 min/km against flat, which works out near a hundredth
+# of a minute per metre gained. Used only to label how much of the cruising
+# shortfall is the hill rather than the traffic.
+CLIMB_MIN_PER_M = 0.010
+
+# A zone is published only if its score is actually pinned down. The test is
+# the width of a bootstrap interval over shifts, not a distance threshold:
+# 5 km across 4 shifts sounds like enough and carries a +-18 point interval,
+# which makes any ordering inside the table meaningless. See score_rideability.
+MAX_CI_WIDTH = 12.0
+MIN_SHIFTS_FOR_CI = 5
+BOOTSTRAP_N = 600
+
+# Shrinkage prior for the order rate, in hours. Distances no longer need one:
+# the rideability score is published only where it is already precise.
 PRIOR_HOURS = 0.75
-
-FLOW_WEIGHTS = {"pace": 0.34, "lights": 0.28, "climb": 0.20, "stopgo": 0.18}
 
 # Somewhere an order is cooked or packed, as opposed to somewhere that merely
 # sells food. Pickup evidence leans on the difference.
@@ -945,8 +957,12 @@ def build_zones(shifts, subs, ctx):
     Z = defaultdict(lambda: {
         "orders": 0, "pickups": 0, "lights": 0, "dwell": [], "pickup_wait": [],
         "secs": 0.0, "ride_secs": 0.0, "move_secs": 0.0, "crawl_secs": 0.0,
-        "light_secs": 0.0, "work_secs": 0.0, "m": 0.0, "speeds": [], "climb": 0.0,
+        "light_secs": 0.0, "stop_secs": 0.0, "work_secs": 0.0, "m": 0.0,
+        "move_m": 0.0, "crawl_m": 0.0, "speeds": [], "climb": 0.0,
         "shifts": set(), "hours": defaultdict(int), "leg_min": [],
+        # Per-shift (time, distance) so the score can be bootstrapped over
+        # shifts rather than over 1 Hz samples, which are not independent.
+        "by_shift": defaultdict(lambda: [0.0, 0.0]),
     })
 
     kind_of = {}
@@ -967,15 +983,27 @@ def build_zones(shifts, subs, ctx):
             if kind in ("pickup", "dropoff"):
                 z["work_secs"] += s["dt"]
                 continue                     # working, not travelling
+            z["ride_secs"] += s["dt"]
+            z["by_shift"][r["id"]][0] += s["dt"]
+            z["by_shift"][r["id"]][1] += s["d"]
+            # Four buckets that partition riding time exactly once each.
+            # A sample sitting in a classified light dwell is light time even
+            # though its state is also "stop"; counting it in both would make
+            # the decomposition sum to more than the clock.
             if kind == "light":
                 z["light_secs"] += s["dt"]
-            z["ride_secs"] += s["dt"]
-            if s["state"] == "move":
-                z["move_secs"] += s["dt"]
-                z["speeds"].append(s["v"] * 3.6)
+            elif s["state"] == "stop":
+                z["stop_secs"] += s["dt"]
             elif s["state"] == "crawl":
                 z["crawl_secs"] += s["dt"]
-            if s["grade"] > 0:
+                z["crawl_m"] += s["d"]
+            else:
+                z["move_secs"] += s["dt"]
+                z["move_m"] += s["d"]
+                z["speeds"].append(s["v"] * 3.6)
+            # Grade is only computed where the bike actually moved a few metres;
+            # forcing it to zero on slow samples would credit crawling as flat.
+            if s["grade"] > 0 and s["d"] > 3:
                 z["climb"] += s["grade"] * s["d"]
 
     for r in shifts:
@@ -1037,11 +1065,16 @@ def zone_rows(Z, subs, ctx, legs):
             "shifts": len(z["shifts"]),
             "hours": round(hours, 2),
             "km": round(km, 2),
-            # -- raw friction measurements, pre-shrinkage
-            "_pace": (z["ride_secs"] / 60) / km if km > 0 else None,       # min/km
-            "_light_s_km": z["light_secs"] / km if km > 0 else 0.0,
-            "_climb_km": z["climb"] / km if km > 0 else 0.0,
-            "_stopgo": (z["crawl_secs"] / moving) if moving else 0.0,
+            # -- raw material for the rideability score
+            "_ride_min": z["ride_secs"] / 60,
+            "_light_min": z["light_secs"] / 60,
+            "_stop_min": z["stop_secs"] / 60,
+            "_crawl_min": z["crawl_secs"] / 60,
+            "_move_min": z["move_secs"] / 60,
+            "_crawl_km": z["crawl_m"] / 1000,
+            "_move_km": z["move_m"] / 1000,
+            "_climb_m": z["climb"],
+            "_by_shift": [tuple(v) for v in z["by_shift"].values()],
             "med_speed": round(med_speed, 1),
             "lights_per_km": round(z["lights"] / km, 2) if km else 0.0,
             "climb_per_km": round(z["climb"] / km, 1) if km else 0.0,
@@ -1063,58 +1096,117 @@ def zone_rows(Z, subs, ctx, legs):
             "sig_per_km": round(osm["signals"] / road_km, 1) if (road_km > 0.2 and osm.get("signals") is not None) else None,
             "road_km": round(road_km, 1) if road_km else None,
             "pop_density": osm.get("pop_density"),
-            "ranked": km >= RANK_MIN_KM and len(z["shifts"]) >= RANK_MIN_SHIFTS,
+            # Filled in by score_rideability once the interval is known.
+            "ranked": False,
         })
     return rows
 
 
-def score_flow(rows):
-    """0-100 rideability, self-scaled and sample-aware.
+def score_rideability(rows):
+    """How much of free-running pace a suburb actually lets you keep.
 
-    Four things make a suburb hard to ride: it is slow, it stops you at lights,
-    it goes uphill, and it makes you crawl. Each is measured, shrunk toward the
-    city figure by how little was ridden there, then normalised against the
-    exposure-weighted 10th and 90th percentile of the data itself. The old
-    version used hand-picked bounds (8-22 km/h, 0-26 m/km); those were guesses,
-    and anything outside them clipped silently. The anchors are written into
-    the output so the page can print the scale it is scoring against.
+        指数 = 100 x (distance / V_FREE) / time_actually_spent_riding
+
+    One measured ratio, no weights. The old score was a weighted blend of four
+    normalised components — median speed 34%, light density 28%, climb 20%,
+    crawl share 18% — and it had two faults that only showed up once there was
+    enough data to test it.
+
+    The first is double counting. Minutes per kilometre already *contains* the
+    time spent at lights and the time spent crawling; adding those back as
+    separate weighted terms scores the same lost minute two or three times.
+    Measured on this dataset the components were badly tangled — pace against
+    crawl share r=0.76, pace against lights r=0.64 — and the finished index
+    tracked its own pace term at r=0.87. It was a noisy restatement of one
+    number dressed up as four.
+
+    The second is that the weights were wrong about physics. Climb carried 20%
+    of the index, but the speed-versus-grade curve in this data says a metre of
+    ascent costs about 0.01 min: even a hilly suburb at 12 m/km loses about
+    0.12 min/km to gradient, against 0.4-1.7 min/km lost to traffic lights.
+    Lights cost roughly ten times what hills do, and the index said otherwise.
+
+    So the score is now the ratio itself, and the four numbers become a
+    decomposition of the gap rather than voters on it. Every lost minute is
+    attributed exactly once, to waiting at a signal, to stopping briefly for
+    something else, to crawling, or to cruising below free pace — and the part
+    of the cruising shortfall the gradient explains is labelled inside it.
+    The parts sum to the measured total instead of to an arbitrary 100.
     """
-    ranked = [r for r in rows if r["ranked"]]
-    basis = ranked or rows
-    weights = [(r, r["km"]) for r in basis]
-
-    def city(key):
-        vals = [(r[key], w) for r, w in weights if r[key] is not None]
-        return wpercentile(vals, 0.5)
-
-    anchors = {}
-    for key, prior, good_high in (("_pace", PRIOR_KM, False),
-                                  ("_light_s_km", PRIOR_KM, False),
-                                  ("_climb_km", PRIOR_KM, False),
-                                  ("_stopgo", PRIOR_KM, False)):
-        vals = [(r[key], w) for r, w in weights if r[key] is not None]
-        lo = wpercentile(vals, 0.10)
-        hi = wpercentile(vals, 0.90)
-        anchors[key] = {"good": lo if not good_high else hi,
-                        "bad": hi if not good_high else lo,
-                        "city": city(key)}
-
-    comp_keys = {"pace": "_pace", "lights": "_light_s_km",
-                 "climb": "_climb_km", "stopgo": "_stopgo"}
     for r in rows:
-        parts = {}
-        for comp, key in comp_keys.items():
-            a = anchors[key]
-            raw = r[key]
-            if raw is None:
-                parts[comp] = 0.5
-                continue
-            sh = shrink(raw, r["km"], a["city"], PRIOR_KM)
-            r[key + "_shrunk"] = round(sh, 3)
-            parts[comp] = 1 - norm01(sh, a["good"], a["bad"])
-        r["flow_parts"] = {k: round(100 * v, 1) for k, v in parts.items()}
-        r["flow"] = round(100 * sum(FLOW_WEIGHTS[k] * parts[k] for k in FLOW_WEIGHTS), 1)
-    return anchors
+        km, T = r["km"], r["_ride_min"]
+        if not km or T <= 0:
+            r["flow"] = None
+            r["flow_parts"] = None
+            continue
+        free = km * 60 / V_FREE_KMH
+        # Excess over free pace on the distance that was actually covered.
+        crawl_excess = max(0.0, r["_crawl_min"] - r["_crawl_km"] * 60 / V_FREE_KMH)
+        move_excess = max(0.0, r["_move_min"] - r["_move_km"] * 60 / V_FREE_KMH)
+        climb_cost = min(move_excess, r["_climb_m"] * CLIMB_MIN_PER_M)
+        r["flow"] = round(100 * free / T, 1)
+        r["min_per_km"] = round(T / km, 2)
+        r["free_min_per_km"] = round(60 / V_FREE_KMH, 2)
+        r["flow_parts"] = {
+            "light": round(r["_light_min"] / km, 2),
+            "stop": round(r["_stop_min"] / km, 2),
+            "crawl": round(crawl_excess / km, 2),
+            "cruise": round(move_excess / km, 2),
+            "climb_of_cruise": round(climb_cost / km, 2),
+        }
+
+    # ---- how firm is each score ------------------------------------------
+    # Resampling is over shifts, not over 1 Hz samples: consecutive samples on
+    # one evening are the same traffic, the same weather and the same rider, so
+    # treating them as independent would report a confidence nobody has earned.
+    rng = random.Random(20260831)
+    for r in rows:
+        legs = r.get("_by_shift") or []
+        r["ci"] = None
+        if r["flow"] is None or len(legs) < MIN_SHIFTS_FOR_CI:
+            continue
+        draws = []
+        n = len(legs)
+        for _ in range(BOOTSTRAP_N):
+            secs = dist = 0.0
+            for _ in range(n):
+                a, b = legs[rng.randrange(n)]
+                secs += a
+                dist += b
+            if secs > 0 and dist > 0:
+                draws.append(100 * ((dist / 1000) * 3600 / V_FREE_KMH) / secs)
+        if len(draws) < BOOTSTRAP_N // 2:
+            continue
+        draws.sort()
+        lo = draws[int(0.05 * len(draws))]
+        hi = draws[int(0.95 * len(draws))]
+        r["ci"] = [round(lo, 1), round(hi, 1)]
+        r["ci_width"] = round(hi - lo, 1)
+
+    for r in rows:
+        r["ranked"] = bool(r.get("ci") and r["ci_width"] <= MAX_CI_WIDTH)
+        if not r["ranked"]:
+            # Blank the estimates rather than leaving them for a caller to
+            # print next to a "not enough data" badge. Counts survive — how
+            # many times the rider was there is an observation, not a guess.
+            r["flow"] = None
+            r["flow_parts"] = None
+            r["min_per_km"] = None
+            r["ci"] = None
+            r["ci_width"] = None
+
+    published = [r for r in rows if r["ranked"]]
+    return {
+        "v_free_kmh": V_FREE_KMH,
+        "free_min_per_km": round(60 / V_FREE_KMH, 2),
+        "climb_min_per_m": CLIMB_MIN_PER_M,
+        "max_ci_width": MAX_CI_WIDTH,
+        "min_shifts": MIN_SHIFTS_FOR_CI,
+        "bootstrap_n": BOOTSTRAP_N,
+        "published": len(published),
+        "median_ci_width": round(st.median([r["ci_width"] for r in published]), 1)
+                           if published else None,
+    }
 
 
 def score_worth(rows):
@@ -1135,11 +1227,13 @@ def score_worth(rows):
     ranked = [r for r in rows if r["ranked"]]
     basis = ranked or rows
     city_rate = wpercentile([(r["jobs_per_hour"], r["hours"]) for r in basis], 0.5) or 0.0
-    city_flow = wpercentile([(r["flow"], r["km"]) for r in basis], 0.5) or 50.0
+    city_flow = wpercentile([(r["flow"], r["km"]) for r in basis
+                             if r["flow"] is not None], 0.5) or 50.0
     for r in rows:
         rate = shrink(r["jobs_per_hour"], r["hours"], city_rate, PRIOR_HOURS)
         r["rate_shrunk"] = round(rate, 2)
-        r["worth"] = round(rate * (r["flow"] / city_flow), 2) if r["ranked"] else None
+        r["worth"] = (round(rate * (r["flow"] / city_flow), 2)
+                      if (r["ranked"] and r["flow"] is not None) else None)
     return {"city_rate": round(city_rate, 2), "city_flow": round(city_flow, 1)}
 
 
@@ -1343,7 +1437,7 @@ def main():
     for z in zones:
         z["as_pickup"] = pickup_stats.get(z["name"])
         z["as_drop"] = drop_stats.get(z["name"])
-    flow_anchors = score_flow(zones)
+    flow_basis = score_rideability(zones)
     worth_basis = score_worth(zones)
     zones.sort(key=lambda x: (-x["jobs"], -x["hours"]))
     for i, z in enumerate(zones, 1):
@@ -1481,12 +1575,9 @@ def main():
             "city": "Sydney", "tz": "Australia/Sydney",
             "stop_speed_ms": STOP_SPEED, "dwell_seconds": DWELL_SECONDS,
             "crawl_speed_ms": CRAWL_SPEED, "cell_m": CELL_M, "cluster_m": CLUSTER_M,
-            "flow_weights": FLOW_WEIGHTS,
-            "flow_anchors": {k: {kk: (round(vv, 3) if isinstance(vv, float) else vv)
-                                 for kk, vv in v.items()} for k, v in flow_anchors.items()},
+            "flow_basis": flow_basis,
             "worth_basis": worth_basis,
-            "rank_min_km": RANK_MIN_KM, "rank_min_shifts": RANK_MIN_SHIFTS,
-            "prior_km": PRIOR_KM, "prior_hours": PRIOR_HOURS,
+            "prior_hours": PRIOR_HOURS,
             "shifts": len(shift_rows), "sydney_tracks": len(rides),
             "first": shift_rows[0]["date"], "last": shift_rows[-1]["date"],
             "suburb_source": "ABS 2016 SSC boundaries via michalsn/australian-suburbs (MIT)",

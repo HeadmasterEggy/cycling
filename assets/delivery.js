@@ -106,8 +106,7 @@ function renderDeliveryKpis() {
   if (secEl) secEl.textContent = m.dwell_seconds;
   const note = document.getElementById('dlvMethod');
   if (note) {
-    const w = m.flow_weights || {};
-    const pct = k => Math.round((w[k] || 0) * 100);
+    const fb = m.flow_basis || {};
     const osm = m.osm && m.osm.counts ? m.osm.counts : {};
     note.innerHTML = `<strong>怎么算的</strong> · 平台数据一条都没有，全部从 1 Hz 的 GPS 轨迹里反推。`
       + `每一次停车都对着地图判断是<em>取餐 / 送达 / 等红灯</em>（方法见下一节），`
@@ -115,8 +114,11 @@ function renderDeliveryKpis() {
       + `一单 = 一次送达；取餐单独计数，把两者相加会把每一单算两遍。`
       + `地图底料来自 OpenStreetMap：${osm.signals || 0} 个红绿灯、${osm.venues || 0} 家餐饮店、`
       + `${osm.suburbs || 0} 个区的路网与人口。`
-      + `好跑指数 = 通行速度 ${pct('pace')}% + 红灯耗时 ${pct('lights')}% + 爬升 ${pct('climb')}% + 走走停停 ${pct('stopgo')}%，`
-      + `每项都按里程加权收缩过，跑得少的区不会拿到一个漂亮但没根据的分数。`
+      + `好跑指数 = 自由通行耗时 ÷ 实际耗时 —— 一个比值，没有权重。`
+      + `自由通行取 ${fb.v_free_kmh} km/h（平路、不在路口、实测移动速度的 90 分位），`
+      + `所以 ${fb.free_min_per_km} 分钟/km 是理论下限，指数 60 就是「只跑出了自由流的六成」。`
+      + `每个区都用班次做 ${fb.bootstrap_n} 次 bootstrap 估出 90% 区间，`
+      + `区间宽超过 ${fb.max_ci_width} 分的区直接不上榜 —— ${fb.published} 个区达标，中位区间宽 ${fb.median_ci_width} 分。`
       + `每次出勤自己的起点/终点 ${m.endpoint_m} 米内的停留已剔除（共 ${m.endpoint_stops_dropped} 次），那是家不是客户。`;
   }
 }
@@ -187,7 +189,9 @@ function renderZoneQuadrant() {
   if (!D) return;
   const svg = document.getElementById('zoneQuadrant');
   if (!svg) return;
-  const zones = D.zones.filter(z => z.jobs > 0);
+  // Published zones only. A grey dot for a suburb crossed twice still invited
+  // the eye to read a position that the interval says is not there.
+  const zones = D.zones.filter(z => z.ranked && z.flow != null);
   if (!zones.length) return;
 
   const W = 900, H = 460, P = { l: 58, r: 28, t: 34, b: 52 };
@@ -223,9 +227,15 @@ function renderZoneQuadrant() {
   const dots = zones.map(z => {
     const r = 5 + Math.sqrt(z.hours / hMax) * 16;
     const hot = z.jobs >= xMed && z.flow >= yMed;
-    const col = !z.ranked ? DLV.axis : (hot ? DLV.amber : (z.jobs >= xMed ? DLV.rose : DLV.cyan));
-    return `<circle cx="${xs(z.jobs)}" cy="${ys(z.flow)}" r="${r}" fill="${col}" fill-opacity="${z.ranked ? 0.3 : 0.14}" stroke="${col}" stroke-width="1.2" stroke-opacity="${z.ranked ? 1 : 0.5}">`
-      + `<title>${dlvEsc(z.label)} · ${z.jobs} 次活（送 ${z.orders} / 取 ${z.pickups}）· ${z.shifts} 个班次 · 好跑 ${z.flow} · 中位 ${z.med_speed} km/h · 红灯 ${z.light_min_per_km} min/km · 爬升 ${z.climb_per_km} m/km${z.ranked ? '' : ' · 样本不足，未参与排名'}</title></circle>`;
+    const col = hot ? DLV.amber : (z.jobs >= xMed ? DLV.rose : DLV.cyan);
+    const ci = z.ci ? ` (${z.ci[0]}–${z.ci[1]})` : '';
+    // A vertical whisker for the bootstrap interval: the dot is an estimate,
+    // and on this chart the estimate's height is the whole point.
+    const bar = z.ci
+      ? `<line x1="${xs(z.jobs)}" x2="${xs(z.jobs)}" y1="${ys(z.ci[1])}" y2="${ys(z.ci[0])}" stroke="${col}" stroke-width="1" stroke-opacity="0.5"/>`
+      : '';
+    return bar + `<circle cx="${xs(z.jobs)}" cy="${ys(z.flow)}" r="${r}" fill="${col}" fill-opacity="0.3" stroke="${col}" stroke-width="1.2">`
+      + `<title>${dlvEsc(z.label)} · ${z.jobs} 次活（送 ${z.orders} / 取 ${z.pickups}）· ${z.shifts} 个班次 · 好跑 ${z.flow}${ci} · ${z.min_per_km} min/km · 红灯 ${z.light_min_per_km} min/km · 爬升 ${z.climb_per_km} m/km</title></circle>`;
   }).join('');
 
   // Label the zones worth reading; the rest stay hover targets. Busy suburbs
@@ -253,7 +263,7 @@ function renderZoneQuadrant() {
   // Reading "好跑但没活: Croydon" off two minutes of riding is worse than
   // reading nothing.
   const buckets = { hot: [], flowOnly: [], grind: [], quiet: [] };
-  zones.filter(z => z.ranked).forEach(z => {
+  zones.forEach(z => {
     if (z.jobs >= xMed && z.flow >= yMed) buckets.hot.push(z);
     else if (z.jobs < xMed && z.flow >= yMed) buckets.flowOnly.push(z);
     else if (z.jobs >= xMed) buckets.grind.push(z);
@@ -275,9 +285,10 @@ function renderZoneTable() {
   if (!D) return;
   const tbody = document.getElementById('zoneTbody');
   if (!tbody) return;
-  const onlyRanked = window.__dlvOnlyRanked !== false;
-  let rows = D.zones.filter(z => z.jobs > 0 || z.km >= 1.5);
-  if (onlyRanked) rows = rows.filter(z => z.ranked);
+  // Only zones whose score is actually pinned down. The rest are not greyed
+  // out any more, they are simply absent — a row you are told not to trust is
+  // still a row people read.
+  let rows = D.zones.filter(z => z.ranked);
   const st = window.__dlvZoneSort || { key: 'jobs', dir: 'desc' };
   rows = [...rows].sort((a, b) => {
     const av = a[st.key], bv = b[st.key];
@@ -288,30 +299,29 @@ function renderZoneTable() {
   });
   tbody.innerHTML = rows.map(z => {
     const bar = `<span class="flow-bar"><span class="flow-bar-fill" style="width:${z.flow}%;background:${dlvRamp(z.flow / 100)}"></span></span>`;
-    const thin = z.ranked ? '' : ' class="dlv-thin"';
-    const na = '<span class="dlv-na" title="骑过的里程或出现班次太少，速率不可靠">样本少</span>';
-    return `<tr${thin} data-zone="${dlvEsc(z.name)}">
+    const ci = z.ci ? `<span class="flow-ci">±${(z.ci_width / 2).toFixed(1)}</span>` : '';
+    return `<tr data-zone="${dlvEsc(z.name)}">
       <td class="dlv-zone">${dlvEsc(z.label)}<span class="dlv-lga">${dlvEsc(z.lga || '')}</span></td>
       <td class="col-distance">${z.jobs}</td>
       <td>${z.orders}</td>
       <td>${z.pickups}</td>
       <td>${z.shifts}</td>
-      <td>${z.ranked ? dlvNum(z.jobs_per_hour, 2) : na}</td>
-      <td>${dlvNum(z.med_speed, 1)}</td>
+      <td>${dlvNum(z.jobs_per_hour, 2)}</td>
+      <td>${dlvNum(z.min_per_km, 2)}</td>
       <td>${dlvNum(z.light_min_per_km, 2)}</td>
       <td>${dlvNum(z.climb_per_km, 1)}</td>
       <td>${z.prep_per_km2 == null ? '—' : Math.round(z.prep_per_km2)}</td>
-      <td>${bar}<span class="flow-num">${z.flow.toFixed(0)}</span></td>
+      <td>${bar}<span class="flow-num">${z.flow.toFixed(0)}</span>${ci}</td>
       <td>${z.worth == null ? '—' : dlvNum(z.worth, 1)}</td>
     </tr>`;
   }).join('');
 
   const foot = document.getElementById('zoneTableFoot');
   if (foot) {
-    const m = D.meta;
-    foot.textContent = onlyRanked
-      ? `只显示骑够 ${m.rank_min_km} km 且出现过 ${m.rank_min_shifts} 个班次以上的 ${rows.length} 个区`
-      : `显示全部 ${rows.length} 个区，灰色行样本不足、不参与排名`;
+    const fb = D.meta.flow_basis || {};
+    const hidden = D.zones.filter(z => !z.ranked && z.jobs > 0).length;
+    foot.textContent = `${rows.length} 个区 · 好跑指数的 90% 区间宽在 ${fb.max_ci_width} 分以内才列出`
+      + `；另有 ${hidden} 个去过但样本不够的区没有列出`;
   }
 }
 
@@ -336,15 +346,6 @@ function bindZoneTable() {
       dlvSetFocus(tr.dataset.zone);
       const map = document.getElementById('dlvMap');
       if (map) map.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    });
-  }
-  const toggle = document.getElementById('zoneRankToggle');
-  if (toggle) {
-    toggle.addEventListener('click', () => {
-      window.__dlvOnlyRanked = window.__dlvOnlyRanked === false;
-      toggle.classList.toggle('active', window.__dlvOnlyRanked !== false);
-      toggle.textContent = window.__dlvOnlyRanked !== false ? '只看样本够的区' : '显示全部区';
-      renderZoneTable();
     });
   }
 }
@@ -384,7 +385,8 @@ const DLV_HOURLY = new Set(['pickups', 'drops', 'zones']);
 const DLV_METRICS = {
   jobs: { label: '活的数量', unit: '次', get: z => z.jobs, hourly: true },
   worth: { label: '值得去', unit: '次/h', get: z => z.worth, rankedOnly: true },
-  flow: { label: '好跑指数', unit: '', get: z => z.flow },
+  flow: { label: '好跑指数', unit: '', get: z => z.flow, rankedOnly: true },
+  min_per_km: { label: '每公里耗时', unit: 'min/km', get: z => z.min_per_km, invert: true, rankedOnly: true },
   light_min_per_km: { label: '红灯耗时', unit: 'min/km', get: z => z.light_min_per_km, invert: true },
   climb_per_km: { label: '爬升', unit: 'm/km', get: z => z.climb_per_km, invert: true },
   prep_per_km2: { label: '餐厅密度', unit: '家/km²', get: z => z.prep_per_km2 },
@@ -538,7 +540,9 @@ function dlvPopupHtml(kind, item) {
       + `<span class="dlv-pop-sub">${dlvEsc(item.lga || '')}</span><br>`
       + `${m.label}：${v == null ? '—' : v}${m.unit ? ' ' + m.unit : ''}<br>`
       + `送达 ${item.orders} · 取餐 ${item.pickups} · ${item.shifts} 个班次<br>`
-      + `好跑 ${item.flow} · 中位 ${item.med_speed} km/h<br>`
+      + (item.flow == null
+          ? `好跑 —（样本不足，未计分）<br>`
+          : `好跑 ${item.flow}${item.ci ? ` (${item.ci[0]}–${item.ci[1]})` : ''} · ${item.min_per_km} min/km<br>`)
       + `<span class="dlv-pop-hint">点一下只看这个区</span>`;
   }
   return `<b>${dlvEsc(item.zone || '—')}</b><br>${item.passes} 个班次经过 · 约 ${item.len_m} m<br>`
@@ -642,32 +646,42 @@ function dlvRenderFocusBar() {
   const bar = document.getElementById('dlvFocusBar');
   if (!bar) return;
   if (!DLVMAP.focus) { bar.hidden = true; bar.innerHTML = ''; return; }
-  const z = dlvData().zones.find(s => s.name === DLVMAP.focus);
+  const D = dlvData();
+  const z = D.zones.find(s => s.name === DLVMAP.focus);
   if (!z) { bar.hidden = true; return; }
+  const freeMin = (D.meta.flow_basis || {}).free_min_per_km;
   const peak = z.hour_hist.indexOf(Math.max(...z.hour_hist));
   const stats = [
     ['送达', z.orders],
     ['取餐', z.pickups],
     ['出现班次', z.shifts],
-    ['活/小时', z.ranked ? dlvNum(z.jobs_per_hour, 2) : '样本少'],
+    ['活/小时', dlvNum(z.jobs_per_hour, 2)],
     ['中位速度', `${z.med_speed} km/h`],
+    ['比自由流慢', (z.min_per_km == null || !freeMin) ? '—' : `${(z.min_per_km - freeMin).toFixed(2)} min/km`],
     ['红灯', `${dlvNum(z.light_min_per_km, 2)} min/km`],
     ['爬升', `${z.climb_per_km} m/km`],
     ['餐厅密度', z.prep_per_km2 == null ? '—' : `${Math.round(z.prep_per_km2)}/km²`],
     ['人口密度', z.pop_density == null ? '—' : `${Math.round(z.pop_density)}/km²`],
-    ['好跑指数', z.flow.toFixed(0)],
+    ['好跑指数', z.flow == null ? '—' : `${z.flow.toFixed(0)}${z.ci ? ` (${z.ci[0]}–${z.ci[1]})` : ''}`],
+    ['每公里耗时', z.min_per_km == null ? '—' : `${z.min_per_km} min`],
     ['最忙时段', Math.max(...z.hour_hist) ? `${String(peak).padStart(2, '0')}:00` : '—'],
   ];
+  // The decomposition is in minutes lost per km, so the bars are scaled
+  // against the biggest single loss rather than against 100.
   const parts = z.flow_parts || {};
-  const partBar = ['pace', 'lights', 'climb', 'stopgo'].map(k => {
-    const names = { pace: '速度', lights: '红灯', climb: '爬升', stopgo: '走停' };
+  const names = { light: '等红灯', stop: '短停', crawl: '龟速', cruise: '巡航偏慢' };
+  const keys = ['light', 'stop', 'crawl', 'cruise'];
+  const maxPart = Math.max(...keys.map(k => parts[k] || 0), 0.01);
+  const partBar = keys.map(k => {
     const v = parts[k] == null ? 0 : parts[k];
-    return `<span class="dlv-part" title="${names[k]} 分项 ${v.toFixed(0)}/100">
-      <em>${names[k]}</em><span class="dlv-part-bar"><span style="width:${v}%;background:${dlvRamp(v / 100)}"></span></span></span>`;
+    const extra = k === 'cruise' && parts.climb_of_cruise
+      ? `，其中坡度约 ${parts.climb_of_cruise} min` : '';
+    return `<span class="dlv-part" title="${names[k]} 每公里损失 ${v} 分钟${extra}">
+      <em>${names[k]}</em><span class="dlv-part-bar"><span style="width:${(v / maxPart) * 100}%;background:${dlvRamp(v / maxPart)}"></span></span><b>${v}</b></span>`;
   }).join('');
   bar.hidden = false;
   bar.innerHTML = `<div class="dlv-focus-name">${dlvEsc(z.label)}<span class="dlv-focus-lga">${dlvEsc(z.lga || '')}</span>`
-    + `${z.ranked ? '' : '<span class="dlv-focus-thin">样本不足</span>'}</div>`
+    + `${z.ranked ? '' : '<span class="dlv-focus-thin">样本不足，未计分</span>'}</div>`
     + `<div class="dlv-focus-stats">${stats.map(([k, v]) => `<span><em>${k}</em>${dlvEsc(v)}</span>`).join('')}</div>`
     + `<div class="dlv-focus-parts">${partBar}</div>`
     + `<button class="dlv-focus-exit" id="dlvFocusExit">退出 ×</button>`;
@@ -730,7 +744,8 @@ function dlvRenderPanel() {
       const m = dlvMetric();
       const v = dlvZoneValue(item);
       main = item.label;
-      meta = `${m.label} ${v == null ? '—' : v}${m.unit ? ' ' + m.unit : ''} · 送 ${item.orders} / 取 ${item.pickups} · 好跑 ${item.flow}`;
+      meta = `${m.label} ${v == null ? '—' : v}${m.unit ? ' ' + m.unit : ''} · 送 ${item.orders} / 取 ${item.pickups}`
+        + (item.flow == null ? ' · 好跑 样本不足' : ` · 好跑 ${item.flow}`);
     } else {
       const n = (seen[item.zone] = (seen[item.zone] || 0) + 1);
       main = n === 1 ? item.zone : `${item.zone} ${'②③④⑤⑥⑦⑧⑨'[n - 2] || n}`;

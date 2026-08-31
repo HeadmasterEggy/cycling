@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-08-31T03:17:36+00:00",
+  "generated_at": "2026-08-31T07:32:31+00:00",
   "city": "Sydney",
   "tz": "Australia/Sydney",
   "stop_speed_ms": 0.7,
@@ -8,41 +8,20 @@
   "crawl_speed_ms": 2.2,
   "cell_m": 60,
   "cluster_m": 35,
-  "flow_weights": {
-   "pace": 0.34,
-   "lights": 0.28,
-   "climb": 0.2,
-   "stopgo": 0.18
-  },
-  "flow_anchors": {
-   "_pace": {
-    "good": 3.728,
-    "bad": 5.694,
-    "city": 4.591
-   },
-   "_light_s_km": {
-    "good": 24.412,
-    "bad": 58.606,
-    "city": 40.171
-   },
-   "_climb_km": {
-    "good": 4.462,
-    "bad": 11.975,
-    "city": 8.563
-   },
-   "_stopgo": {
-    "good": 0.085,
-    "bad": 0.293,
-    "city": 0.177
-   }
+  "flow_basis": {
+   "v_free_kmh": 25.0,
+   "free_min_per_km": 2.4,
+   "climb_min_per_m": 0.01,
+   "max_ci_width": 12.0,
+   "min_shifts": 5,
+   "bootstrap_n": 600,
+   "published": 18,
+   "median_ci_width": 7.5
   },
   "worth_basis": {
    "city_rate": 4.96,
-   "city_flow": 50.1
+   "city_flow": 52.2
   },
-  "rank_min_km": 5.0,
-  "rank_min_shifts": 4,
-  "prior_km": 3.0,
   "prior_hours": 0.75,
   "shifts": 45,
   "sydney_tracks": 55,
@@ -94,11 +73,11 @@
   "leg_km_med": 1.35,
   "legs": 153,
   "zones_touched": 58,
-  "zones_ranked": 27,
+  "zones_ranked": 18,
   "top_zone": "Newtown",
   "top_pickup_zone": "Newtown",
   "top_drop_zone": "Camperdown",
-  "sweet_zone": "Forest Lodge",
+  "sweet_zone": "Glebe",
   "peak_hour": 19,
   "hour_totals": [
    0,
@@ -146,7 +125,7 @@
    "med_speed": 19.0,
    "lights_per_km": 0.67,
    "climb_per_km": 10.0,
-   "crawl_share": 0.241,
+   "crawl_share": 0.239,
    "light_min_per_km": 0.58,
    "dwell_med": 106,
    "pickup_wait_med": 190,
@@ -201,15 +180,23 @@
     "same_pct": 62,
     "next_zone": "Chippendale"
    },
+   "flow": 52.2,
+   "min_per_km": 4.6,
+   "free_min_per_km": 2.4,
    "flow_parts": {
-    "pace": 55.8,
-    "lights": 69.6,
-    "climb": 27.5,
-    "stopgo": 26.2
+    "light": 0.58,
+    "stop": 0.33,
+    "crawl": 0.71,
+    "cruise": 0.71,
+    "climb_of_cruise": 0.1
    },
-   "flow": 48.7,
+   "ci": [
+    47.3,
+    53.0
+   ],
+   "ci_width": 5.8,
    "rate_shrunk": 5.52,
-   "worth": 5.36,
+   "worth": 5.52,
    "rank": 1,
    "ring": [
     [
@@ -384,7 +371,7 @@
    "med_speed": 15.5,
    "lights_per_km": 0.92,
    "climb_per_km": 5.3,
-   "crawl_share": 0.293,
+   "crawl_share": 0.292,
    "light_min_per_km": 0.67,
    "dwell_med": 136,
    "pickup_wait_med": 122,
@@ -439,15 +426,23 @@
     "same_pct": 80,
     "next_zone": "Surry Hills"
    },
+   "flow": 42.1,
+   "min_per_km": 5.69,
+   "free_min_per_km": 2.4,
    "flow_parts": {
-    "pace": 2.3,
-    "lights": 54.6,
-    "climb": 86.4,
-    "stopgo": 2.3
+    "light": 0.67,
+    "stop": 0.68,
+    "crawl": 1.01,
+    "cruise": 1.08,
+    "climb_of_cruise": 0.05
    },
-   "flow": 33.8,
+   "ci": [
+    37.8,
+    43.7
+   ],
+   "ci_width": 5.9,
    "rate_shrunk": 5.58,
-   "worth": 3.76,
+   "worth": 4.5,
    "rank": 2,
    "ring": [
     [
@@ -526,7 +521,7 @@
    "med_speed": 18.9,
    "lights_per_km": 1.2,
    "climb_per_km": 7.0,
-   "crawl_share": 0.236,
+   "crawl_share": 0.233,
    "light_min_per_km": 0.98,
    "dwell_med": 150,
    "pickup_wait_med": 138,
@@ -581,15 +576,23 @@
     "same_pct": 50,
     "next_zone": "Redfern"
    },
+   "flow": 47.3,
+   "min_per_km": 5.07,
+   "free_min_per_km": 2.4,
    "flow_parts": {
-    "pace": 32.8,
-    "lights": 2.4,
-    "climb": 65.8,
-    "stopgo": 28.4
+    "light": 0.98,
+    "stop": 0.36,
+    "crawl": 0.7,
+    "cruise": 0.76,
+    "climb_of_cruise": 0.07
    },
-   "flow": 30.1,
+   "ci": [
+    42.6,
+    48.6
+   ],
+   "ci_width": 6.0,
    "rate_shrunk": 5.72,
-   "worth": 3.44,
+   "worth": 5.18,
    "rank": 3,
    "ring": [
     [
@@ -656,7 +659,7 @@
    "med_speed": 18.0,
    "lights_per_km": 1.14,
    "climb_per_km": 8.5,
-   "crawl_share": 0.224,
+   "crawl_share": 0.221,
    "light_min_per_km": 0.98,
    "dwell_med": 144,
    "pickup_wait_med": 93,
@@ -711,15 +714,23 @@
     "same_pct": 38,
     "next_zone": "Glebe"
    },
+   "flow": 46.7,
+   "min_per_km": 5.14,
+   "free_min_per_km": 2.4,
    "flow_parts": {
-    "pace": 29.2,
-    "lights": 2.0,
-    "climb": 45.9,
-    "stopgo": 34.3
+    "light": 0.98,
+    "stop": 0.44,
+    "crawl": 0.66,
+    "cruise": 0.81,
+    "climb_of_cruise": 0.09
    },
-   "flow": 25.8,
+   "ci": [
+    41.9,
+    47.4
+   ],
+   "ci_width": 5.5,
    "rate_shrunk": 4.96,
-   "worth": 2.55,
+   "worth": 4.44,
    "rank": 4,
    "ring": [
     [
@@ -778,7 +789,7 @@
    "med_speed": 20.9,
    "lights_per_km": 0.51,
    "climb_per_km": 13.4,
-   "crawl_share": 0.177,
+   "crawl_share": 0.175,
    "light_min_per_km": 0.46,
    "dwell_med": 138,
    "pickup_wait_med": 164,
@@ -833,15 +844,23 @@
     "same_pct": 0,
     "next_zone": "Ultimo"
    },
+   "flow": 60.7,
+   "min_per_km": 3.96,
+   "free_min_per_km": 2.4,
    "flow_parts": {
-    "pace": 86.7,
-    "lights": 87.9,
-    "climb": 0.0,
-    "stopgo": 55.8
+    "light": 0.46,
+    "stop": 0.27,
+    "crawl": 0.46,
+    "cruise": 0.52,
+    "climb_of_cruise": 0.13
    },
-   "flow": 64.1,
+   "ci": [
+    54.3,
+    61.6
+   ],
+   "ci_width": 7.3,
    "rate_shrunk": 7.02,
-   "worth": 8.98,
+   "worth": 8.16,
    "rank": 5,
    "ring": [
     [
@@ -1012,7 +1031,7 @@
    "med_speed": 20.7,
    "lights_per_km": 0.74,
    "climb_per_km": 9.8,
-   "crawl_share": 0.128,
+   "crawl_share": 0.122,
    "light_min_per_km": 0.65,
    "dwell_med": 164,
    "pickup_wait_med": 98,
@@ -1067,15 +1086,23 @@
     "same_pct": 0,
     "next_zone": "Newtown"
    },
+   "flow": 59.1,
+   "min_per_km": 4.06,
+   "free_min_per_km": 2.4,
    "flow_parts": {
-    "pace": 81.8,
-    "lights": 57.6,
-    "climb": 30.3,
-    "stopgo": 78.5
+    "light": 0.65,
+    "stop": 0.24,
+    "crawl": 0.31,
+    "cruise": 0.55,
+    "climb_of_cruise": 0.1
    },
-   "flow": 64.1,
+   "ci": [
+    53.4,
+    62.6
+   ],
+   "ci_width": 9.1,
    "rate_shrunk": 4.76,
-   "worth": 6.08,
+   "worth": 5.38,
    "rank": 6,
    "ring": [
     [
@@ -1203,10 +1230,10 @@
    "shifts": 23,
    "hours": 5.91,
    "km": 60.72,
-   "med_speed": 20.9,
+   "med_speed": 21.0,
    "lights_per_km": 0.84,
    "climb_per_km": 6.4,
-   "crawl_share": 0.162,
+   "crawl_share": 0.156,
    "light_min_per_km": 0.75,
    "dwell_med": 86,
    "pickup_wait_med": 88,
@@ -1261,15 +1288,23 @@
     "same_pct": 50,
     "next_zone": "Zetland"
    },
+   "flow": 54.9,
+   "min_per_km": 4.37,
+   "free_min_per_km": 2.4,
    "flow_parts": {
-    "pace": 66.7,
-    "lights": 40.2,
-    "climb": 72.8,
-    "stopgo": 62.5
+    "light": 0.75,
+    "stop": 0.29,
+    "crawl": 0.42,
+    "cruise": 0.62,
+    "climb_of_cruise": 0.06
    },
-   "flow": 59.7,
+   "ci": [
+    50.5,
+    55.9
+   ],
+   "ci_width": 5.4,
    "rate_shrunk": 4.92,
-   "worth": 5.86,
+   "worth": 5.17,
    "rank": 7,
    "ring": [
     [
@@ -1344,7 +1379,7 @@
    "med_speed": 16.1,
    "lights_per_km": 1.2,
    "climb_per_km": 8.6,
-   "crawl_share": 0.355,
+   "crawl_share": 0.35,
    "light_min_per_km": 0.96,
    "dwell_med": 122,
    "pickup_wait_med": 118,
@@ -1399,15 +1434,23 @@
     "same_pct": 17,
     "next_zone": "Pyrmont"
    },
+   "flow": 39.8,
+   "min_per_km": 6.04,
+   "free_min_per_km": 2.4,
    "flow_parts": {
-    "pace": 0.0,
-    "lights": 4.9,
-    "climb": 44.6,
-    "stopgo": 0.0
+    "light": 0.96,
+    "stop": 0.5,
+    "crawl": 1.29,
+    "cruise": 1.01,
+    "climb_of_cruise": 0.09
    },
-   "flow": 10.3,
+   "ci": [
+    34.6,
+    43.2
+   ],
+   "ci_width": 8.6,
    "rate_shrunk": 3.66,
-   "worth": 0.75,
+   "worth": 2.79,
    "rank": 8,
    "ring": [
     [
@@ -1674,7 +1717,7 @@
    "med_speed": 19.1,
    "lights_per_km": 0.71,
    "climb_per_km": 4.5,
-   "crawl_share": 0.187,
+   "crawl_share": 0.185,
    "light_min_per_km": 0.53,
    "dwell_med": 98,
    "pickup_wait_med": 120,
@@ -1729,15 +1772,23 @@
     "same_pct": 33,
     "next_zone": "Rosebery"
    },
+   "flow": 48.9,
+   "min_per_km": 4.91,
+   "free_min_per_km": 2.4,
    "flow_parts": {
-    "pace": 40.9,
-    "lights": 77.2,
-    "climb": 96.8,
-    "stopgo": 51.4
+    "light": 0.53,
+    "stop": 0.7,
+    "crawl": 0.55,
+    "cruise": 0.83,
+    "climb_of_cruise": 0.04
    },
-   "flow": 64.1,
+   "ci": [
+    45.1,
+    50.7
+   ],
+   "ci_width": 5.6,
    "rate_shrunk": 5.03,
-   "worth": 6.43,
+   "worth": 4.71,
    "rank": 9,
    "ring": [
     [
@@ -1804,7 +1855,7 @@
    "med_speed": 20.1,
    "lights_per_km": 1.24,
    "climb_per_km": 9.7,
-   "crawl_share": 0.161,
+   "crawl_share": 0.159,
    "light_min_per_km": 0.97,
    "dwell_med": 117,
    "pickup_wait_med": 140,
@@ -1859,15 +1910,23 @@
     "same_pct": 33,
     "next_zone": "Alexandria"
    },
+   "flow": 51.6,
+   "min_per_km": 4.65,
+   "free_min_per_km": 2.4,
    "flow_parts": {
-    "pace": 53.1,
-    "lights": 4.1,
-    "climb": 30.8,
-    "stopgo": 63.0
+    "light": 0.97,
+    "stop": 0.29,
+    "crawl": 0.43,
+    "cruise": 0.65,
+    "climb_of_cruise": 0.1
    },
-   "flow": 36.7,
+   "ci": [
+    47.3,
+    54.3
+   ],
+   "ci_width": 7.0,
    "rate_shrunk": 3.8,
-   "worth": 2.79,
+   "worth": 3.76,
    "rank": 10,
    "ring": [
     [
@@ -2009,15 +2068,23 @@
     "same_pct": 33,
     "next_zone": "Erskineville"
    },
+   "flow": 52.3,
+   "min_per_km": 4.59,
+   "free_min_per_km": 2.4,
    "flow_parts": {
-    "pace": 56.1,
-    "lights": 51.5,
-    "climb": 4.3,
-    "stopgo": 50.8
+    "light": 0.68,
+    "stop": 0.33,
+    "crawl": 0.53,
+    "cruise": 0.77,
+    "climb_of_cruise": 0.12
    },
-   "flow": 43.5,
+   "ci": [
+    46.5,
+    55.7
+   ],
+   "ci_width": 9.2,
    "rate_shrunk": 6.03,
-   "worth": 5.24,
+   "worth": 6.04,
    "rank": 11,
    "ring": [
     [
@@ -2108,7 +2175,7 @@
    "med_speed": 20.4,
    "lights_per_km": 0.81,
    "climb_per_km": 4.1,
-   "crawl_share": 0.229,
+   "crawl_share": 0.226,
    "light_min_per_km": 0.79,
    "dwell_med": 111,
    "pickup_wait_med": 92,
@@ -2163,15 +2230,23 @@
     "same_pct": 100,
     "next_zone": null
    },
+   "flow": 43.2,
+   "min_per_km": 5.56,
+   "free_min_per_km": 2.4,
    "flow_parts": {
-    "pace": 10.1,
-    "lights": 34.7,
-    "climb": 100.0,
-    "stopgo": 32.5
+    "light": 0.79,
+    "stop": 1.09,
+    "crawl": 0.68,
+    "cruise": 0.7,
+    "climb_of_cruise": 0.04
    },
-   "flow": 39.0,
+   "ci": [
+    38.6,
+    46.7
+   ],
+   "ci_width": 8.0,
    "rate_shrunk": 3.32,
-   "worth": 2.59,
+   "worth": 2.75,
    "rank": 12,
    "ring": [
     [
@@ -2454,7 +2529,7 @@
    "med_speed": 20.0,
    "lights_per_km": 1.59,
    "climb_per_km": 9.4,
-   "crawl_share": 0.191,
+   "crawl_share": 0.186,
    "light_min_per_km": 1.07,
    "dwell_med": 136,
    "pickup_wait_med": 126,
@@ -2509,15 +2584,23 @@
     "same_pct": 20,
     "next_zone": "Haymarket"
    },
+   "flow": 52.7,
+   "min_per_km": 4.56,
+   "free_min_per_km": 2.4,
    "flow_parts": {
-    "pace": 57.5,
-    "lights": 0.0,
-    "climb": 36.0,
-    "stopgo": 50.1
+    "light": 1.07,
+    "stop": 0.18,
+    "crawl": 0.5,
+    "cruise": 0.59,
+    "climb_of_cruise": 0.09
    },
-   "flow": 35.8,
+   "ci": [
+    44.0,
+    54.4
+   ],
+   "ci_width": 10.4,
    "rate_shrunk": 7.28,
-   "worth": 5.2,
+   "worth": 7.35,
    "rank": 13,
    "ring": [
     [
@@ -2656,7 +2739,7 @@
    "med_speed": 22.0,
    "lights_per_km": 1.07,
    "climb_per_km": 4.6,
-   "crawl_share": 0.106,
+   "crawl_share": 0.101,
    "light_min_per_km": 1.18,
    "dwell_med": 223,
    "pickup_wait_med": 141,
@@ -2711,15 +2794,23 @@
     "same_pct": 50,
     "next_zone": "Chippendale"
    },
+   "flow": 53.2,
+   "min_per_km": 4.51,
+   "free_min_per_km": 2.4,
    "flow_parts": {
-    "pace": 59.8,
-    "lights": 0.0,
-    "climb": 95.9,
-    "stopgo": 88.5
+    "light": 1.18,
+    "stop": 0.21,
+    "crawl": 0.25,
+    "cruise": 0.54,
+    "climb_of_cruise": 0.05
    },
-   "flow": 55.5,
+   "ci": [
+    48.6,
+    56.4
+   ],
+   "ci_width": 7.8,
    "rate_shrunk": 2.52,
-   "worth": 2.79,
+   "worth": 2.57,
    "rank": 14,
    "ring": [
     [
@@ -2858,7 +2949,7 @@
    "med_speed": 21.6,
    "lights_per_km": 0.78,
    "climb_per_km": 9.9,
-   "crawl_share": 0.158,
+   "crawl_share": 0.156,
    "light_min_per_km": 0.67,
    "dwell_med": 148,
    "pickup_wait_med": 117,
@@ -2913,15 +3004,23 @@
     "same_pct": 25,
     "next_zone": "Erskineville"
    },
+   "flow": 57.8,
+   "min_per_km": 4.15,
+   "free_min_per_km": 2.4,
    "flow_parts": {
-    "pace": 76.7,
-    "lights": 53.9,
-    "climb": 29.5,
-    "stopgo": 64.2
+    "light": 0.67,
+    "stop": 0.2,
+    "crawl": 0.42,
+    "cruise": 0.55,
+    "climb_of_cruise": 0.1
    },
-   "flow": 58.6,
+   "ci": [
+    52.6,
+    59.6
+   ],
+   "ci_width": 7.0,
    "rate_shrunk": 4.72,
-   "worth": 5.52,
+   "worth": 5.23,
    "rank": 15,
    "ring": [
     [
@@ -3000,7 +3099,7 @@
    "med_speed": 20.8,
    "lights_per_km": 0.46,
    "climb_per_km": 10.6,
-   "crawl_share": 0.139,
+   "crawl_share": 0.134,
    "light_min_per_km": 0.45,
    "dwell_med": 132,
    "pickup_wait_med": 151,
@@ -3042,7 +3141,7 @@
    "sig_per_km": 2.0,
    "road_km": 24.7,
    "pop_density": 6439.0,
-   "ranked": true,
+   "ranked": false,
    "as_pickup": {
     "legs": 4,
     "leg_min": 5.2,
@@ -3055,15 +3154,14 @@
     "same_pct": 33,
     "next_zone": "Glebe"
    },
-   "flow_parts": {
-    "pace": 81.7,
-    "lights": 89.0,
-    "climb": 20.4,
-    "stopgo": 72.7
-   },
-   "flow": 69.9,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 4.56,
-   "worth": 6.37,
+   "worth": null,
    "rank": 16,
    "ring": [
     [
@@ -3166,7 +3264,7 @@
    "med_speed": 22.4,
    "lights_per_km": 0.55,
    "climb_per_km": 7.0,
-   "crawl_share": 0.186,
+   "crawl_share": 0.178,
    "light_min_per_km": 0.56,
    "dwell_med": 222,
    "pickup_wait_med": 261,
@@ -3208,7 +3306,7 @@
    "sig_per_km": 3.9,
    "road_km": 31.3,
    "pop_density": 6807.0,
-   "ranked": true,
+   "ranked": false,
    "as_pickup": {
     "legs": 4,
     "leg_min": 14.4,
@@ -3221,15 +3319,14 @@
     "same_pct": 100,
     "next_zone": null
    },
-   "flow_parts": {
-    "pace": 76.8,
-    "lights": 70.0,
-    "climb": 63.2,
-    "stopgo": 52.1
-   },
-   "flow": 67.7,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 6.03,
-   "worth": 8.14,
+   "worth": null,
    "rank": 17,
    "ring": [
     [
@@ -3403,15 +3500,23 @@
     "same_pct": 0,
     "next_zone": "Glebe"
    },
+   "flow": 63.4,
+   "min_per_km": 3.79,
+   "free_min_per_km": 2.4,
    "flow_parts": {
-    "pace": 92.1,
-    "lights": 95.9,
-    "climb": 22.0,
-    "stopgo": 70.0
+    "light": 0.4,
+    "stop": 0.23,
+    "crawl": 0.37,
+    "cruise": 0.51,
+    "climb_of_cruise": 0.11
    },
-   "flow": 75.2,
+   "ci": [
+    56.0,
+    67.4
+   ],
+   "ci_width": 11.5,
    "rate_shrunk": 6.16,
-   "worth": 9.25,
+   "worth": 7.48,
    "rank": 18,
    "ring": [
     [
@@ -3580,7 +3685,7 @@
    "sig_per_km": 7.7,
    "road_km": 26.2,
    "pop_density": 12388.0,
-   "ranked": true,
+   "ranked": false,
    "as_pickup": {
     "legs": 2,
     "leg_min": 6.5,
@@ -3593,15 +3698,14 @@
     "same_pct": 100,
     "next_zone": null
    },
-   "flow_parts": {
-    "pace": 57.3,
-    "lights": 90.2,
-    "climb": 0.0,
-    "stopgo": 29.7
-   },
-   "flow": 50.1,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 6.74,
-   "worth": 6.74,
+   "worth": null,
    "rank": 19,
    "ring": [
     [
@@ -3751,15 +3855,23 @@
     "same_pct": 0,
     "next_zone": "Newtown"
    },
+   "flow": 70.0,
+   "min_per_km": 3.43,
+   "free_min_per_km": 2.4,
    "flow_parts": {
-    "pace": 100.0,
-    "lights": 100.0,
-    "climb": 37.4,
-    "stopgo": 100.0
+    "light": 0.21,
+    "stop": 0.13,
+    "crawl": 0.18,
+    "cruise": 0.55,
+    "climb_of_cruise": 0.09
    },
-   "flow": 87.5,
+   "ci": [
+    65.4,
+    73.5
+   ],
+   "ci_width": 8.0,
    "rate_shrunk": 4.19,
-   "worth": 7.32,
+   "worth": 5.62,
    "rank": 20,
    "ring": [
     [
@@ -3858,7 +3970,7 @@
    "med_speed": 23.3,
    "lights_per_km": 0.54,
    "climb_per_km": 6.2,
-   "crawl_share": 0.064,
+   "crawl_share": 0.063,
    "light_min_per_km": 0.38,
    "dwell_med": 215,
    "pickup_wait_med": 0,
@@ -3900,7 +4012,7 @@
    "sig_per_km": 4.8,
    "road_km": 29.0,
    "pop_density": 4501.0,
-   "ranked": true,
+   "ranked": false,
    "as_pickup": null,
    "as_drop": {
     "legs": 2,
@@ -3909,15 +4021,14 @@
     "same_pct": 0,
     "next_zone": "Kingsford"
    },
-   "flow_parts": {
-    "pace": 100.0,
-    "lights": 99.7,
-    "climb": 73.9,
-    "stopgo": 100.0
-   },
-   "flow": 94.7,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 4.38,
-   "worth": 8.27,
+   "worth": null,
    "rank": 21,
    "ring": [
     [
@@ -4068,7 +4179,7 @@
    "med_speed": 21.5,
    "lights_per_km": 1.05,
    "climb_per_km": 10.3,
-   "crawl_share": 0.161,
+   "crawl_share": 0.149,
    "light_min_per_km": 0.9,
    "dwell_med": 157,
    "pickup_wait_med": 110,
@@ -4110,7 +4221,7 @@
    "sig_per_km": 2.5,
    "road_km": 18.1,
    "pop_density": 6291.0,
-   "ranked": true,
+   "ranked": false,
    "as_pickup": {
     "legs": 3,
     "leg_min": 4.1,
@@ -4123,15 +4234,14 @@
     "same_pct": 25,
     "next_zone": "Annandale"
    },
-   "flow_parts": {
-    "pace": 72.5,
-    "lights": 20.0,
-    "climb": 26.0,
-    "stopgo": 62.4
-   },
-   "flow": 46.7,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 5.34,
-   "worth": 4.97,
+   "worth": null,
    "rank": 22,
    "ring": [
     [
@@ -4282,7 +4392,7 @@
    "med_speed": 23.3,
    "lights_per_km": 0.67,
    "climb_per_km": 2.9,
-   "crawl_share": 0.085,
+   "crawl_share": 0.083,
    "light_min_per_km": 0.61,
    "dwell_med": 129,
    "pickup_wait_med": 74,
@@ -4337,15 +4447,23 @@
     "same_pct": 0,
     "next_zone": "Waterloo"
    },
+   "flow": 64.4,
+   "min_per_km": 3.73,
+   "free_min_per_km": 2.4,
    "flow_parts": {
-    "pace": 96.6,
-    "lights": 64.0,
-    "climb": 100.0,
-    "stopgo": 96.6
+    "light": 0.61,
+    "stop": 0.14,
+    "crawl": 0.19,
+    "cruise": 0.42,
+    "climb_of_cruise": 0.03
    },
-   "flow": 88.2,
+   "ci": [
+    59.2,
+    68.9
+   ],
+   "ci_width": 9.7,
    "rate_shrunk": 3.3,
-   "worth": 5.81,
+   "worth": 4.07,
    "rank": 23,
    "ring": [
     [
@@ -4420,7 +4538,7 @@
    "med_speed": 22.0,
    "lights_per_km": 1.22,
    "climb_per_km": 8.6,
-   "crawl_share": 0.116,
+   "crawl_share": 0.115,
    "light_min_per_km": 1.74,
    "dwell_med": 114,
    "pickup_wait_med": 212,
@@ -4462,7 +4580,7 @@
    "sig_per_km": 2.9,
    "road_km": 35.1,
    "pop_density": 2114.0,
-   "ranked": true,
+   "ranked": false,
    "as_pickup": null,
    "as_drop": {
     "legs": 2,
@@ -4471,15 +4589,14 @@
     "same_pct": 0,
     "next_zone": "Newtown"
    },
-   "flow_parts": {
-    "pace": 12.5,
-    "lights": 0.0,
-    "climb": 45.4,
-    "stopgo": 81.0
-   },
-   "flow": 27.9,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 3.87,
-   "worth": 2.16,
+   "worth": null,
    "rank": 24,
    "ring": [
     [
@@ -4566,7 +4683,7 @@
    "med_speed": 20.0,
    "lights_per_km": 0.85,
    "climb_per_km": 12.8,
-   "crawl_share": 0.143,
+   "crawl_share": 0.14,
    "light_min_per_km": 0.65,
    "dwell_med": 82,
    "pickup_wait_med": 152,
@@ -4608,7 +4725,7 @@
    "sig_per_km": 2.7,
    "road_km": 42.9,
    "pop_density": 5830.0,
-   "ranked": true,
+   "ranked": false,
    "as_pickup": {
     "legs": 3,
     "leg_min": 10.1,
@@ -4621,15 +4738,14 @@
     "same_pct": 100,
     "next_zone": null
    },
-   "flow_parts": {
-    "pace": 78.1,
-    "lights": 57.1,
-    "climb": 0.0,
-    "stopgo": 69.5
-   },
-   "flow": 55.1,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 4.85,
-   "worth": 5.33,
+   "worth": null,
    "rank": 25,
    "ring": [
     [
@@ -4780,7 +4896,7 @@
    "med_speed": 19.5,
    "lights_per_km": 0.77,
    "climb_per_km": 14.1,
-   "crawl_share": 0.179,
+   "crawl_share": 0.163,
    "light_min_per_km": 0.53,
    "dwell_med": 230,
    "pickup_wait_med": 349,
@@ -4831,13 +4947,12 @@
     "same_pct": 100,
     "next_zone": null
    },
-   "flow_parts": {
-    "pace": 80.8,
-    "lights": 72.1,
-    "climb": 0.0,
-    "stopgo": 55.2
-   },
-   "flow": 57.6,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 5.75,
    "worth": null,
    "rank": 26,
@@ -4992,7 +5107,7 @@
    "sig_per_km": 3.8,
    "road_km": 20.7,
    "pop_density": 6404.0,
-   "ranked": true,
+   "ranked": false,
    "as_pickup": null,
    "as_drop": {
     "legs": 1,
@@ -5001,15 +5116,14 @@
     "same_pct": 0,
     "next_zone": "Leichhardt"
    },
-   "flow_parts": {
-    "pace": 71.5,
-    "lights": 43.9,
-    "climb": 0.0,
-    "stopgo": 79.7
-   },
-   "flow": 51.0,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 4.33,
-   "worth": 4.4,
+   "worth": null,
    "rank": 27,
    "ring": [
     [
@@ -5152,7 +5266,7 @@
    "med_speed": 20.1,
    "lights_per_km": 0.84,
    "climb_per_km": 14.2,
-   "crawl_share": 0.209,
+   "crawl_share": 0.193,
    "light_min_per_km": 0.8,
    "dwell_med": 101,
    "pickup_wait_med": 439,
@@ -5201,13 +5315,12 @@
     "leg_km": 2.45
    },
    "as_drop": null,
-   "flow_parts": {
-    "pace": 59.9,
-    "lights": 39.9,
-    "climb": 0.0,
-    "stopgo": 46.3
-   },
-   "flow": 39.8,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 4.88,
    "worth": null,
    "rank": 28,
@@ -5431,13 +5544,12 @@
     "same_pct": 0,
     "next_zone": "Leichhardt"
    },
-   "flow_parts": {
-    "pace": 78.4,
-    "lights": 57.8,
-    "climb": 13.4,
-    "stopgo": 76.1
-   },
-   "flow": 59.2,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 6.43,
    "worth": null,
    "rank": 29,
@@ -5667,13 +5779,12 @@
     "leg_km": 3.38
    },
    "as_drop": null,
-   "flow_parts": {
-    "pace": 57.4,
-    "lights": 0.0,
-    "climb": 28.2,
-    "stopgo": 74.8
-   },
-   "flow": 38.6,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 4.2,
    "worth": null,
    "rank": 30,
@@ -5881,13 +5992,12 @@
     "same_pct": 0,
     "next_zone": "Kingsford"
    },
-   "flow_parts": {
-    "pace": 76.2,
-    "lights": 75.6,
-    "climb": 87.2,
-    "stopgo": 50.1
-   },
-   "flow": 73.5,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 4.82,
    "worth": null,
    "rank": 31,
@@ -6052,7 +6162,7 @@
    "med_speed": 23.0,
    "lights_per_km": 0.93,
    "climb_per_km": 4.7,
-   "crawl_share": 0.146,
+   "crawl_share": 0.143,
    "light_min_per_km": 1.0,
    "dwell_med": 332,
    "pickup_wait_med": 0,
@@ -6097,13 +6207,12 @@
    "ranked": false,
    "as_pickup": null,
    "as_drop": null,
-   "flow_parts": {
-    "pace": 63.6,
-    "lights": 23.9,
-    "climb": 72.5,
-    "stopgo": 63.6
-   },
-   "flow": 54.3,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 4.9,
    "worth": null,
    "rank": 32,
@@ -6345,13 +6454,12 @@
    "ranked": false,
    "as_pickup": null,
    "as_drop": null,
-   "flow_parts": {
-    "pace": 86.4,
-    "lights": 89.8,
-    "climb": 41.1,
-    "stopgo": 52.5
-   },
-   "flow": 72.2,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 5.17,
    "worth": null,
    "rank": 33,
@@ -6563,13 +6671,12 @@
     "same_pct": 0,
     "next_zone": "Summer Hill"
    },
-   "flow_parts": {
-    "pace": 92.8,
-    "lights": 100.0,
-    "climb": 22.8,
-    "stopgo": 75.1
-   },
-   "flow": 77.6,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 5.21,
    "worth": null,
    "rank": 34,
@@ -6725,13 +6832,12 @@
     "same_pct": 100,
     "next_zone": null
    },
-   "flow_parts": {
-    "pace": 75.9,
-    "lights": 73.7,
-    "climb": 43.9,
-    "stopgo": 77.6
-   },
-   "flow": 69.2,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 5.67,
    "worth": null,
    "rank": 35,
@@ -7019,13 +7125,12 @@
     "same_pct": 0,
     "next_zone": "Sydney CBD"
    },
-   "flow_parts": {
-    "pace": 31.3,
-    "lights": 69.1,
-    "climb": 57.4,
-    "stopgo": 1.9
-   },
-   "flow": 41.8,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 5.71,
    "worth": null,
    "rank": 36,
@@ -7147,13 +7252,12 @@
    "ranked": false,
    "as_pickup": null,
    "as_drop": null,
-   "flow_parts": {
-    "pace": 90.0,
-    "lights": 85.2,
-    "climb": 73.0,
-    "stopgo": 79.1
-   },
-   "flow": 83.3,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 5.82,
    "worth": null,
    "rank": 37,
@@ -7329,13 +7433,12 @@
     "same_pct": 0,
     "next_zone": "Enmore"
    },
-   "flow_parts": {
-    "pace": 70.4,
-    "lights": 59.7,
-    "climb": 8.0,
-    "stopgo": 71.4
-   },
-   "flow": 55.1,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 5.82,
    "worth": null,
    "rank": 38,
@@ -7445,10 +7548,10 @@
    "shifts": 7,
    "hours": 0.19,
    "km": 1.7,
-   "med_speed": 22.8,
+   "med_speed": 23.1,
    "lights_per_km": 1.18,
    "climb_per_km": 9.8,
-   "crawl_share": 0.222,
+   "crawl_share": 0.219,
    "light_min_per_km": 1.21,
    "dwell_med": 88,
    "pickup_wait_med": 0,
@@ -7499,13 +7602,12 @@
     "same_pct": 0,
     "next_zone": "Waterloo"
    },
-   "flow_parts": {
-    "pace": 50.9,
-    "lights": 19.7,
-    "climb": 39.3,
-    "stopgo": 47.9
-   },
-   "flow": 39.3,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 6.06,
    "worth": null,
    "rank": 39,
@@ -7607,13 +7709,12 @@
    "ranked": false,
    "as_pickup": null,
    "as_drop": null,
-   "flow_parts": {
-    "pace": 57.4,
-    "lights": 89.6,
-    "climb": 78.2,
-    "stopgo": 47.9
-   },
-   "flow": 68.9,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 6.18,
    "worth": null,
    "rank": 40,
@@ -7686,7 +7787,7 @@
    "med_speed": 23.8,
    "lights_per_km": 0.13,
    "climb_per_km": 4.6,
-   "crawl_share": 0.044,
+   "crawl_share": 0.043,
    "light_min_per_km": 0.14,
    "dwell_med": 75,
    "pickup_wait_med": 0,
@@ -7728,7 +7829,7 @@
    "sig_per_km": 1.4,
    "road_km": 2.8,
    "pop_density": 1143.0,
-   "ranked": true,
+   "ranked": false,
    "as_pickup": null,
    "as_drop": {
     "legs": 1,
@@ -7737,15 +7838,14 @@
     "same_pct": 0,
     "next_zone": "Newtown"
    },
-   "flow_parts": {
-    "pace": 100.0,
-    "lights": 100.0,
-    "climb": 92.3,
-    "stopgo": 100.0
-   },
-   "flow": 98.5,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 2.45,
-   "worth": 4.81,
+   "worth": null,
    "rank": 41,
    "ring": [
     [
@@ -7909,13 +8009,12 @@
    "ranked": false,
    "as_pickup": null,
    "as_drop": null,
-   "flow_parts": {
-    "pace": 90.8,
-    "lights": 81.3,
-    "climb": 56.8,
-    "stopgo": 87.3
-   },
-   "flow": 80.7,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 4.44,
    "worth": null,
    "rank": 42,
@@ -8205,13 +8304,12 @@
    "ranked": false,
    "as_pickup": null,
    "as_drop": null,
-   "flow_parts": {
-    "pace": 100.0,
-    "lights": 100.0,
-    "climb": 81.8,
-    "stopgo": 98.5
-   },
-   "flow": 96.1,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 4.69,
    "worth": null,
    "rank": 43,
@@ -8341,13 +8439,12 @@
     "leg_km": 3.09
    },
    "as_drop": null,
-   "flow_parts": {
-    "pace": 100.0,
-    "lights": 100.0,
-    "climb": 24.6,
-    "stopgo": 88.1
-   },
-   "flow": 82.8,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 4.76,
    "worth": null,
    "rank": 44,
@@ -8505,13 +8602,12 @@
    "ranked": false,
    "as_pickup": null,
    "as_drop": null,
-   "flow_parts": {
-    "pace": 100.0,
-    "lights": 100.0,
-    "climb": 58.2,
-    "stopgo": 92.1
-   },
-   "flow": 90.2,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 4.91,
    "worth": null,
    "rank": 45,
@@ -8659,13 +8755,12 @@
     "same_pct": 0,
     "next_zone": "Ashfield"
    },
-   "flow_parts": {
-    "pace": 81.8,
-    "lights": 63.0,
-    "climb": 33.4,
-    "stopgo": 77.4
-   },
-   "flow": 66.1,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 4.96,
    "worth": null,
    "rank": 46,
@@ -8847,13 +8942,12 @@
    "ranked": false,
    "as_pickup": null,
    "as_drop": null,
-   "flow_parts": {
-    "pace": 87.3,
-    "lights": 100.0,
-    "climb": 26.7,
-    "stopgo": 76.3
-   },
-   "flow": 76.7,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 5.19,
    "worth": null,
    "rank": 47,
@@ -8938,7 +9032,7 @@
    "med_speed": 24.2,
    "lights_per_km": 0.5,
    "climb_per_km": 7.5,
-   "crawl_share": 0.031,
+   "crawl_share": 0.027,
    "light_min_per_km": 0.51,
    "dwell_med": 138,
    "pickup_wait_med": 0,
@@ -8983,13 +9077,12 @@
    "ranked": false,
    "as_pickup": null,
    "as_drop": null,
-   "flow_parts": {
-    "pace": 90.2,
-    "lights": 65.0,
-    "climb": 50.9,
-    "stopgo": 84.0
-   },
-   "flow": 74.2,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 5.33,
    "worth": null,
    "rank": 48,
@@ -9167,13 +9260,12 @@
     "leg_km": 1.79
    },
    "as_drop": null,
-   "flow_parts": {
-    "pace": 71.0,
-    "lights": 95.8,
-    "climb": 32.3,
-    "stopgo": 56.3
-   },
-   "flow": 67.5,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 5.29,
    "worth": null,
    "rank": 49,
@@ -9331,13 +9423,12 @@
    "ranked": false,
    "as_pickup": null,
    "as_drop": null,
-   "flow_parts": {
-    "pace": 39.5,
-    "lights": 0.0,
-    "climb": 47.1,
-    "stopgo": 70.2
-   },
-   "flow": 35.5,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 3.96,
    "worth": null,
    "rank": 50,
@@ -9406,13 +9497,12 @@
    "ranked": false,
    "as_pickup": null,
    "as_drop": null,
-   "flow_parts": {
-    "pace": 61.9,
-    "lights": 35.5,
-    "climb": 5.4,
-    "stopgo": 72.6
-   },
-   "flow": 45.1,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 4.23,
    "worth": null,
    "rank": 51,
@@ -9481,13 +9571,12 @@
    "ranked": false,
    "as_pickup": null,
    "as_drop": null,
-   "flow_parts": {
-    "pace": 54.1,
-    "lights": 29.5,
-    "climb": 38.5,
-    "stopgo": 67.3
-   },
-   "flow": 46.5,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 4.48,
    "worth": null,
    "rank": 52,
@@ -9556,13 +9645,12 @@
    "ranked": false,
    "as_pickup": null,
    "as_drop": null,
-   "flow_parts": {
-    "pace": 32.7,
-    "lights": 0.0,
-    "climb": 58.0,
-    "stopgo": 56.1
-   },
-   "flow": 32.8,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 4.59,
    "worth": null,
    "rank": 53,
@@ -9631,13 +9719,12 @@
    "ranked": false,
    "as_pickup": null,
    "as_drop": null,
-   "flow_parts": {
-    "pace": 73.9,
-    "lights": 82.8,
-    "climb": 62.6,
-    "stopgo": 67.5
-   },
-   "flow": 73.0,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 4.65,
    "worth": null,
    "rank": 54,
@@ -9706,13 +9793,12 @@
    "ranked": false,
    "as_pickup": null,
    "as_drop": null,
-   "flow_parts": {
-    "pace": 84.2,
-    "lights": 87.7,
-    "climb": 61.8,
-    "stopgo": 75.9
-   },
-   "flow": 79.2,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 4.65,
    "worth": null,
    "rank": 55,
@@ -9781,13 +9867,12 @@
    "ranked": false,
    "as_pickup": null,
    "as_drop": null,
-   "flow_parts": {
-    "pace": 76.3,
-    "lights": 82.4,
-    "climb": 65.6,
-    "stopgo": 73.5
-   },
-   "flow": 75.3,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 4.65,
    "worth": null,
    "rank": 56,
@@ -9856,13 +9941,12 @@
    "ranked": false,
    "as_pickup": null,
    "as_drop": null,
-   "flow_parts": {
-    "pace": 67.6,
-    "lights": 70.1,
-    "climb": 13.9,
-    "stopgo": 65.1
-   },
-   "flow": 57.1,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 4.83,
    "worth": null,
    "rank": 57,
@@ -9931,13 +10015,12 @@
    "ranked": false,
    "as_pickup": null,
    "as_drop": null,
-   "flow_parts": {
-    "pace": 70.9,
-    "lights": 70.7,
-    "climb": 22.0,
-    "stopgo": 67.9
-   },
-   "flow": 60.5,
+   "flow": null,
+   "min_per_km": null,
+   "free_min_per_km": 2.4,
+   "flow_parts": null,
+   "ci": null,
+   "ci_width": null,
    "rate_shrunk": 4.83,
    "worth": null,
    "rank": 58,
@@ -9960,18 +10043,9 @@
   "Pyrmont",
   "Alexandria",
   "Darlington",
-  "Annandale",
-  "Kingsford",
   "Forest Lodge",
-  "Darlinghurst",
   "Erskineville",
-  "Kensington",
-  "Stanmore",
-  "Rosebery",
-  "St Peters",
-  "Leichhardt",
-  "Petersham",
-  "Eveleigh"
+  "Rosebery"
  ],
  "hotspots": [
   {

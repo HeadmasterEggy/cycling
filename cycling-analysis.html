@@ -757,15 +757,14 @@
 
 <section class="analysis-section">
   <div class="section-title">区域排行<em>·</em>Zone Leaderboard</div>
-  <div class="section-sub">横轴是识别出的活（取餐 + 送达），纵轴好跑指数 —— 右上角「活多又好跑」，右下角「活多但难跑」。圈大小 = 在这个区待过的时长</div>
+  <div class="section-sub">横轴是识别出的活（取餐 + 送达），纵轴好跑指数 —— 右上角「活多又好跑」，右下角「活多但难跑」。圈大小 = 在这个区待过的时长，竖线是 90% 置信区间</div>
   <div class="chart-card">
     <svg id="zoneQuadrant" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid meet"></svg>
     <div class="eq-legend" id="zoneQuadLegend"></div>
-    <div class="dlv-table-foot" style="padding: 10px 2px 0;">灰色的点是样本不足的区 —— 画出来当背景，但不参与上面四格的点名</div>
+    <div class="dlv-table-foot" style="padding: 10px 2px 0;">只画样本够的区。竖线越长说明这个区跑得越少、分数越不确定</div>
   </div>
   <div class="chart-card" style="padding: 0; margin-top: 20px;">
     <div class="dlv-table-bar">
-      <button class="dlv-chip active" id="zoneRankToggle">只看样本够的区</button>
       <span class="dlv-table-foot" id="zoneTableFoot"></span>
     </div>
     <div class="rides-table-wrap">
@@ -777,11 +776,11 @@
           <th data-sort="pickups" data-dir="desc">取餐</th>
           <th data-sort="shifts" data-dir="desc">班次</th>
           <th data-sort="jobs_per_hour" data-dir="desc">活/小时</th>
-          <th data-sort="med_speed" data-dir="desc">中位速度</th>
+          <th data-sort="min_per_km" data-dir="asc" title="每公里实际耗时；自由通行下限是 2.4 min/km">每km耗时</th>
           <th data-sort="light_min_per_km" data-dir="asc" title="每公里花在等红灯上的分钟数">红灯 min/km</th>
           <th data-sort="climb_per_km" data-dir="asc">爬升 m/km</th>
           <th data-sort="prep_per_km2" data-dir="desc" title="OpenStreetMap 里每平方公里的餐厅、外卖店、咖啡馆数量">餐厅/km²</th>
-          <th data-sort="flow" data-dir="desc">好跑指数</th>
+          <th data-sort="flow" data-dir="desc" title="自由通行耗时 ÷ 实际耗时。100 = 全程跑出 25 km/h">好跑指数</th>
           <th data-sort="worth" data-dir="desc" title="收缩后的活/小时 × 好跑相对城市中位数">值得去</th>
         </tr></thead>
         <tbody id="zoneTbody"></tbody>
