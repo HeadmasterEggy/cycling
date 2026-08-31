@@ -370,8 +370,11 @@ PAGES = [
             custom_sub='从 GPS 轨迹反推出的接单节奏 —— 每一次停车都对着地图判断是取餐、送达还是等红灯，再看哪个区活最多、哪个区跑得动、哪几段路最费时间、几点该在哪儿。没有平台数据，全部是从停车、速度和 OpenStreetMap 里读出来的。',
             custom_meta='配送 · Delivery'),
         'intro': '',
-        'sections': ['dlv_kpis', 'dlv_method', 'dlv_truth', 'dlv_zones', 'dlv_chain',
-                     'dlv_map', 'dlv_roads', 'dlv_hours', 'dlv_profile'],
+        # Map first: it is the thing worth looking at, and every other section
+        # is a way of reading it. Method and scoring go last — a reader who
+        # wants them will scroll, and one who does not should not have to.
+        'sections': ['dlv_map', 'dlv_kpis', 'dlv_zones', 'dlv_chain', 'dlv_hours',
+                     'dlv_roads', 'dlv_profile', 'dlv_method', 'dlv_truth'],
         'has_filter': False,
         # Delivery analysis is Sydney-only by construction — a city picker
         # here would offer three choices that all empty the page.
@@ -421,8 +424,8 @@ ALL_TITLES_ORDER = [
     'hrv', 'rhr', 'resp', 'sleep', 'walking_reserve', 'recovery_composite',
     'elev_gallery', 'ascent_descent',
     'ride_explorer', 'mets', 'departure', 'rides_table',
-    'dlv_kpis', 'dlv_method', 'dlv_truth', 'dlv_zones', 'dlv_chain',
-    'dlv_map', 'dlv_roads', 'dlv_hours', 'dlv_profile',
+    'dlv_map', 'dlv_kpis', 'dlv_zones', 'dlv_chain', 'dlv_hours',
+    'dlv_roads', 'dlv_profile', 'dlv_method', 'dlv_truth',
 ]
 all_body = "\n\n".join(SECTIONS[s] for s in ALL_TITLES_ORDER)
 all_html = PAGE_TEMPLATE.format(

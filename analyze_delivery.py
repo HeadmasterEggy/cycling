@@ -609,6 +609,14 @@ def build_transitions(shifts, subs):
     flows = defaultdict(int)          # (dropoff zone, next pickup zone) -> n
     dead_all, paid_all = [], []
 
+    # Where the work comes from, as a single point: the mean of every pickup.
+    # A drop-off can then be described by whether the next job pulled the rider
+    # back toward it or pushed them further out, which is the difference
+    # between a suburb that keeps feeding you and one you have to escape.
+    picks = [d for r in shifts for d in r["dwells"] if d["kind"] == "pickup"]
+    core = (sum(d["lat"] for d in picks) / len(picks),
+            sum(d["lon"] for d in picks) / len(picks)) if picks else None
+
     for r in shifts:
         seq = sorted([d for d in r["dwells"] if d["kind"] in ("pickup", "dropoff")],
                      key=lambda d: d["t"])
@@ -628,7 +636,11 @@ def build_transitions(shifts, subs):
             elif a["kind"] == "dropoff" and b["kind"] == "pickup":
                 dead_all.append(km)
                 if a["zone"]:
-                    into_zone[a["zone"]].append((mins, km, b["zone"]))
+                    d_from = d_to = None
+                    if core:
+                        d_from = haversine(a["lat"], a["lon"], core[0], core[1]) / 1000
+                        d_to = haversine(b["lat"], b["lon"], core[0], core[1]) / 1000
+                    into_zone[a["zone"]].append((mins, km, b["zone"], d_from, d_to))
                     flows[(a["zone"], b["zone"])] += 1
 
     pickup_stats, drop_stats = {}, {}
@@ -639,13 +651,21 @@ def build_transitions(shifts, subs):
             "leg_km": round(st.median([k for _, k in legs]), 2),
         }
     for z, legs in into_zone.items():
-        same = sum(1 for _, _, nz in legs if nz == z)
-        nxt = Counter(nz for _, _, nz in legs if nz and nz != z)
+        same = sum(1 for _, _, nz, _, _ in legs if nz == z)
+        nxt = Counter(nz for _, _, nz, _, _ in legs if nz and nz != z)
+        # "Had to ride back" = the next collection sat measurably closer to the
+        # core than the drop did. The 200 m deadband keeps a job across the
+        # street from counting as a journey home.
+        back = sum(1 for _, _, _, df, dt in legs
+                   if df is not None and dt is not None and dt < df - 0.2)
+        far = [df for _, _, _, df, _ in legs if df is not None]
         drop_stats[z] = {
             "legs": len(legs),
-            "dead_min": round(st.median([m for m, _, _ in legs]), 1),
-            "dead_km": round(st.median([k for _, k, _ in legs]), 2),
+            "dead_min": round(st.median([m for m, _, _, _, _ in legs]), 1),
+            "dead_km": round(st.median([k for _, k, _, _, _ in legs]), 2),
             "same_pct": round(100 * same / len(legs)),
+            "back_pct": round(100 * back / len(legs)),
+            "from_core_km": round(st.median(far), 2) if far else None,
             "next_zone": DISPLAY_NAMES.get(nxt.most_common(1)[0][0], nxt.most_common(1)[0][0]) if nxt else None,
         }
 
@@ -657,7 +677,8 @@ def build_transitions(shifts, subs):
                  if b and n >= 2]
     summary = {
         "dead_legs": len(dead_all),
-        "dead_min_med": round(st.median([m for legs in into_zone.values() for m, _, _ in legs]), 1)
+        "dead_min_med": round(st.median([m for legs in into_zone.values()
+                                         for m, _, _, _, _ in legs]), 1)
                         if into_zone else None,
         "dead_km_med": round(st.median(dead_all), 2) if dead_all else None,
         "paid_km_med": round(st.median(paid_all), 2) if paid_all else None,
@@ -665,10 +686,26 @@ def build_transitions(shifts, subs):
         "paid_km_total": round(paid_km, 1),
         "dead_share": round(100 * dead_km / (dead_km + paid_km)) if (dead_km + paid_km) else None,
         "same_zone_pct": round(100 * sum(1 for z, legs in into_zone.items()
-                                         for _, _, nz in legs if nz == z)
+                                         for _, _, nz, _, _ in legs if nz == z)
                                / max(1, sum(len(v) for v in into_zone.values()))),
         "flows": top_flows,
     }
+    # Citywide split of what the unpaid leg was actually doing.
+    all_legs = [lg for legs in into_zone.values() for lg in legs]
+    inward = [lg for lg in all_legs if lg[3] is not None and lg[4] < lg[3] - 0.2]
+    outward = [lg for lg in all_legs if lg[3] is not None and lg[4] > lg[3] + 0.2]
+    local = [lg for lg in all_legs if lg[3] is not None
+             and abs(lg[4] - lg[3]) <= 0.2]
+    if all_legs:
+        summary["direction"] = {
+            "inward": len(inward), "outward": len(outward), "local": len(local),
+            "inward_pct": round(100 * len(inward) / len(all_legs)),
+            "inward_km": round(st.median([lg[1] for lg in inward]), 2) if inward else None,
+            "inward_min": round(st.median([lg[0] for lg in inward]), 1) if inward else None,
+            "local_km": round(st.median([lg[1] for lg in local]), 2) if local else None,
+            "local_min": round(st.median([lg[0] for lg in local]), 1) if local else None,
+            "core": [round(core[0], 5), round(core[1], 5)] if core else None,
+        }
     return pickup_stats, drop_stats, summary
 
 

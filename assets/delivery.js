@@ -1307,11 +1307,12 @@ function renderChain() {
 
   const sum = document.getElementById('dlvChainSum');
   if (sum) {
+    const dir = c.direction || {};
     const cards = [
-      ['空驶占比', c.dead_share, '%', `送完到下一次取餐之间的里程 —— ${c.dead_km_total} km 不挣钱，载单 ${c.paid_km_total} km`],
-      ['每次空驶', c.dead_km_med, 'km', `中位 ${c.dead_min_med} 分钟 · 共 ${c.dead_legs} 段`],
-      ['下一单还在同区', c.same_zone_pct, '%', `送完之后，下一次取餐仍在同一个 suburb 的比例`],
-      ['载单里程', c.paid_km_med, 'km', `取餐到送达的中位直线距离`],
+      ['空驶占比', c.dead_share, '%', `${c.dead_km_total} km 送完了还没接到下一单 —— 一分钱不挣，载单只有 ${c.paid_km_total} km`],
+      ['要骑回市区', dir.inward_pct, '%', `这些空驶中位 ${dir.inward_km} km / ${dir.inward_min} min，是就地续单的三倍`],
+      ['下一单还在同区', c.same_zone_pct, '%', `送完之后下一次取餐仍在同一个 suburb，中位只骑 ${dir.local_km} km`],
+      ['每次空驶', c.dead_km_med, 'km', `全部 ${c.dead_legs} 段的中位 · ${c.dead_min_med} 分钟`],
     ];
     sum.innerHTML = cards.map(([label, v, unit, foot]) => `
       <div class="dlv-kpi">
@@ -1319,6 +1320,35 @@ function renderChain() {
         <div class="dlv-kpi-value">${v == null ? '—' : v}<span class="dlv-kpi-unit">${unit}</span></div>
         <div class="dlv-kpi-foot">${dlvEsc(foot)}</div>
       </div>`).join('');
+  }
+
+  // ---- what the unpaid leg was actually doing ----
+  // The single number "41% of distance is unpaid" hides the thing that hurts.
+  // Riding two blocks to the next restaurant and riding back in from Pyrmont
+  // are both dead legs; only one of them is worth reorganising a shift around.
+  const dirs = document.getElementById('dlvChainDirs');
+  if (dirs && c.direction) {
+    const d = c.direction;
+    const total = d.inward + d.outward + d.local || 1;
+    const rows = [
+      ['往回骑', d.inward, DLV.rose, d.inward_km, d.inward_min,
+       '落点离取餐重心越远，下一单越可能把你拉回来 —— 这段路最贵'],
+      ['就地续上', d.local, DLV.cyan, d.local_km, d.local_min,
+       '下一单就在手边，几乎不用移动'],
+      ['继续往外', d.outward, DLV.amber, null, null,
+       '接着往更外围送，暂时没往回走'],
+    ];
+    dirs.innerHTML = rows.map(([label, n, col, km, min, why]) => `
+      <div class="ch-dir">
+        <div class="ch-dir-head">
+          <span class="ch-dir-n" style="color:${col}">${Math.round(100 * n / total)}<em>%</em></span>
+          <span class="ch-dir-label">${label}</span>
+          <span class="ch-dir-cost">${km == null ? `${n} 段` : `${n} 段 · 中位 ${km} km / ${min} min`}</span>
+        </div>
+        <div class="ch-dir-bar"><span style="width:${(n / total) * 100}%;background:${col}"></span></div>
+        <div class="ch-dir-why">${why}</div>
+      </div>`).join('')
+      + `<div class="ch-dir-foot">「往回骑」= 下一次取餐比这次送达更靠近取餐重心（${d.core[0].toFixed(3)}, ${d.core[1].toFixed(3)}，302 次取餐的平均位置），至少近 200 米。</div>`;
   }
 
   const MIN_LEGS = 4;   // below this the per-zone medians are anecdotes
@@ -1361,12 +1391,20 @@ function renderChain() {
       // Long wait but short distance is not the same failure as long wait and
       // long distance: one is sitting still, the other is riding for nothing.
       const idling = ad.dead_min >= 8 && ad.dead_km <= 1.0;
+      // Three verdicts a rider can act on, in the order they'd want to know.
+      const verdict = ad.back_pct >= 50
+        ? ['trap', '要往回骑', `${ad.back_pct}% 的下一单把你拉回市区方向`]
+        : (ad.same_pct >= 40 || ad.dead_km <= 0.8)
+          ? ['hub', '接得上', `${ad.same_pct}% 的下一单就在本区`]
+          : null;
       return `<div class="ch-row${thin ? ' ch-row-thin' : ''}" data-zone="${dlvEsc(z.name)}">
-        <div class="ch-name">${dlvEsc(z.label)}<em>${z.orders} 次送达</em></div>
+        <div class="ch-name">${dlvEsc(z.label)}<em>${z.orders} 次送达</em>
+          ${verdict ? `<b class="ch-tag ${verdict[0]}" title="${verdict[2]}">${verdict[1]}</b>` : ''}</div>
         <div class="ch-stats">
           <span><i>空驶</i>${ad.dead_min} min</span>
           <span><i>骑了</i>${ad.dead_km} km</span>
           <span><i>同区续单</i>${ad.same_pct}%</span>
+          <span><i>往回骑</i>${ad.back_pct}%</span>
           <span><i>常去的下一区</i>${dlvEsc(ad.next_zone || '—')}</span>
         </div>
         ${idling ? '<div class="ch-flag">时间长但没骑多远 —— 是在原地等单，不是在跑远路</div>' : ''}
@@ -1393,19 +1431,22 @@ function renderChain() {
 
   const note = document.getElementById('dlvChainNote');
   if (note) {
-    note.innerHTML = `<strong>怎么读这两张表</strong> · `
+    const d = c.direction || {};
+    note.innerHTML = `<strong>怎么读这一节</strong> · `
       + `一个区很少两头都好。<em>接单区</em>看的是它把单派出去的能力：取餐次数、餐厅让你等多久、`
-      + `以及接了之后要骑多远才送到 —— 送得越近，同样时间里能跑的单越多。`
-      + `<em>送达区</em>看的是完全不同的东西：送完之后，你离下一单有多远。`
+      + `接了之后要骑多远才送到 —— 送得越近，同样时间里能跑的单越多。`
+      + `<em>落点</em>看的是完全不同的东西：把餐交出去之后，下一单离你有多远。`
       + `<br><br>`
-      + `<b>空驶是最大的一笔隐形成本</b>：全部里程里有 ${c.dead_share}% 花在「送完了、还没接到下一单」的路上，`
-      + `一分钱不挣。把它压下去比多接一单更划算。`
+      + `<b>最贵的一段路是没人付钱的那段</b> —— 全部里程的 ${c.dead_share}% 花在「送完了、还没接到下一单」上。`
+      + `而这 ${c.dead_legs} 段里有 ${d.inward_pct}% 是在往市区方向骑回来，中位 ${d.inward_km} km、${d.inward_min} 分钟，`
+      + `是就地续单（${d.local_km} km / ${d.local_min} min）的三倍多。`
+      + `所以真正该躲的不是「远」，是<em>落在没有餐厅的地方</em> —— 那里不会有新单找上你，只能自己骑回去。`
       + `<br><br>`
-      + `<b>两种不同的坏</b>：空驶时间长、距离也长，是真的在跑远路；`
-      + `时间长但距离很短，是停在原地等派单 —— 后者换个位置也没用，得换时段。表里标出来了。`
+      + `<b>两种不同的坏</b>：空驶时间长、距离也长，是真的在跑远路；时间长但距离很短，是停在原地等派单。`
+      + `后者换个位置没用，得换时段 —— 表里分别标了「要往回骑」和「原地等单」。`
       + `<br><br>`
-      + `<b>样本很薄</b>：一共只有 ${c.dead_legs} 段空驶可分析，摊到各区每区只有几段，`
-      + `少于 4 段的已经标灰。这一节看趋势可以，别拿单个数字下结论。`
-      + `另外这里只统计相邻两次作业间隔在 45 分钟以内的 —— 更长的那些是休息或跨城转场，不是接单间隙。`;
+      + `<b>样本很薄</b>：一共只有 ${c.dead_legs} 段空驶，摊到各区每区只有几段，少于 4 段的已经标灰。`
+      + `这一节看趋势可以，别拿单个数字下结论。`
+      + `只统计相邻两次作业间隔在 45 分钟以内的 —— 更长的是休息或跨城转场，不是接单间隙。`;
   }
 }

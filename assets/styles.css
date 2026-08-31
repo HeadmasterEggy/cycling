@@ -3873,6 +3873,38 @@ body[data-page]:not([data-page="all"]) .hero h1 {
   }
   .dlv-miss-bar span { display: block; height: 100%; opacity: 0.85; }
   .dlv-miss-why { font-size: 11.5px; color: var(--text-faint); line-height: 1.6; }
+  /* ---- 送完之后往哪骑 / dead-leg direction ---- */
+  .ch-dirs { margin-top: 16px; display: flex; flex-direction: column; gap: 16px; }
+  .ch-dir-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 7px; }
+  .ch-dir-n { font-family: var(--mono); font-size: 24px; line-height: 1; }
+  .ch-dir-n em { font-style: normal; font-size: 13px; margin-left: 2px; }
+  .ch-dir-label { font-size: 13px; color: var(--text); }
+  .ch-dir-cost { font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); margin-left: auto; }
+  .ch-dir-bar { height: 7px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+  .ch-dir-bar span { display: block; height: 100%; opacity: 0.85; }
+  .ch-dir-why { margin-top: 6px; font-size: 11.5px; color: var(--text-dim); line-height: 1.6; }
+  .ch-dir-foot {
+    margin-top: 4px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    line-height: 1.6;
+  }
+  .ch-tag {
+    font-family: var(--chinese);
+    font-weight: 400;
+    font-size: 10px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    margin-left: 8px;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+  .ch-tag.trap { color: var(--rose); border-color: var(--rose); background: rgba(217,122,138,0.1); }
+  .ch-tag.hub { color: var(--cyan); border-color: var(--cyan); background: rgba(108,196,217,0.1); }
+
   .flow-ci {
     font-family: var(--mono);
     font-size: 9.5px;
