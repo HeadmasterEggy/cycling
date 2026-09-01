@@ -13,6 +13,7 @@
 | `training.html` | `training` | 滚动负荷、Fitness/Form、训练效率、强度象限 |
 | `rides.html` | `rides` | 能量构成、海拔画廊、爬升/下降、骑行明细表 |
 | `delivery.html` | `delivery` | 配送效率:停留分类(取餐/送达/等灯)、区域排行、可交互热点地图、路段好坏、时段规律、区域档案 |
+| `dashboard.html` | `dashboard` | 配送作战台:同一份数据的单屏版本,九个面板一屏排完,点任一面板的区在所有面板同时高亮 |
 | `explorer.html` | `explorer` | 单次骑行逐条放大 |
 | `recovery.html` | `recovery` | HRV、静息心率、呼吸、血氧、睡眠 |
 | `cycling-analysis.html` | `all` | 所有章节合并的单页全景视图 |
@@ -230,6 +231,20 @@ python3 analyze_delivery.py --dry-run
 所以密度和这里的几何是对得上的,不是把两种「区」的定义混在一起。
 
 > 单量是从轨迹反推的,不是平台真实单数。它能比较区与区的相对高低,不能当账单看。
+
+### 底图
+
+`index.html` / `delivery.html` / `cycling-analysis.html` / `dashboard.html` 四张地图用的都是
+Esri Dark Gray Canvas。原来用的 CARTO dark basemap **现在对所有匿名调用打水印** ——
+瓦片仍然返回 HTTP 200、大小也正常,所以看起来像限流,直到你真的把那张 PNG 打开看一眼,
+中间横着 "API KEY REQUIRED"。
+
+Esri 免 key,但 z16 以上没有数据,会返回一张浅灰色的 "Map data not yet available" 占位图。
+所以设了 `maxNativeZoom: 16` —— 请求停在 z16,更高的缩放由 Leaflet 放大 z16 的瓦片,
+比原生细节软一些,但好过钻进一个 suburb 时看到一张空卡片。
+
+Esri 的底图比站点暗色调亮两档,会和琥珀/青色的叠加层抢注意力,所以用 CSS 滤镜
+(`.dlv-tiles-base`)把它压回去,标签层反向提亮。
 
 ### 重新生成页面
 

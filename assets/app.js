@@ -3913,6 +3913,9 @@ function buildTopNav() {
     { key: 'training', href: 'training.html', cn: '训练',   en: 'Training' },
     { key: 'rides',    href: 'rides.html',    cn: '骑行',   en: 'Rides' },
     { key: 'delivery', href: 'delivery.html', cn: '配送',   en: 'Delivery' },
+    // Same data as 配送, arranged as one screen instead of a scroll. Sits next
+    // to it because it is a second reading of that page, not a new subject.
+    { key: 'dashboard', href: 'dashboard.html', cn: '作战台', en: 'Console' },
     { key: 'recovery', href: 'recovery.html', cn: '复元',   en: 'Recovery' },
     { key: 'explorer', href: 'explorer.html', cn: '逐次',   en: 'Explorer' },
     { key: 'all',      href: 'cycling-analysis.html', cn: '全景', en: 'All' },
