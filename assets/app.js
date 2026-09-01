@@ -120,18 +120,25 @@ function initMap() {
     attributionControl: true,
   }).setView([-33.91, 151.17], 13);
 
-  // CartoDB Dark Matter tiles - 适合暗色主题
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> · © <a href="https://carto.com/">CARTO</a>',
-    subdomains: 'abcd',
-    maxZoom: 19
+  // Esri Dark Gray Canvas. CARTO's dark basemap now stamps every anonymous
+  // tile with "API KEY REQUIRED" — the tiles still return 200 at a plausible
+  // size, so it reads as rate limiting until you actually look at one.
+  // Esri has no data above z16 and serves a pale placeholder there, so
+  // maxNativeZoom caps the request and Leaflet upscales past it.
+  const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/';
+  L.tileLayer(ESRI + 'World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles © <a href="https://www.esri.com/">Esri</a> · © <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+    maxNativeZoom: 16,
+    maxZoom: 19,
+    className: 'dlv-tiles-base'
   }).addTo(map);
 
   // 标签层(单独叠加,可以更亮)
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
-    subdomains: 'abcd',
+  L.tileLayer(ESRI + 'World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+    maxNativeZoom: 16,
     maxZoom: 19,
-    pane: 'shadowPane'
+    pane: 'shadowPane',
+    className: 'dlv-tiles-labels'
   }).addTo(map);
 }
 
@@ -4062,9 +4069,10 @@ function renderExplorerDetail(ride, host) {
         zoomControl: true, attributionControl: false,
         scrollWheelZoom: false, dragging: true,
       });
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 18, subdomains: 'abcd',
-      }).addTo(map);
+      // See dlvBasemap in delivery.js for why CARTO is gone.
+      if (typeof dlvBasemap === 'function') dlvBasemap(map, { maxZoom: 18, attribution: false });
+      else L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+        { maxNativeZoom: 16, maxZoom: 18 }).addTo(map);
       const poly = L.polyline(track, { color: '#e8b76d', weight: 3, opacity: 0.9 }).addTo(map);
       L.circleMarker(track[0],            { radius: 5, color: '#6cc4d9', fillColor: '#6cc4d9', fillOpacity: 1, weight: 1 }).addTo(map);
       L.circleMarker(track[track.length-1], { radius: 5, color: '#d97a8a', fillColor: '#d97a8a', fillOpacity: 1, weight: 1 }).addTo(map);

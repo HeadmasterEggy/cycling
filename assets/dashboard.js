@@ -24,8 +24,36 @@
   // Jumping to the map from any panel. On the dashboard the map is already on
   // screen, so unlike the long page this must not scroll anything — it just
   // drills in and lets the eye travel.
+  //
+  // Every panel is a different view of the same suburbs, so a suburb picked in
+  // one of them lights up in all of them. Without this the console is seven
+  // charts that happen to share a page; with it, it is one instrument.
   function focusZone(name) {
-    if (typeof dlvSetFocus === 'function') dlvSetFocus(name);
+    // DLVMAP is a `const` in delivery.js, so it is a lexical global and never
+    // appears on `window` — reading it as window.DLVMAP yields undefined and
+    // silently turns this toggle into a no-op.
+    const cur = (typeof DLVMAP !== 'undefined') ? DLVMAP.focus : null;
+    const next = (cur === name) ? null : name;
+    if (typeof dlvSetFocus === 'function') dlvSetFocus(next);
+    markFocus(next);
+  }
+
+  function markFocus(name) {
+    document.querySelectorAll('[data-zone]').forEach(el => {
+      el.classList.toggle('is-focused', !!name && el.dataset.zone === name);
+    });
+  }
+
+  // The map's own polygons can also set the focus, and the panels have to
+  // follow. dlvSetFocus is delivery.js's, so wrap it rather than edit it.
+  function hookMapFocus() {
+    if (typeof window.dlvSetFocus !== 'function' || window.__dashHooked) return;
+    const inner = window.dlvSetFocus;
+    window.__dashHooked = true;
+    window.dlvSetFocus = function (name) {
+      inner.apply(this, arguments);
+      markFocus(name || null);
+    };
   }
 
   // ============ top bar ============
@@ -35,19 +63,29 @@
     if (!d || !host) return;
     const s = d.summary, c = d.chain || {}, v = d.validation || {}, fb = d.meta.flow_basis || {};
     const dir = c.direction || {};
+    // Three groups, divided by a heavier rule: what the work produced, what it
+    // cost, and how much of it to believe. Nine numbers in an undifferentiated
+    // row is a wall; three groups of three is a sentence.
     const cards = [
       ['送达', s.orders, '单', ''],
       ['取餐', s.pickups, '次', ''],
       ['单 / 小时', s.orders_per_hour.toFixed(2), '', ''],
       ['在岗', s.hours.toFixed(0), 'h', ''],
-      ['空驶占比', c.dead_share, '%', 'warn'],
+      ['空驶占比', c.dead_share, '%', 'warn group'],
       ['要骑回市区', dir.inward_pct, '%', 'warn'],
       ['等红灯', s.light_min_per_hour, 'min/h', ''],
-      ['好跑指数中位', medianFlow(), '', 'hot'],
+      ['好跑指数中位', medianFlow(), '', 'hot group'],
       ['送达召回率', v.recall_drop, '%', ''],
     ];
+    const tips = {
+      '空驶占比': `${c.dead_km_total} km 送完了还没接到下一单，一分钱不挣`,
+      '要骑回市区': `这些空驶中位 ${dir.inward_km} km / ${dir.inward_min} min，是就地续单的三倍`,
+      '好跑指数中位': `自由通行耗时 ÷ 实际耗时。100 = 全程跑出 ${fb.v_free_kmh} km/h`,
+      '送达召回率': `对照 ${v.orders} 单真实订单记录，只算召回率`,
+      '单 / 小时': `平均每 ${s.min_per_order} 分钟一单`,
+    };
     host.innerHTML = cards.map(([label, val, unit, cls]) => `
-      <div class="dash-stat ${cls}">
+      <div class="dash-stat ${cls}"${tips[label] ? ` title="${esc(tips[label])}"` : ''}>
         <i>${label}</i>
         <b>${val == null ? '—' : val}${unit ? `<u>${unit}</u>` : ''}</b>
       </div>`).join('');
@@ -279,10 +317,13 @@
     renderRoads();
     renderTruth();
     if (typeof renderDeliveryMap === 'function') renderDeliveryMap();
+    hookMapFocus();
 
     // The map is laid out by the grid, so Leaflet measures it before the
     // fonts and the panel widths settle. Nudge it once, then again on resize.
-    const kick = () => { if (window.DLVMAP && DLVMAP.map) DLVMAP.map.invalidateSize(); };
+    const kick = () => {
+      if (typeof DLVMAP !== 'undefined' && DLVMAP.map) DLVMAP.map.invalidateSize();
+    };
     setTimeout(kick, 60);
     setTimeout(kick, 400);
     let t = null;

@@ -28,19 +28,41 @@ body:has(.dash) { overflow: hidden; }
 }
 
 .dash-panel {
-  background: var(--bg);
+  /* A shade lifted off the 1px gutter grid, with a hairline highlight on the
+     top edge. Flat black panels on a black gutter read as one surface; this
+     is what makes the grid legible as separate instruments. */
+  background: linear-gradient(180deg, #101014 0%, var(--bg) 42%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+  position: relative;
 }
+/* Colour-coded accent per panel, so the eye learns the grid by hue rather
+   than by reading every header. */
+.dash-panel::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0;
+  width: 2px; height: 34px;
+  background: var(--accent, var(--amber));
+  opacity: 0.85;
+}
+.p-map   { --accent: var(--amber-bright); }
+.p-zones { --accent: var(--amber); }
+.p-chain { --accent: var(--rose); }
+.p-list  { --accent: var(--cyan); }
+.p-hours { --accent: var(--amber-dim); }
+.p-roads { --accent: var(--rose); }
+.p-truth { --accent: var(--cyan); }
 
 .dash-head {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  padding: 8px 12px 6px;
+  padding: 9px 12px 7px 14px;
   border-bottom: 1px solid var(--border);
   flex: 0 0 auto;
 }
@@ -67,6 +89,16 @@ body:has(.dash) { overflow: hidden; }
   white-space: nowrap;
 }
 .dash-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 8px 12px 10px; }
+.dash-body::-webkit-scrollbar { width: 7px; height: 7px; }
+.dash-body::-webkit-scrollbar-track { background: transparent; }
+.dash-body::-webkit-scrollbar-thumb {
+  background: var(--border-bright);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.dash-body::-webkit-scrollbar-thumb:hover { background: var(--amber-dim); background-clip: content-box; }
+.dash-body { scrollbar-width: thin; scrollbar-color: var(--border-bright) transparent; }
 .dash-body.flush { padding: 0; }
 
 /* ---- top bar ------------------------------------------------------- */
@@ -94,6 +126,16 @@ body:has(.dash) { overflow: hidden; }
   font-weight: 500;
   color: var(--amber);
   letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.dash-brand b::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 8px var(--amber);
 }
 .dash-brand span {
   font-family: var(--mono);
@@ -104,8 +146,18 @@ body:has(.dash) { overflow: hidden; }
   margin-top: 2px;
 }
 .dash-stats { display: flex; gap: 0; flex: 1 1 auto; }
-.dash-stat { padding: 7px 18px; border-right: 1px solid var(--border); white-space: nowrap; }
+.dash-stat {
+  padding: 8px 17px;
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+  position: relative;
+  transition: background 0.18s;
+}
 .dash-stat:last-child { border-right: none; }
+.dash-stat:hover { background: rgba(255, 255, 255, 0.022); }
+/* A heavier rule where the meaning changes: what you produced, what it cost,
+   how much of it to believe. */
+.dash-stat.group { border-left: 1px solid var(--border-bright); }
 .dash-stat i {
   display: block;
   font-style: normal;
@@ -116,13 +168,15 @@ body:has(.dash) { overflow: hidden; }
 }
 .dash-stat b {
   font-family: var(--mono);
-  font-size: 17px;
-  font-weight: 400;
+  font-size: 19px;
+  font-weight: 300;
   color: var(--text);
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 .dash-stat b u { text-decoration: none; font-size: 9.5px; color: var(--text-faint); margin-left: 3px; }
-.dash-stat.hot b { color: var(--amber-bright); }
+.dash-stat.hot b { color: var(--amber-bright); text-shadow: 0 0 18px rgba(255, 216, 151, 0.28); }
 .dash-stat.warn b { color: var(--rose); }
 .dash-links { margin-left: auto; display: flex; gap: 14px; padding-left: 18px; flex: 0 0 auto; }
 .dash-links a {
@@ -229,14 +283,16 @@ body:has(.dash) { overflow: hidden; }
 /* ---- zone bars ----------------------------------------------------- */
 .dz-row {
   display: grid;
-  grid-template-columns: 78px 1fr 30px;
+  grid-template-columns: 82px 1fr 32px;
   align-items: center;
-  gap: 7px;
-  padding: 3px 0;
+  gap: 8px;
+  padding: 3px 5px 3px 4px;
   cursor: pointer;
   border-radius: 3px;
+  border-left: 2px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
 }
-.dz-row:hover { background: var(--surface); }
+.dz-row:hover { background: rgba(255, 255, 255, 0.03); border-left-color: var(--amber); }
 .dz-name {
   font-size: 11px;
   color: var(--text-dim);
@@ -245,11 +301,30 @@ body:has(.dash) { overflow: hidden; }
   text-overflow: ellipsis;
 }
 .dz-row:hover .dz-name { color: var(--amber); }
-.dz-track { position: relative; height: 12px; background: var(--surface-2); border-radius: 2px; overflow: hidden; }
-.dz-fill { position: absolute; left: 0; top: 0; bottom: 0; opacity: 0.85; }
+.dz-track {
+  position: relative;
+  height: 13px;
+  background: rgba(255, 255, 255, 0.045);
+  border-radius: 3px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.dz-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  border-radius: 3px;
+  opacity: 0.92;
+}
+.dz-row:hover .dz-fill { opacity: 1; }
 .dz-ci { position: absolute; top: 0; bottom: 0; border-left: 1px solid rgba(255,255,255,.35); border-right: 1px solid rgba(255,255,255,.35); }
 .dz-med { position: absolute; top: -1px; bottom: -1px; width: 1px; background: var(--text-faint); opacity: .8; }
-.dz-val { font-family: var(--mono); font-size: 10.5px; color: var(--text); text-align: right; }
+.dz-val {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 .dz-legend {
   display: flex;
   gap: 12px;
@@ -260,26 +335,49 @@ body:has(.dash) { overflow: hidden; }
   margin-bottom: 4px;
   border-bottom: 1px solid var(--border);
 }
+.dz-legend { flex-wrap: wrap; gap: 5px; align-items: center; }
+.dz-legend > span { margin-right: auto; }
 .dz-toggle {
-  margin-left: auto;
-  background: none;
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: 999px;
   color: var(--text-faint);
   font-family: var(--chinese);
   font-size: 9.5px;
-  padding: 1px 6px;
+  padding: 2px 8px;
   cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
-.dz-toggle:hover { color: var(--amber); border-color: var(--amber-dim); }
+.dz-toggle:hover { color: var(--text); border-color: var(--border-bright); }
+.dz-toggle.active {
+  color: var(--bg) !important;
+  background: var(--amber);
+  border-color: var(--amber) !important;
+}
+
+/* ---- one suburb, lit in every panel at once ---- */
+.dz-row.is-focused,
+.dc-zone.is-focused,
+.dh-row.is-focused .dh-label {
+  color: var(--amber-bright);
+}
+.dz-row.is-focused {
+  background: rgba(232, 183, 109, 0.09);
+  border-left-color: var(--amber-bright);
+}
+.dz-row.is-focused .dz-name { color: var(--amber-bright); }
+.dc-zone.is-focused { background: rgba(232, 183, 109, 0.09); }
+.dc-zone.is-focused b { color: var(--amber-bright); }
+.dh-row.is-focused .dh-label { font-weight: 500; }
+.dh-row.is-focused .dh-cell { outline: 1px solid rgba(255, 216, 151, 0.28); outline-offset: -1px; }
 
 /* ---- chain panel --------------------------------------------------- */
 .dc-dir { margin-bottom: 9px; }
 .dc-dir-head { display: flex; align-items: baseline; gap: 6px; margin-bottom: 3px; }
-.dc-dir-n { font-family: var(--mono); font-size: 15px; line-height: 1; }
+.dc-dir-n { font-family: var(--mono); font-size: 17px; font-weight: 300; line-height: 1; font-variant-numeric: tabular-nums; }
 .dc-dir-label { font-size: 10.5px; color: var(--text); }
 .dc-dir-cost { margin-left: auto; font-family: var(--mono); font-size: 9px; color: var(--text-faint); }
-.dc-bar { height: 5px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.dc-bar { height: 5px; background: rgba(255,255,255,.05); border-radius: 3px; overflow: hidden; }
 .dc-bar span { display: block; height: 100%; opacity: 0.85; }
 .dc-split {
   font-family: var(--mono);
@@ -295,11 +393,14 @@ body:has(.dash) { overflow: hidden; }
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 0;
+  padding: 3px 4px;
   font-size: 10.5px;
   cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.15s;
 }
-.dc-zone:hover { color: var(--amber); }
+.dc-zone:hover { background: rgba(255, 255, 255, 0.03); }
+.dc-zone:hover b { color: var(--amber); }
 .dc-zone b { font-weight: 400; color: var(--text-dim); flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dc-zone .dc-num { font-family: var(--mono); font-size: 10px; color: var(--text-faint); }
 .dc-pill {
@@ -314,7 +415,7 @@ body:has(.dash) { overflow: hidden; }
 
 /* ---- hour heatmap -------------------------------------------------- */
 .dh-grid { min-width: 0; }
-.dh-row { display: flex; align-items: center; gap: 1px; margin-bottom: 1px; }
+.dh-row { display: flex; align-items: center; gap: 1.5px; margin-bottom: 1.5px; cursor: pointer; }
 .dh-label {
   flex: 0 0 66px;
   font-size: 9.5px;
@@ -327,22 +428,31 @@ body:has(.dash) { overflow: hidden; }
   cursor: pointer;
 }
 .dh-row:hover .dh-label { color: var(--amber); }
-.dh-cell { flex: 1 1 0; height: 13px; border-radius: 1px; min-width: 0; }
+.dh-cell { flex: 1 1 0; height: 14px; border-radius: 2px; min-width: 0; transition: transform 0.12s; }
+.dh-row:hover .dh-cell { transform: scaleY(1.12); }
 .dh-head .dh-cell { height: auto; background: none !important; font-family: var(--mono); font-size: 8px; color: var(--text-faint); text-align: center; }
 
 /* ---- roads / list -------------------------------------------------- */
-.dr-row { padding: 4px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+.dr-row {
+  padding: 5px 5px 5px 4px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+.dr-row:hover { background: rgba(255, 255, 255, 0.03); border-left-color: var(--rose); }
 .dr-row:last-child { border-bottom: none; }
 .dr-row:hover .dr-name { color: var(--amber); }
 .dr-top { display: flex; align-items: baseline; gap: 6px; }
 .dr-name { font-size: 10.5px; color: var(--text-dim); flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dr-metric { font-family: var(--mono); font-size: 10px; color: var(--amber); }
-.dr-bar { height: 3px; background: var(--surface-2); border-radius: 2px; overflow: hidden; margin-top: 3px; }
+.dr-metric { font-family: var(--mono); font-size: 10.5px; color: var(--amber); font-variant-numeric: tabular-nums; }
+.dr-bar { height: 3px; background: rgba(255,255,255,.05); border-radius: 2px; overflow: hidden; margin-top: 4px; }
 .dr-bar span { display: block; height: 100%; }
 .dr-meta { font-family: var(--mono); font-size: 8.5px; color: var(--text-faint); margin-top: 2px; }
 
 .p-list .dash-body { padding: 0; }
-.p-list .dlv-row { padding: 5px 12px; }
+.p-list .dlv-row { padding: 5px 12px; border-left: 2px solid transparent; transition: background .15s, border-color .15s; }
+.p-list .dlv-row:hover { background: rgba(255,255,255,.03); border-left-color: var(--cyan); }
 .p-list .dlv-row-main { font-size: 11px; }
 .p-list .dlv-row-meta { font-size: 9px; }
 .p-list .dlv-rank { font-size: 9px; }
@@ -363,9 +473,21 @@ body:has(.dash) { overflow: hidden; }
 
 /* ---- truth panel --------------------------------------------------- */
 .dt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 9px; }
-.dt-cell { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; }
+.dt-cell {
+  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.012));
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 7px 9px;
+}
 .dt-cell i { display: block; font-style: normal; font-size: 9px; color: var(--text-faint); margin-bottom: 2px; }
-.dt-cell b { font-family: var(--mono); font-size: 16px; font-weight: 400; color: var(--amber-bright); line-height: 1; }
+.dt-cell b {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 300;
+  color: var(--amber-bright);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
 .dt-cell b u { text-decoration: none; font-size: 9px; color: var(--text-faint); }
 .dt-line { font-size: 10px; color: var(--text-dim); line-height: 1.65; margin-bottom: 6px; }
 .dt-line b { color: var(--text); font-weight: 500; }

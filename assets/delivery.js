@@ -895,6 +895,35 @@ function dlvTogglePlay() {
   }, 900);
 }
 
+// ---- basemap ---------------------------------------------------------
+// CARTO stopped serving its dark basemap to anonymous callers: every tile now
+// comes back stamped "API KEY REQUIRED" across the middle. The tiles still
+// return HTTP 200 at the right size, which is why it looked like rate
+// limiting at first — the watermark is baked into the image.
+//
+// Esri's Dark Gray Canvas needs no key and suits the palette, with one catch:
+// it has no data above zoom 16 and serves a light grey "Map data not yet
+// available" placeholder instead. maxNativeZoom stops the request there and
+// lets Leaflet upscale the z16 tile, which is softer than native detail but
+// far better than a blank card at the zoom where a suburb drill-down lands.
+function dlvBasemap(map, opts) {
+  const o = opts || {};
+  const base = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/';
+  L.tileLayer(base + 'World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    attribution: o.attribution === false ? '' :
+      'Tiles © <a href="https://www.esri.com/">Esri</a> · © <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+    maxNativeZoom: 16, maxZoom: o.maxZoom || 19, className: 'dlv-tiles-base',
+  }).addTo(map);
+  if (o.labels !== false) {
+    // Labels ride in shadowPane so street names stay readable on top of the
+    // suburb fills and corridor lines.
+    L.tileLayer(base + 'World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+      maxNativeZoom: 16, maxZoom: o.maxZoom || 19,
+      pane: 'shadowPane', className: 'dlv-tiles-labels',
+    }).addTo(map);
+  }
+}
+
 function renderDeliveryMap() {
   const D = dlvData();
   if (!D || typeof L === 'undefined') return;
@@ -903,15 +932,7 @@ function renderDeliveryMap() {
 
   DLVMAP.map = L.map('dlvMap', { zoomControl: true, scrollWheelZoom: true })
     .setView([-33.89, 151.20], 13);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> · © <a href="https://carto.com/">CARTO</a>',
-    subdomains: 'abcd', maxZoom: 19,
-  }).addTo(DLVMAP.map);
-  // Labels ride in shadowPane so street names stay readable on top of the
-  // suburb fills and corridor lines. Same trick as the overview map.
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
-    subdomains: 'abcd', maxZoom: 19, pane: 'shadowPane',
-  }).addTo(DLVMAP.map);
+  dlvBasemap(DLVMAP.map);
 
   // Draw order matters: fills first, lines over them, dots on top.
   ['zones', 'common', 'hard', 'lights', 'drops', 'pickups'].forEach(kind => {
