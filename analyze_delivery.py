@@ -857,6 +857,361 @@ def validate_against_uber(path, shifts, dwells, subs):
     }
 
 
+# -- which offers are worth taking ------------------------------------------
+# The offer screen shows three numbers: the fare, the distance, and an ETA.
+# All three describe the *paid* leg. None of them describe the ride to the
+# restaurant, which the rider pays for out of the same hour. This block joins
+# the order log to the ridden track so the hidden half can be measured, and
+# turns the result into a rule that can be applied in the eight seconds an
+# offer stays on screen.
+OFFER_APPROACH_CAP_S = 45 * 60     # longer than this is a break, not an approach
+OFFER_MIN_ROWS = 40                # below this the fits are not worth printing
+OFFER_TARGET_RATES = (15, 18, 20, 22, 25)
+OFFER_RULE_CUTS = (1.0, 1.2, 1.4, 1.6, 1.8, 2.0)
+OFFER_KM_BANDS = ((0, 1.2), (1.2, 1.6), (1.6, 2.0), (2.0, 2.6), (2.6, 99))
+
+
+def _ols(X, y):
+    """Least squares by Gaussian elimination. Returns (coefficients, R^2).
+
+    Three predictors at most and a few hundred rows, so the normal equations
+    are fine and the file stays dependency-free.
+    """
+    n, p = len(y), len(X[0])
+    A = [[sum(X[i][a] * X[i][b] for i in range(n)) for b in range(p)]
+         + [sum(X[i][a] * y[i] for i in range(n))] for a in range(p)]
+    for c in range(p):
+        piv = max(range(c, p), key=lambda r: abs(A[r][c]))
+        A[c], A[piv] = A[piv], A[c]
+        if abs(A[c][c]) < 1e-12:
+            return None, None
+        d = A[c][c]
+        A[c] = [v / d for v in A[c]]
+        for r in range(p):
+            if r != c and A[r][c]:
+                f = A[r][c]
+                A[r] = [x - f * z for x, z in zip(A[r], A[c])]
+    beta = [A[i][p] for i in range(p)]
+    fit = [sum(X[i][a] * beta[a] for a in range(p)) for i in range(n)]
+    ybar = sum(y) / n
+    ss_tot = sum((v - ybar) ** 2 for v in y)
+    if ss_tot <= 0:
+        return beta, None
+    return beta, 1 - sum((y[i] - fit[i]) ** 2 for i in range(n)) / ss_tot
+
+
+def _spearman(a, b):
+    """Rank correlation — the relationships here are monotone, not linear."""
+    n = len(a)
+    if n < 3:
+        return None
+    ra, rb = [0] * n, [0] * n
+    for r, i in enumerate(sorted(range(n), key=lambda i: a[i])):
+        ra[i] = r
+    for r, i in enumerate(sorted(range(n), key=lambda i: b[i])):
+        rb[i] = r
+    ma, mb = sum(ra) / n, sum(rb) / n
+    num = sum((ra[i] - ma) * (rb[i] - mb) for i in range(n))
+    den = (sum((ra[i] - ma) ** 2 for i in range(n))
+           * sum((rb[i] - mb) ** 2 for i in range(n))) ** 0.5
+    return round(num / den, 3) if den else None
+
+
+def _window(ride, t0, t1):
+    """Moving seconds, stopped seconds and kilometres inside a time window."""
+    move = stop = 0.0
+    metres = 0.0
+    for s in ride["samples"]:
+        t = s["t"].timestamp()
+        if t < t0:
+            continue
+        if t > t1:
+            break
+        if s["state"] == "stop":
+            stop += s["dt"]
+        else:
+            move += s["dt"]
+        metres += s["d"]
+    return move, stop, metres / 1000
+
+
+
+TAIL_BANDS = ((0, 1), (1, 2), (2, 3), (3, 99))
+
+
+def _drop_tail(shifts):
+    """How much the *next* order costs, as a function of where this one ended.
+
+    A fare buys a ride to a front door and stops paying there. The ride out of
+    that door is charged to the following order, which is why a drop-off deep
+    in a quiet suburb can be a bad job at a good price. Measured against the
+    middle of the restaurant cluster, since that is where the next collection
+    almost always is.
+    """
+    picks = [d for r in shifts for d in r["dwells"] if d["kind"] == "pickup"]
+    if len(picks) < 20:
+        return None
+    core = (sum(d["lat"] for d in picks) / len(picks),
+            sum(d["lon"] for d in picks) / len(picks))
+
+    legs = []
+    for r in shifts:
+        seq = sorted([d for d in r["dwells"] if d["kind"] in ("pickup", "dropoff")],
+                     key=lambda d: d["t"])
+        for a, b in zip(seq, seq[1:]):
+            if a["kind"] != "dropoff" or b["kind"] != "pickup":
+                continue
+            t0 = a["t"].timestamp() + a["secs"]
+            t1 = b["t"].timestamp()
+            mins = (t1 - t0) / 60
+            if not 0 <= mins <= 45:
+                continue
+            km = sum(s["d"] for s in r["samples"] if t0 <= s["t"].timestamp() < t1) / 1000
+            legs.append((haversine(a["lat"], a["lon"], core[0], core[1]) / 1000, mins, km))
+    if len(legs) < 40:
+        return None
+
+    n = len(legs)
+    mx = sum(l[0] for l in legs) / n
+    my = sum(l[1] for l in legs) / n
+    den = sum((l[0] - mx) ** 2 for l in legs)
+    slope = sum((l[0] - mx) * (l[1] - my) for l in legs) / den if den else 0.0
+
+    bands = []
+    for lo, hi in TAIL_BANDS:
+        sub = [l for l in legs if lo <= l[0] < hi]
+        if len(sub) < 8:
+            continue
+        bands.append({"lo": lo, "hi": hi if hi < 90 else None, "n": len(sub),
+                      "min": round(st.median([l[1] for l in sub]), 1),
+                      "km": round(st.median([l[2] for l in sub]), 2)})
+    return {
+        "legs": n,
+        "rho": _spearman([l[0] for l in legs], [l[1] for l in legs]),
+        "base": round(my - slope * mx, 1),
+        "per_km": round(slope, 2),
+        "bands": bands,
+    }
+
+
+def build_offers(path, shifts, subs):
+    """Measure what an accepted order actually costs, and what that implies.
+
+    Every order in the log is placed inside the shift that contains it, which
+    gives each one the thing the log itself cannot know: the ride that led to
+    the restaurant. That approach leg starts at the end of the previous
+    hand-over — the moment the rider became free — and ends at the collection.
+
+    Two denominators are reported, because they answer different questions.
+    *Marginal* time is approach riding plus the paid leg: what accepting this
+    offer costs that declining it would not. *Full* time adds the standing
+    around, and is what an hour of the evening actually pays. The first drives
+    the accept rule; the second is the honest headline.
+
+    Only this one platform's fares are visible, so every dollar figure here is
+    an Uber figure. The times are not — they come from the track, which does
+    not know which app the job came from.
+    """
+    orders = [o for o in read_uber(path) if o["dist"] and o["dur"] > 0]
+    if not orders:
+        return None
+    orders.sort(key=lambda o: o["at"])
+
+    rows = []
+    for o in orders:
+        ride = next((r for r in shifts
+                     if r["samples"][0]["t"].timestamp() - 60 <= o["at"]
+                     and o["at"] + o["dur"] <= r["samples"][-1]["t"].timestamp() + 60), None)
+        if ride is None:
+            continue
+        # Free again at the end of the last hand-over; before the first one,
+        # free from the moment the recording started.
+        released = ride["samples"][0]["t"].timestamp()
+        for d in ride["dwells"]:
+            end = d["t"].timestamp() + d["secs"]
+            if d["kind"] == "dropoff" and end <= o["at"]:
+                released = max(released, end)
+        released = max(released, o["at"] - OFFER_APPROACH_CAP_S)
+        ap_move, ap_stop, ap_km = _window(ride, released, o["at"])
+        lg_move, lg_stop, lg_km = _window(ride, o["at"], o["at"] + o["dur"])
+        marg = (ap_move + o["dur"]) / 60
+        full = (o["at"] - released + o["dur"]) / 60
+        if marg <= 0:
+            continue
+        tot_km = o["dist"] + ap_km
+        rows.append({
+            "amt": o["total"], "km": o["dist"], "ap_km": ap_km, "tot_km": tot_km,
+            "dur_min": o["dur"] / 60, "ap_move": ap_move / 60, "ap_stop": ap_stop / 60,
+            "lg_move": lg_move / 60, "lg_stop": lg_stop / 60, "lg_km": lg_km,
+            "marg": marg, "full": full,
+            "offer_rate": o["total"] / (o["dur"] / 3600),
+            "marg_rate": o["total"] / (marg / 60),
+            "full_rate": o["total"] / (full / 60),
+            "per_km": o["total"] / o["dist"],
+            "per_tot_km": o["total"] / tot_km if tot_km > 0 else 0.0,
+            "batched": o["kind"] == "CT",
+            "hour": datetime.fromtimestamp(o["at"], timezone.utc).astimezone(SYD_TZ).hour,
+        })
+    if len(rows) < OFFER_MIN_ROWS:
+        return None
+
+    med = lambda f, src=None: st.median([f(r) for r in (src or rows)])
+
+    # -- what the offer screen is paying for
+    pay, pay_r2 = _ols([[1.0, r["km"], r["dur_min"]] for r in rows],
+                       [r["amt"] for r in rows])
+    # -- what an accepted offer costs in minutes
+    tm, tm_r2 = _ols([[1.0, r["tot_km"]] for r in rows], [r["marg"] for r in rows])
+    tmb, tmb_r2 = _ols([[1.0, r["tot_km"], 1.0 if r["batched"] else 0.0] for r in rows],
+                       [r["marg"] for r in rows])
+
+    # -- which of the offer's visible numbers actually moves the hourly rate.
+    # The approach distance sits in the denominator of the rate, so some of
+    # this correlation is arithmetic rather than discovery. What is not
+    # arithmetic is the comparison: the fare varies by a factor of three
+    # across orders and the approach by a factor of twenty, so the small
+    # number on the screen is the one with room to decide the hour.
+    y = [r["marg_rate"] for r in rows]
+    drivers = [
+        {"key": "ap_km", "cn": "取餐点有多远", "en": "distance to the restaurant",
+         "rho": _spearman([-r["ap_km"] for r in rows], y)},
+        {"key": "amt", "cn": "这一单给多少钱", "en": "what the offer pays",
+         "rho": _spearman([r["amt"] for r in rows], y)},
+        {"key": "per_km", "cn": "每公里多少钱（只算送餐段）", "en": "dollars per delivered km",
+         "rho": _spearman([r["per_km"] for r in rows], y)},
+        {"key": "km", "cn": "送多远", "en": "how far the delivery runs",
+         "rho": _spearman([r["km"] for r in rows], y)},
+        {"key": "per_tot_km", "cn": "每公里多少钱（含去餐厅的路）", "en": "dollars per ridden km",
+         "rho": _spearman([r["per_tot_km"] for r in rows], y)},
+    ]
+    drivers.sort(key=lambda d: -(d["rho"] or 0))
+
+    q = lambda vals, k: round(st.quantiles(sorted(vals), n=10)[k], 2)
+    spread = {}
+    for key, label in (("ap_km", "取餐距离"), ("km", "送餐距离"), ("amt", "单价")):
+        v = [r[key] for r in rows]
+        spread[key] = {"label": label, "p10": q(v, 0), "med": round(st.median(v), 2),
+                       "p90": q(v, 8), "ratio": round(q(v, 8) / max(q(v, 0), 0.01), 1)}
+
+    bands = []
+    for lo, hi in OFFER_KM_BANDS:
+        sub = [r for r in rows if lo <= r["per_tot_km"] < hi]
+        if len(sub) < 8:
+            continue
+        bands.append({"lo": lo, "hi": hi if hi < 90 else None, "n": len(sub),
+                      "rate": round(med(lambda r: r["marg_rate"], sub), 1),
+                      "amt": round(med(lambda r: r["amt"], sub), 2),
+                      "km": round(med(lambda r: r["km"], sub), 2),
+                      "ap_km": round(med(lambda r: r["ap_km"], sub), 2)})
+
+    # -- the rule, swept. `refilled` assumes a declined order is replaced by
+    # another at the kept set's rate; `idle` assumes the freed minutes earn
+    # nothing at all. The truth is in between and this data cannot locate it,
+    # because a log of accepted orders has nothing to say about the ones that
+    # were never offered.
+    gross = sum(r["amt"] for r in rows)
+    hours = sum(r["marg"] for r in rows) / 60
+    cuts = []
+    for thr in OFFER_RULE_CUTS:
+        keep = [r for r in rows if r["per_tot_km"] >= thr]
+        skip = [r for r in rows if r["per_tot_km"] < thr]
+        if len(keep) < 10 or len(skip) < 10:
+            continue
+        kh = sum(r["marg"] for r in keep) / 60
+        cuts.append({"thr": thr, "keep": len(keep),
+                     "keep_pct": round(100 * len(keep) / len(rows)),
+                     "kept_rate": round(med(lambda r: r["marg_rate"], keep), 1),
+                     "skip_rate": round(med(lambda r: r["marg_rate"], skip), 1),
+                     "gross_pct": round(100 * sum(r["amt"] for r in keep) / gross),
+                     "refilled": round(sum(r["amt"] for r in keep) / kh, 1),
+                     "idle": round(sum(r["amt"] for r in keep) / hours, 1)})
+
+    targets = []
+    if tm:
+        for t in OFFER_TARGET_RATES:
+            targets.append({"rate": t, "base": round(t / 60 * tm[0], 2),
+                            "per_km": round(t / 60 * tm[1], 2),
+                            "at4": round(t / 60 * (tm[0] + tm[1] * 4), 2)})
+
+    kinds = {}
+    for key, sub in (("single", [r for r in rows if not r["batched"]]),
+                     ("batched", [r for r in rows if r["batched"]])):
+        if len(sub) < 10:
+            continue
+        kinds[key] = {"n": len(sub),
+                      "amt": round(med(lambda r: r["amt"], sub), 2),
+                      "km": round(med(lambda r: r["km"], sub), 2),
+                      "ap_km": round(med(lambda r: r["ap_km"], sub), 2),
+                      "paid_min": round(med(lambda r: r["dur_min"], sub), 1),
+                      "offer_rate": round(med(lambda r: r["offer_rate"], sub), 1),
+                      "marg_rate": round(med(lambda r: r["marg_rate"], sub), 1)}
+
+    hours_rows = []
+    for h in sorted({r["hour"] for r in rows}):
+        sub = [r for r in rows if r["hour"] == h]
+        if len(sub) < 10:
+            continue
+        hours_rows.append({"h": h, "n": len(sub),
+                           "rate": round(med(lambda r: r["marg_rate"], sub), 1),
+                           "amt": round(med(lambda r: r["amt"], sub), 2),
+                           "ap_km": round(med(lambda r: r["ap_km"], sub), 2)})
+
+    # -- what the drop-off point costs *after* the order is over.
+    # Splitting the fares by destination suburb was the obvious way to ask
+    # this and it does not survive contact with the sample: six or seven
+    # priced orders per suburb, and the spread between the best and worst is
+    # smaller than the noise. Asked as a continuous question it holds up,
+    # because it can use every drop the watch saw rather than only the ones
+    # this platform priced — how far the drop lands from the middle of the
+    # restaurant cluster, against the unpaid ride that follows it.
+    tail = _drop_tail(shifts)
+
+    waits = [d["secs"] / 60 for r in shifts for d in r["dwells"] if d["kind"] == "pickup"]
+
+    return {
+        "n": len(rows), "of_orders": len(orders),
+        "gross": round(gross, 2), "hours": round(hours, 1),
+        "engaged_rate": round(gross / hours, 1),
+        "pay_model": {"base": round(pay[0], 2), "per_km": round(pay[1], 2),
+                      "per_min": round(pay[2], 3), "r2": round(pay_r2, 3)} if pay else None,
+        # Two fits of the same thing. The plain one is what the calculator
+        # quotes and what the accept rule is derived from; the second adds a
+        # batched flag, and its own base/slope must be used with its own
+        # coefficient rather than bolted onto the first.
+        "time_model": {"base": round(tm[0], 2), "per_km": round(tm[1], 2),
+                       "r2": round(tm_r2, 3), "kmh": round(60 / tm[1], 1)} if tm else None,
+        "time_model_ct": {"base": round(tmb[0], 2), "per_km": round(tmb[1], 2),
+                          "extra": round(tmb[2], 1), "r2": round(tmb_r2, 3)} if tmb else None,
+        "split": {
+            "ap_min": round(med(lambda r: r["ap_move"] + r["ap_stop"]), 1),
+            "ap_move": round(med(lambda r: r["ap_move"]), 1),
+            "ap_stop": round(med(lambda r: r["ap_stop"]), 1),
+            "ap_km": round(med(lambda r: r["ap_km"]), 2),
+            "paid_min": round(med(lambda r: r["dur_min"]), 1),
+            "paid_move": round(med(lambda r: r["lg_move"]), 1),
+            "paid_stop": round(med(lambda r: r["lg_stop"]), 1),
+            "paid_km": round(med(lambda r: r["km"]), 2),
+            "marg_min": round(med(lambda r: r["marg"]), 1),
+            "full_min": round(med(lambda r: r["full"]), 1),
+            "unpaid_km_pct": round(100 * sum(r["ap_km"] for r in rows)
+                                   / sum(r["ap_km"] + r["km"] for r in rows)),
+        },
+        "rates": {"offer": round(med(lambda r: r["offer_rate"]), 1),
+                  "marginal": round(med(lambda r: r["marg_rate"]), 1),
+                  "full": round(med(lambda r: r["full_rate"]), 1),
+                  "haircut": round(100 * (1 - med(lambda r: r["full_rate"])
+                                          / med(lambda r: r["offer_rate"])))},
+        "drivers": drivers, "spread": spread, "bands": bands, "cuts": cuts,
+        "targets": targets, "kinds": kinds, "by_hour": hours_rows, "tail": tail,
+        "wait": {"n": len(waits), "med": round(st.median(waits), 1),
+                 "p90": round(st.quantiles(sorted(waits), n=10)[8], 1)} if waits else None,
+        # One point per order for the scatter: money against the kilometres it
+        # cost. No addresses, no timestamps — nothing that locates a customer.
+        "points": [{"k": round(r["tot_km"], 2), "a": round(r["amt"], 2),
+                    "m": round(r["marg"], 1), "b": 1 if r["batched"] else 0,
+                    "h": r["hour"]} for r in rows],
+    }
+
 # -- per-ride pass ----------------------------------------------------------
 ENDPOINT_M = 150
 
@@ -1455,6 +1810,7 @@ def main():
     legs = build_legs(shifts)
     pickup_stats, drop_stats, chain = build_transitions(shifts, subs)
     validation = validate_against_uber(args.uber, shifts, all_dwells, subs)
+    offers = build_offers(args.uber, shifts, subs)
     print(f"  -> {len(all_dwells)} dwells: {counts['dropoff']} 送达, {counts['pickup']} 取餐, "
           f"{counts['light']} 等灯 ({len(anchors)} repeat pickup points, "
           f"{endpoint_dropped} dropped as shift endpoints)")
@@ -1468,6 +1824,10 @@ def main():
               f"{validation['zone_pct']}% in the right suburb")
     else:
         print("  -> no order log found, skipping validation")
+    if offers:
+        print(f"  -> offer model on {offers['n']} priced orders: "
+              f"${offers['rates']['offer']}/h on the offer screen, "
+              f"${offers['rates']['full']}/h once the ride to the restaurant is counted")
 
     Z = build_zones(shifts, subs, ctx)
     zones = zone_rows(Z, subs, ctx, legs)
@@ -1664,6 +2024,7 @@ def main():
         "corridors": corridors,
         "shifts": shift_rows,
         "validation": validation,
+        "offers": offers,
         "chain": chain,
         "samples": {"quick_pickups": quick_work, "long_lights": long_light},
     }

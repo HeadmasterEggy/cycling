@@ -128,6 +128,66 @@
 
 
 <section class="analysis-section">
+  <div class="section-title">这一单该不该接<em>·</em>Which Offers to Take</div>
+  <div class="section-sub">派单页上给你三个数字：多少钱、多少公里、大概多久。三个都只描述「取到餐之后」的那一段 —— 而骑去餐厅的路，是从同一个小时里扣的</div>
+
+  <div class="dlv-kpis" id="dlvOfferKpis"></div>
+
+  <div class="chart-card" style="margin-top: 20px;">
+    <div class="chart-title">一单的时间都花在哪</div>
+    <div class="chart-sub">Where the minutes go · 派单页只给你右边那一段计价</div>
+    <div class="of-split" id="dlvOfferSplit"></div>
+  </div>
+
+  <div class="chart-card" style="margin-top: 20px;">
+    <div class="chart-title">决定时薪的不是钱</div>
+    <div class="chart-sub">What actually moves the hourly rate · 各项与实际时薪的秩相关</div>
+    <div class="of-drivers" id="dlvOfferDrivers"></div>
+  </div>
+
+  <div class="chart-card of-calc-card" style="margin-top: 20px;">
+    <div class="chart-title">接单计算器</div>
+    <div class="chart-sub">Offer calculator · 拖动三个滑块，看这一单落在 143 单真实记录的哪个位置</div>
+    <div class="of-calc" id="dlvOfferCalc"></div>
+  </div>
+
+  <div class="analysis-grid dlv-chain-grid">
+    <div class="chart-card">
+      <div class="chart-title">按「每骑一公里挣多少」分档</div>
+      <div class="chart-sub">Dollars per ridden km · 分母含骑去餐厅的路</div>
+      <div class="of-bands" id="dlvOfferBands"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">定在哪一档</div>
+      <div class="chart-sub">Where to draw the line · 拒掉的时间能不能补回来，决定这条线值不值</div>
+      <div class="of-cuts" id="dlvOfferCuts"></div>
+    </div>
+  </div>
+
+  <div class="analysis-grid dlv-chain-grid">
+    <div class="chart-card">
+      <div class="chart-title">拼单是白送的加速</div>
+      <div class="chart-sub">Batched vs single · 派单页上两者时薪一样</div>
+      <div class="of-kinds" id="dlvOfferKinds"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">落点的隐性成本</div>
+      <div class="chart-sub">What the drop-off costs afterwards · 送得越偏，下一单越远</div>
+      <div class="of-tail" id="dlvOfferTail"></div>
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-top: 20px;">
+    <div class="chart-title">哪个时段的单值得接</div>
+    <div class="chart-sub">By hour · 只画有 10 单以上的时段</div>
+    <div class="of-hours" id="dlvOfferHours"></div>
+  </div>
+
+  <div class="dlv-note" id="dlvOfferNote"></div>
+</section>
+
+
+<section class="analysis-section">
   <div class="section-title">接单区还是送达区<em>·</em>Collect or Deliver</div>
   <div class="section-sub">同一个区，做「取餐点」和做「送达点」是两件不同的事 —— 而真正吃掉时薪的是第三件：把餐送到之后，下一单是就在手边，还是要先骑回市区</div>
 

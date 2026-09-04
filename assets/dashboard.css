@@ -19,7 +19,10 @@ body:has(.dash) { overflow: hidden; }
   height: 100vh;
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  /* Fourteen rather than twelve: eight panels do not divide into twelve
+     without either crushing the hour heatmap or leaving the new offer
+     panel too narrow for its sliders. */
+  grid-template-columns: repeat(14, 1fr);
   grid-template-rows: auto 1.55fr 1fr;
   gap: 1px;
   padding: 1px;
@@ -57,6 +60,7 @@ body:has(.dash) { overflow: hidden; }
 .p-hours { --accent: var(--amber-dim); }
 .p-roads { --accent: var(--rose); }
 .p-truth { --accent: var(--cyan); }
+.p-offer { --accent: var(--amber-bright); }
 
 .dash-head {
   display: flex;
@@ -191,13 +195,14 @@ body:has(.dash) { overflow: hidden; }
 .dash-links a:hover { color: var(--amber); border-bottom-color: var(--amber-dim); }
 
 /* ---- placement ----------------------------------------------------- */
-.p-map    { grid-column: 1 / 8;  grid-row: 2 / 3; }
-.p-zones  { grid-column: 8 / 11; grid-row: 2 / 3; }
-.p-chain  { grid-column: 11 / -1; grid-row: 2 / 3; }
-.p-list   { grid-column: 1 / 4;  grid-row: 3 / 4; }
-.p-hours  { grid-column: 4 / 8;  grid-row: 3 / 4; }
-.p-roads  { grid-column: 8 / 11; grid-row: 3 / 4; }
-.p-truth  { grid-column: 11 / -1; grid-row: 3 / 4; }
+.p-map    { grid-column: 1 / 8;   grid-row: 2 / 3; }
+.p-zones  { grid-column: 8 / 11;  grid-row: 2 / 3; }
+.p-chain  { grid-column: 11 / 13; grid-row: 2 / 3; }
+.p-offer  { grid-column: 13 / -1; grid-row: 2 / 3; }
+.p-list   { grid-column: 1 / 4;   grid-row: 3 / 4; }
+.p-hours  { grid-column: 4 / 9;   grid-row: 3 / 4; }
+.p-roads  { grid-column: 9 / 13;  grid-row: 3 / 4; }
+.p-truth  { grid-column: 13 / -1; grid-row: 3 / 4; }
 
 /* ---- map panel ----------------------------------------------------- */
 .p-map .dash-body { display: flex; flex-direction: column; gap: 0; }
@@ -509,8 +514,9 @@ body:has(.dash) { overflow: hidden; }
   .p-map   { grid-column: 1 / -1; height: 62vh; }
   .p-zones { grid-column: 1 / 4; height: 46vh; }
   .p-chain { grid-column: 4 / -1; height: 46vh; }
-  .p-list  { grid-column: 1 / 4; height: 42vh; }
-  .p-hours { grid-column: 4 / -1; height: 42vh; }
+  .p-offer { grid-column: 1 / 4; height: 46vh; }
+  .p-list  { grid-column: 4 / -1; height: 42vh; }
+  .p-hours { grid-column: 1 / -1; height: 42vh; }
   .p-roads { grid-column: 1 / 4; height: 40vh; }
   .p-truth { grid-column: 4 / -1; height: 40vh; }
 }
@@ -521,3 +527,82 @@ body:has(.dash) { overflow: hidden; }
   .dash-brand { margin-right: 10px; padding-right: 12px; }
   .dash-stat { padding: 7px 12px; }
 }
+
+/* ---- 这单接不接 ------------------------------------------------------ */
+/* The narrowest panel on the board, so everything is stacked and the labels
+   sit on the same line as their values rather than above them. */
+.p-offer .dash-body { display: flex; flex-direction: column; gap: 7px; }
+.do-sliders { display: grid; gap: 7px; }
+.do-sliders label { display: block; }
+.do-sliders span {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-bottom: 2px;
+}
+.do-sliders span b { font-family: var(--mono); font-size: 11.5px; color: var(--amber); font-weight: 400; }
+.do-sliders input[type="range"] {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 12px;
+  background: transparent;
+  outline: none;
+  display: block;
+  margin: 0;
+}
+/* The visible track is painted by the gradient, not the element's own box,
+   so the input can be 12px tall instead of the browser default 20-something
+   and five controls still fit the panel without it scrolling. */
+.do-sliders input[type="range"] {
+  background: linear-gradient(var(--border-bright), var(--border-bright)) center / 100% 3px no-repeat;
+}
+.do-sliders input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--amber); cursor: pointer;
+}
+.do-sliders input[type="range"]::-moz-range-thumb {
+  width: 12px; height: 12px; border: none; border-radius: 50%;
+  background: var(--amber); cursor: pointer;
+}
+.do-check { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--text-dim); cursor: pointer; }
+.do-check input { accent-color: var(--amber); margin: 0; }
+.do-row { display: flex; align-items: center; gap: 8px; }
+.do-targets { display: flex; gap: 3px; flex: 1; }
+.do-targets button {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  padding: 3px 0;
+  background: transparent;
+  border: 1px solid var(--border-bright);
+  color: var(--text-faint);
+  cursor: pointer;
+}
+.do-targets button.on { color: #14151a; background: var(--amber); border-color: var(--amber); }
+.do-out { margin-top: auto; border-top: 1px solid var(--border); padding-top: 8px; }
+.do-vd { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+.do-vd b { font-family: var(--serif); font-size: 19px; font-weight: 400; }
+.do-vd span { font-family: var(--mono); font-size: 15px; }
+.do-vd u { text-decoration: none; font-size: 9px; color: var(--text-faint); }
+.do-vd.take b, .do-vd.take span { color: #8fbf7f; }
+.do-vd.skip b, .do-vd.skip span { color: var(--rose); }
+.do-vd.edge b, .do-vd.edge span { color: var(--amber); }
+.do-math { margin-top: 6px; font-size: 10px; line-height: 1.65; color: var(--text-faint); }
+.do-math em { font-style: normal; color: var(--amber); font-family: var(--mono); }
+.do-bands { display: grid; gap: 3px; }
+.do-bands-t {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  margin-bottom: 2px;
+}
+.do-band { display: grid; grid-template-columns: 46px 1fr 30px; gap: 6px; align-items: center; }
+.do-band-k { font-family: var(--mono); font-size: 9px; color: var(--text-dim); }
+.do-band-bar { height: 5px; background: var(--surface-2); overflow: hidden; }
+.do-band-bar i { display: block; height: 100%; background: var(--amber-dim); }
+.do-band-r { font-family: var(--mono); font-size: 9.5px; color: var(--amber); text-align: right; }

@@ -156,6 +156,7 @@ SECTIONS = {
     'dlv_truth':    find_section_by_title('判得准不准'),
     'dlv_zones':    find_section_by_title('区域排行'),
     'dlv_chain':    find_section_by_title('接单区还是送达区'),
+    'dlv_offers':   find_section_by_title('这一单该不该接'),
     'dlv_map':      find_section_by_title('热点地图'),
     'dlv_roads':    find_section_by_title('路段好坏'),
     'dlv_hours':    find_section_by_title('时段规律'),
@@ -167,7 +168,7 @@ SECTIONS = {
 # of these sections do not get the tags at all.
 DELIVERY_SECTIONS = {'dlv_kpis', 'dlv_method', 'dlv_truth', 'dlv_zones',
                      'dlv_chain', 'dlv_map', 'dlv_roads', 'dlv_hours',
-                     'dlv_profile'}
+                     'dlv_profile', 'dlv_offers'}
 # Sections that draw a Leaflet map.
 MAP_SECTIONS = {'map', 'dlv_map'}
 
@@ -373,8 +374,8 @@ PAGES = [
         # Map first: it is the thing worth looking at, and every other section
         # is a way of reading it. Method and scoring go last — a reader who
         # wants them will scroll, and one who does not should not have to.
-        'sections': ['dlv_map', 'dlv_kpis', 'dlv_zones', 'dlv_chain', 'dlv_hours',
-                     'dlv_roads', 'dlv_profile', 'dlv_method', 'dlv_truth'],
+        'sections': ['dlv_map', 'dlv_kpis', 'dlv_zones', 'dlv_offers', 'dlv_chain',
+                     'dlv_hours', 'dlv_roads', 'dlv_profile', 'dlv_method', 'dlv_truth'],
         'has_filter': False,
         # Delivery analysis is Sydney-only by construction — a city picker
         # here would offer three choices that all empty the page.
@@ -424,7 +425,7 @@ ALL_TITLES_ORDER = [
     'hrv', 'rhr', 'resp', 'sleep', 'walking_reserve', 'recovery_composite',
     'elev_gallery', 'ascent_descent',
     'ride_explorer', 'mets', 'departure', 'rides_table',
-    'dlv_map', 'dlv_kpis', 'dlv_zones', 'dlv_chain', 'dlv_hours',
+    'dlv_map', 'dlv_kpis', 'dlv_zones', 'dlv_offers', 'dlv_chain', 'dlv_hours',
     'dlv_roads', 'dlv_profile', 'dlv_method', 'dlv_truth',
 ]
 all_body = "\n\n".join(SECTIONS[s] for s in ALL_TITLES_ORDER)

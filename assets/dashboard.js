@@ -307,12 +307,99 @@
       + `<div class="dt-line" style="color:var(--text-faint)">客户地址不在这个站的任何地方，也不在代码仓库里。</div>`;
   }
 
+
+  // ============ 这单接不接 ============
+  // The narrow console twin of the offer calculator on 配送. Same arithmetic
+  // — it calls delivery.js's ofMinutes/ofNeeded rather than re-deriving the
+  // fit — but no scatter: at this width a plot would be decoration, while
+  // three sliders and a verdict are the thing you would actually reach for
+  // mid-shift.
+  const OFP = { amt: 8, ap: 2, km: 3, batched: false, target: 20 };
+
+
+  // The 143 orders, sorted into what they earned per ridden kilometre. It is
+  // the same axis the sliders move along, so the reader can see which band
+  // the offer they are typing in would have landed in.
+  function ofBandStrip(O) {
+    if (!O.bands || !O.bands.length) return '';
+    const max = Math.max(...O.bands.map(b => b.rate), 1);
+    return `<div class="do-bands">
+      <div class="do-bands-t">真实记录里，每骑一公里挣到</div>
+      ${O.bands.map(b => `
+        <div class="do-band">
+          <span class="do-band-k">$${b.lo}${b.hi ? '–' + b.hi : '+'}</span>
+          <span class="do-band-bar"><i style="width:${100 * b.rate / max}%"></i></span>
+          <span class="do-band-r">$${b.rate}</span>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  function renderOffer() {
+    const d = D();
+    const host = document.getElementById('dashOffer');
+    if (!host) return;
+    const O = d && d.offers;
+    if (!O || typeof ofMinutes !== 'function') {
+      host.innerHTML = '<div class="empty-range">没有可用的订单价格记录</div>';
+      return;
+    }
+    const note = document.getElementById('dashOfferNote');
+    if (note) note.textContent = `${O.n} 单拟合 · 实测 $${O.engaged_rate}/h`;
+
+    host.innerHTML = `
+      <div class="do-sliders">
+        <label><span>单价<b id="doAmtV"></b></span><input type="range" id="doAmt" min="4" max="30" step="0.5" value="${OFP.amt}"></label>
+        <label><span>去餐厅<b id="doApV"></b></span><input type="range" id="doAp" min="0" max="7" step="0.1" value="${OFP.ap}"></label>
+        <label><span>送到客人<b id="doKmV"></b></span><input type="range" id="doKm" min="0.3" max="9" step="0.1" value="${OFP.km}"></label>
+      </div>
+      <div class="do-row">
+        <label class="do-check"><input type="checkbox" id="doBatch"><span>拼单</span></label>
+        <div class="do-targets" id="doTargets">
+          ${[15, 18, 20, 22, 25].map(t => `<button data-t="${t}"${t === OFP.target ? ' class="on"' : ''}>$${t}</button>`).join('')}
+        </div>
+      </div>
+      ${ofBandStrip(O)}
+      <div class="do-out" id="doOut"></div>`;
+
+    const paint = () => {
+      const totK = OFP.ap + OFP.km;
+      const mins = ofMinutes(O, OFP.ap, OFP.km, OFP.batched);
+      const rate = OFP.amt / mins * 60;
+      const need = ofNeeded(O, OFP.target, totK, OFP.batched);
+      const gap = OFP.amt - need;
+      const near = Math.abs(gap) < 1;
+      const cls = near ? 'edge' : (gap > 0 ? 'take' : 'skip');
+      document.getElementById('doAmtV').textContent = '$' + OFP.amt.toFixed(2);
+      document.getElementById('doApV').textContent = OFP.ap.toFixed(1) + ' km';
+      document.getElementById('doKmV').textContent = OFP.km.toFixed(1) + ' km';
+      document.getElementById('doOut').innerHTML = `
+        <div class="do-vd ${cls}"><b>${near ? '在线上' : (gap > 0 ? '接' : '别接')}</b><span>$${rate.toFixed(1)}<u>/h</u></span></div>
+        <div class="do-math">
+          骑 ${totK.toFixed(1)} km · ${mins.toFixed(0)} min<br>
+          $${OFP.target}/h 的门槛是 <em>$${need.toFixed(2)}</em>，${gap >= 0 ? '多' : '差'} $${Math.abs(gap).toFixed(2)}
+        </div>`;
+    };
+    const on = (id, key, num) => document.getElementById(id).addEventListener(
+      num ? 'input' : 'change', e => { OFP[key] = num ? +e.target.value : e.target.checked; paint(); });
+    on('doAmt', 'amt', true); on('doAp', 'ap', true); on('doKm', 'km', true);
+    on('doBatch', 'batched', false);
+    document.getElementById('doTargets').addEventListener('click', ev => {
+      const b = ev.target.closest('button[data-t]');
+      if (!b) return;
+      OFP.target = +b.dataset.t;
+      [...ev.currentTarget.children].forEach(c => c.classList.toggle('on', c === b));
+      paint();
+    });
+    paint();
+  }
+
   // ============ boot ============
   function boot() {
     if (!D()) return;
     renderStats();
     renderZones();
     renderChain();
+    renderOffer();
     renderHours();
     renderRoads();
     renderTruth();

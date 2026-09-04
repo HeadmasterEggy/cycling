@@ -4045,3 +4045,247 @@ body[data-page]:not([data-page="all"]) .hero h1 {
     .dlv-corridor-grid { grid-template-columns: 1fr; }
     #dlvMap { height: 420px; }
   }
+
+  /* ============ 这一单该不该接 / Offer decision ============ */
+
+  /* Where a single order's minutes go. One bar, because the point is the
+     proportion — the paid segment is a minority of the clock even though it
+     is the only part the offer screen describes. */
+  .of-bar {
+    display: flex;
+    height: 26px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .of-bar span { display: block; height: 100%; }
+  .of-bar-axis { display: flex; margin-top: 6px; }
+  .of-bar-brace {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    padding-top: 4px;
+    border-top: 1px solid var(--border-bright);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .of-bar-brace.unpaid { color: var(--rose); }
+  .of-bar-brace.paid { color: var(--cyan); }
+  .of-legend { margin-top: 16px; display: grid; gap: 7px; }
+  .of-leg {
+    display: grid;
+    grid-template-columns: 10px 116px 62px 40px 1fr;
+    align-items: center;
+    gap: 10px;
+    font-size: 11.5px;
+    color: var(--text-dim);
+  }
+  .of-leg i { width: 10px; height: 10px; border-radius: 2px; }
+  .of-leg b { color: var(--text); font-weight: 400; }
+  .of-leg-v { font-family: var(--mono); font-size: 11px; color: var(--amber); }
+  .of-leg-tag {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+    text-align: center;
+    padding: 2px 0;
+    border: 1px solid var(--border-bright);
+  }
+  .of-leg-tag.no { color: var(--rose); border-color: rgba(217, 122, 138, 0.35); }
+  .of-leg-tag.yes { color: var(--cyan); border-color: rgba(108, 196, 217, 0.35); }
+  .of-leg-why { font-size: 11px; color: var(--text-faint); }
+  @media (max-width: 720px) {
+    .of-leg { grid-template-columns: 10px 1fr auto auto; }
+    .of-leg-why { display: none; }
+  }
+
+  /* Rank correlations. The bar is |rho|, so the eye compares magnitudes and
+     the sign lives in the printed number. */
+  .of-drivers { display: grid; gap: 11px; }
+  .of-drv-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+  .of-drv-name { font-size: 12.5px; color: var(--text-dim); }
+  .of-drv.strong .of-drv-name { color: var(--text); }
+  .of-drv-rho { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
+  .of-drv.strong .of-drv-rho { color: var(--amber); }
+  .of-drv-bar { height: 6px; background: var(--surface-2); overflow: hidden; }
+  .of-drv-bar span { display: block; height: 100%; opacity: 0.9; }
+  .of-drv-foot, .of-foot {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    font-size: 11.5px;
+    line-height: 1.75;
+    color: var(--text-faint);
+  }
+  .of-drv-foot b, .of-foot b { color: var(--text-dim); font-weight: 500; }
+  .of-drv-foot em, .of-foot em { color: var(--amber); font-style: normal; }
+
+  /* Calculator: controls on the left, the scatter they move on the right. */
+  /* The scatter is the point of this card, but letting it stretch to a
+     1000px column makes it 680px tall and leaves the controls floating in
+     white space. Capped so the two columns finish at roughly the same
+     height. */
+  .of-calc-grid { display: grid; grid-template-columns: 268px minmax(0, 1fr); gap: 26px; align-items: start; }
+  @media (max-width: 860px) { .of-calc-grid { grid-template-columns: 1fr; } }
+  .of-controls { display: grid; gap: 15px; }
+  .of-ctl { display: block; }
+  .of-ctl > span {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 11.5px;
+    color: var(--text-dim);
+    margin-bottom: 7px;
+  }
+  .of-ctl > span b {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--amber);
+    font-weight: 400;
+  }
+  .of-ctl input[type="range"] {
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 3px;
+    background: var(--border-bright);
+    outline: none;
+  }
+  .of-ctl input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--amber);
+    cursor: pointer;
+  }
+  .of-ctl input[type="range"]::-moz-range-thumb {
+    width: 14px; height: 14px; border: none; border-radius: 50%;
+    background: var(--amber); cursor: pointer;
+  }
+  .of-ctl-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .of-ctl-label { font-size: 11.5px; color: var(--text-dim); }
+  .of-check { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--text-dim); cursor: pointer; }
+  .of-check input { accent-color: var(--amber); }
+  .of-targets { display: flex; gap: 4px; }
+  .of-targets button {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 7px;
+    background: transparent;
+    border: 1px solid var(--border-bright);
+    color: var(--text-faint);
+    cursor: pointer;
+  }
+  .of-targets button.on { color: var(--bg); background: var(--amber); border-color: var(--amber); }
+
+  .of-verdict { margin-top: 4px; border-top: 1px solid var(--border); padding-top: 14px; }
+  .of-vd { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .of-vd b { font-family: var(--serif); font-size: 24px; font-weight: 400; }
+  .of-vd-rate { font-family: var(--mono); font-size: 19px; }
+  .of-vd-rate em { font-size: 11px; font-style: normal; color: var(--text-faint); }
+  .of-vd.take b, .of-vd.take .of-vd-rate { color: #8fbf7f; }
+  .of-vd.skip b, .of-vd.skip .of-vd-rate { color: var(--rose); }
+  .of-vd.edge b, .of-vd.edge .of-vd-rate { color: var(--amber); }
+  .of-vd-math { margin-top: 9px; font-size: 11.5px; line-height: 1.8; color: var(--text-dim); }
+  .of-vd-math b { color: var(--amber); font-weight: 400; font-family: var(--mono); }
+  .of-vd-tail { margin-top: 9px; font-size: 11px; line-height: 1.6; color: var(--text-faint); }
+
+  .of-plot svg { width: 100%; max-width: 760px; height: auto; display: block; }
+  .of-plot-key {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    margin-top: 8px;
+    font-size: 10.5px;
+    color: var(--text-faint);
+  }
+  .of-plot-key span { display: flex; align-items: center; gap: 6px; }
+  .of-k-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--amber); }
+  .of-k-line { width: 14px; height: 0; border-top: 1.5px dashed var(--amber-bright); }
+  .of-k-you { width: 9px; height: 9px; border-radius: 50%; border: 2px solid #8fbf7f; }
+
+  /* Band lists, shared by the $/km ranking and the drop-off tail. */
+  .of-band { margin-bottom: 13px; }
+  .of-band-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 5px; }
+  .of-band-k { font-family: var(--mono); font-size: 11.5px; color: var(--text); }
+  .of-band-k em { font-style: normal; color: var(--text-faint); font-size: 10px; }
+  .of-band-r { font-family: var(--mono); font-size: 14px; color: var(--amber); margin-left: auto; }
+  .of-band-r em { font-style: normal; font-size: 10px; color: var(--text-faint); }
+  .of-band-n { font-family: var(--mono); font-size: 10px; color: var(--text-faint); min-width: 42px; text-align: right; }
+  .of-band-bar { height: 6px; background: var(--surface-2); overflow: hidden; }
+  .of-band-bar span { display: block; height: 100%; }
+  .of-band-why { margin-top: 4px; font-size: 10.5px; color: var(--text-faint); }
+
+  /* Threshold sweep. The two right-hand columns are deliberately coloured
+     against each other — they are the bracket, not two findings. */
+  .of-cuts-t { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11px; }
+  .of-cuts-t th {
+    font-weight: 400;
+    font-size: 9.5px;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    text-align: right;
+    padding: 0 0 8px 8px;
+    line-height: 1.4;
+    border-bottom: 1px solid var(--border);
+  }
+  .of-cuts-t th:first-child { text-align: left; padding-left: 0; }
+  .of-cuts-t td { text-align: right; padding: 7px 0 7px 8px; color: var(--text-dim); border-bottom: 1px solid var(--border); }
+  .of-cuts-t td:first-child { text-align: left; padding-left: 0; }
+  .of-cuts-t tr.pick td { background: rgba(232, 183, 109, 0.06); }
+  .of-cuts-t tr.pick .of-thr { color: var(--amber); }
+  .of-cuts-t td.up { color: #8fbf7f; }
+  .of-cuts-t td.dn { color: var(--rose); }
+
+  /* Single vs batched, as a two-column comparison rather than two lists. */
+  .of-kd-head, .of-kd {
+    display: grid;
+    grid-template-columns: 88px 62px 62px 1fr;
+    gap: 10px;
+    align-items: baseline;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .of-kd-head {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+  }
+  .of-kd-head span:nth-child(2), .of-kd-head span:nth-child(3) { text-align: right; }
+  .of-kd-label { font-size: 11.5px; color: var(--text-dim); }
+  .of-kd-a, .of-kd-b { font-family: var(--mono); font-size: 12.5px; text-align: right; }
+  .of-kd-a { color: var(--text-dim); }
+  .of-kd-b { color: var(--amber); }
+  .of-kd-why { font-size: 10.5px; color: var(--text-faint); }
+  @media (max-width: 720px) {
+    .of-kd-head, .of-kd { grid-template-columns: 1fr 58px 58px; }
+    .of-kd-why { display: none; }
+  }
+
+  /* Hour columns. Fixed height so the bars share a baseline. */
+  .of-hours-row { display: flex; gap: 10px; align-items: flex-end; }
+  .of-hr { flex: 1; text-align: center; }
+  .of-hr-bar { height: 110px; display: flex; align-items: flex-end; background: var(--surface-2); }
+  .of-hr-bar span { display: block; width: 100%; }
+  .of-hr-rate { font-family: var(--mono); font-size: 12px; color: var(--amber); margin-top: 6px; }
+  .of-hr-h { font-family: var(--mono); font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+  .of-hr-n { font-family: var(--mono); font-size: 9.5px; color: var(--text-faint); }
+  .of-hr.best .of-hr-rate { color: #8fbf7f; }
+  .of-hr.worst .of-hr-rate { color: var(--rose); }
+
+  /* On a phone the scatter, the threshold table and the hour columns all stop
+     being readable long before they stop fitting — the SVG's 10px labels end
+     up rendering at three or four pixels. Each gets a floor and scrolls
+     sideways inside its own box rather than being squeezed to illegibility. */
+  @media (max-width: 620px) {
+    .of-plot { overflow-x: auto; }
+    .of-plot svg { min-width: 520px; }
+    #dlvOfferCuts, #dlvOfferHours { overflow-x: auto; }
+    .of-cuts-t { min-width: 380px; }
+    .of-hours-row { min-width: 340px; }
+    .of-calc-grid { gap: 20px; }
+  }
