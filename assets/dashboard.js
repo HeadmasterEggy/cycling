@@ -314,7 +314,7 @@
   // fit — but no scatter: at this width a plot would be decoration, while
   // three sliders and a verdict are the thing you would actually reach for
   // mid-shift.
-  const OFP = { amt: 8, ap: 2, km: 3, batched: false, target: 20 };
+  const OFP = { amt: 7.5, ap: 2, km: 3.3, batched: false };
 
 
   // The 143 orders, sorted into what they earned per ridden kilometre. It is
@@ -324,7 +324,7 @@
     if (!O.bands || !O.bands.length) return '';
     const max = Math.max(...O.bands.map(b => b.rate), 1);
     return `<div class="do-bands">
-      <div class="do-bands-t">真实记录里，每骑一公里挣到</div>
+      <div class="do-bands-t">底薪之上才用：每骑一公里挣到</div>
       ${O.bands.map(b => `
         <div class="do-band">
           <span class="do-band-k">$${b.lo}${b.hi ? '–' + b.hi : '+'}</span>
@@ -339,12 +339,12 @@
     const host = document.getElementById('dashOffer');
     if (!host) return;
     const O = d && d.offers;
-    if (!O || typeof ofMinutes !== 'function') {
+    if (!O || !O.floor || typeof ofFloorValue !== 'function') {
       host.innerHTML = '<div class="empty-range">没有可用的订单价格记录</div>';
       return;
     }
     const note = document.getElementById('dashOfferNote');
-    if (note) note.textContent = `${O.n} 单拟合 · 实测 $${O.engaged_rate}/h`;
+    if (note) note.textContent = `单价 $${O.floor.fare_rate}/h · 底薪 $${O.floor.rate}/h`;
 
     host.innerHTML = `
       <div class="do-sliders">
@@ -352,44 +352,34 @@
         <label><span>去餐厅<b id="doApV"></b></span><input type="range" id="doAp" min="0" max="7" step="0.1" value="${OFP.ap}"></label>
         <label><span>送到客人<b id="doKmV"></b></span><input type="range" id="doKm" min="0.3" max="9" step="0.1" value="${OFP.km}"></label>
       </div>
-      <div class="do-row">
-        <label class="do-check"><input type="checkbox" id="doBatch"><span>拼单</span></label>
-        <div class="do-targets" id="doTargets">
-          ${[15, 18, 20, 22, 25].map(t => `<button data-t="${t}"${t === OFP.target ? ' class="on"' : ''}>$${t}</button>`).join('')}
-        </div>
-      </div>
+      <label class="do-check"><input type="checkbox" id="doBatch"><span>拼单（一趟两户）</span></label>
       ${ofBandStrip(O)}
       <div class="do-out" id="doOut"></div>`;
 
     const paint = () => {
-      const totK = OFP.ap + OFP.km;
-      const mins = ofMinutes(O, OFP.ap, OFP.km, OFP.batched);
-      const rate = OFP.amt / mins * 60;
-      const need = ofNeeded(O, OFP.target, totK, OFP.batched);
-      const gap = OFP.amt - need;
-      const near = Math.abs(gap) < 1;
-      const cls = near ? 'edge' : (gap > 0 ? 'take' : 'skip');
+      const F = O.floor;
+      const eng = ofMinutes(O, OFP.ap, OFP.km, OFP.batched, 'engaged');
+      const fv = ofFloorValue(O, OFP.ap, OFP.km, OFP.batched);
+      const under = OFP.amt < fv;
       document.getElementById('doAmtV').textContent = '$' + OFP.amt.toFixed(2);
       document.getElementById('doApV').textContent = OFP.ap.toFixed(1) + ' km';
       document.getElementById('doKmV').textContent = OFP.km.toFixed(1) + ' km';
       document.getElementById('doOut').innerHTML = `
-        <div class="do-vd ${cls}"><b>${near ? '在线上' : (gap > 0 ? '接' : '别接')}</b><span>$${rate.toFixed(1)}<u>/h</u></span></div>
+        <div class="do-pair">
+          <span class="${under ? 'dim' : 'win'}"><i>平台给</i><b>$${OFP.amt.toFixed(2)}</b></span>
+          <span class="${under ? 'win' : 'dim'}"><i>时钟值</i><b>$${fv.toFixed(2)}</b></span>
+        </div>
         <div class="do-math">
-          骑 ${totK.toFixed(1)} km · ${mins.toFixed(0)} min<br>
-          $${OFP.target}/h 的门槛是 <em>$${need.toFixed(2)}</em>，${gap >= 0 ? '多' : '差'} $${Math.abs(gap).toFixed(2)}
+          engaged ${eng.toFixed(0)} min · 骑 ${(OFP.ap + OFP.km).toFixed(1)} km<br>
+          实际值 <em>$${Math.max(OFP.amt, fv).toFixed(2)}</em> —— ${under
+            ? `靠底薪 $${F.rate}/h，平台补 $${(fv - OFP.amt).toFixed(2)}`
+            : `靠单价，高出底薪 $${(OFP.amt - fv).toFixed(2)}`}
         </div>`;
     };
     const on = (id, key, num) => document.getElementById(id).addEventListener(
       num ? 'input' : 'change', e => { OFP[key] = num ? +e.target.value : e.target.checked; paint(); });
     on('doAmt', 'amt', true); on('doAp', 'ap', true); on('doKm', 'km', true);
     on('doBatch', 'batched', false);
-    document.getElementById('doTargets').addEventListener('click', ev => {
-      const b = ev.target.closest('button[data-t]');
-      if (!b) return;
-      OFP.target = +b.dataset.t;
-      [...ev.currentTarget.children].forEach(c => c.classList.toggle('on', c === b));
-      paint();
-    });
     paint();
   }
 

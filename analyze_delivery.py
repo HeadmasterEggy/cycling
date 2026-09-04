@@ -866,9 +866,27 @@ def validate_against_uber(path, shifts, dwells, subs):
 # offer stays on screen.
 OFFER_APPROACH_CAP_S = 45 * 60     # longer than this is a break, not an approach
 OFFER_MIN_ROWS = 40                # below this the fits are not worth printing
-OFFER_TARGET_RATES = (15, 18, 20, 22, 25)
+OFFER_TARGET_RATES = (15, 20, 25, 31.3, 35)
 OFFER_RULE_CUTS = (1.0, 1.2, 1.4, 1.6, 1.8, 2.0)
 OFFER_KM_BANDS = ((0, 1.2), (1.2, 1.6), (1.6, 2.0), (2.0, 2.6), (2.6, 99))
+
+# The Interim On-Demand Delivery Employee-like Worker Minimum Standards Order.
+# From 17 August 2026 a covered platform must compare what it paid against
+# `engaged hours x rate` over an earnings period and top up the shortfall.
+# That single fact reorganises this whole section: below the floor an offer's
+# fare stops being what it earns you, and the clock does the earning instead.
+FLOOR = {
+    "rate": 31.30,                 # bicycle / e-bike / e-scooter
+    "from": "2026-08-17",
+    "vehicle": "自行车 / 电动自行车",
+    "other": [("摩托车 / 燃油踏板", 31.50), ("汽车 / 面包车（≤1 吨）", 32.00)],
+    "basis": "engaged time — 从接单那一刻到送达完成",
+    "period_days": 21,
+    "source": "Fair Work Commission · Interim On-Demand Delivery "
+              "Employee-like Worker Minimum Standards Order",
+    "url": "https://www.fairwork.gov.au/about-us/workplace-laws/"
+           "fair-work-commission-orders/minimum-standards-order-on-demand-delivery-workers",
+}
 
 
 def _ols(X, y):
@@ -934,6 +952,77 @@ def _window(ride, t0, t1):
         metres += s["d"]
     return move, stop, metres / 1000
 
+
+
+PROMO_TYPES = {"QUEST", "MISC"}
+PROMO_PAIR_S = 600
+
+
+def _read_promotions(path):
+    """Total the log's non-trip payouts, without counting them twice.
+
+    The export carries promotion payouts under two labels, and 73 of the 81
+    MISC rows have a QUEST row of exactly the same amount within ten minutes.
+    They are one payout listed twice, so MISC only counts where it has no
+    QUEST twin. What none of it settles is whether these amounts are already
+    inside the trip totals or sit on top of them, and the earnings site's own
+    breakdown is not reachable to check — so this is reported beside the fare
+    figures, never folded into them.
+    """
+    try:
+        text = Path(path).read_text(encoding="utf-8")
+    except OSError:
+        return None
+    quest, misc = [], []
+    for line in text.splitlines():
+        parts = line.split("|")
+        if len(parts) < 3 or parts[1] not in PROMO_TYPES:
+            continue
+        (quest if parts[1] == "QUEST" else misc).append(
+            (int(parts[0]), float(parts[2] or 0)))
+    if not quest and not misc:
+        return None
+    rows = [(t, a) for t, a in quest if a > 0]
+    dupes = 0
+    for t, a in misc:
+        if a <= 0:
+            continue
+        if any(abs(t - t2) <= PROMO_PAIR_S and abs(a - a2) < 0.005 for t2, a2 in quest):
+            dupes += 1
+        else:
+            rows.append((t, a))
+    if not rows:
+        return None
+    amounts = sorted(a for _, a in rows)
+    return {
+        "n": len(rows), "total": round(sum(amounts), 2),
+        "med": round(st.median(amounts), 2),
+        "max": round(amounts[-1], 2),
+        "deduped": dupes,
+        "raw_quest": round(sum(a for _, a in quest), 2),
+        "raw_misc": round(sum(a for _, a in misc), 2),
+    }
+
+
+def _idle_seconds(ride, t0, t1):
+    """Stopped seconds inside a window that fall outside every detected dwell.
+
+    A light, a restaurant counter and a customer's door are all stops that
+    belong to the job. Standing anywhere else is the rider waiting to be given
+    one, which is the only part of the gap between two jobs that the minimum
+    standards order would not call engaged time.
+    """
+    spans = [(d["t"].timestamp(), d["t"].timestamp() + d["secs"]) for d in ride["dwells"]]
+    idle = 0.0
+    for s in ride["samples"]:
+        t = s["t"].timestamp()
+        if t < t0:
+            continue
+        if t > t1:
+            break
+        if s["state"] == "stop" and not any(a <= t <= b for a, b in spans):
+            idle += s["dt"]
+    return idle
 
 
 TAIL_BANDS = ((0, 1), (1, 2), (2, 3), (3, 99))
@@ -1038,15 +1127,29 @@ def build_offers(path, shifts, subs):
         full = (o["at"] - released + o["dur"]) / 60
         if marg <= 0:
             continue
+        # Engaged time as the order defines it: acceptance to hand-over. The
+        # acceptance moment is not in either source, so it is taken as the
+        # moment the rider became free — everything after that was spent on
+        # this job. The one part that plainly was not is standing still
+        # somewhere that is not a light and not a restaurant, which is waiting
+        # for an offer rather than working on one, so it comes back out.
+        idle = _idle_seconds(ride, released, o["at"])
+        engaged = (o["at"] - released - idle + o["dur"]) / 60
         tot_km = o["dist"] + ap_km
         rows.append({
+            "at": o["at"],
             "amt": o["total"], "km": o["dist"], "ap_km": ap_km, "tot_km": tot_km,
             "dur_min": o["dur"] / 60, "ap_move": ap_move / 60, "ap_stop": ap_stop / 60,
             "lg_move": lg_move / 60, "lg_stop": lg_stop / 60, "lg_km": lg_km,
-            "marg": marg, "full": full,
+            "marg": marg, "full": full, "engaged": engaged, "idle": idle / 60,
             "offer_rate": o["total"] / (o["dur"] / 3600),
             "marg_rate": o["total"] / (marg / 60),
             "full_rate": o["total"] / (full / 60),
+            "eng_rate": o["total"] / (engaged / 60),
+            # What the order guarantees this job on its own: the clock times
+            # the rate. Whichever of this and the fare is larger is what the
+            # hour is worth, once the platform settles the period.
+            "floor_value": engaged * FLOOR["rate"] / 60,
             "per_km": o["total"] / o["dist"],
             "per_tot_km": o["total"] / tot_km if tot_km > 0 else 0.0,
             "batched": o["kind"] == "CT",
@@ -1064,6 +1167,10 @@ def build_offers(path, shifts, subs):
     tm, tm_r2 = _ols([[1.0, r["tot_km"]] for r in rows], [r["marg"] for r in rows])
     tmb, tmb_r2 = _ols([[1.0, r["tot_km"], 1.0 if r["batched"] else 0.0] for r in rows],
                        [r["marg"] for r in rows])
+    # -- and in engaged minutes, which is the clock the floor is paid against
+    em, em_r2 = _ols([[1.0, r["tot_km"]] for r in rows], [r["engaged"] for r in rows])
+    emb, emb_r2 = _ols([[1.0, r["tot_km"], 1.0 if r["batched"] else 0.0] for r in rows],
+                       [r["engaged"] for r in rows])
 
     # -- which of the offer's visible numbers actually moves the hourly rate.
     # The approach distance sits in the denominator of the rate, so some of
@@ -1168,6 +1275,56 @@ def build_offers(path, shifts, subs):
 
     waits = [d["secs"] / 60 for r in shifts for d in r["dwells"] if d["kind"] == "pickup"]
 
+    # -- the floor, and which side of it this work sits on ------------------
+    eng_hours = sum(r["engaged"] for r in rows) / 60
+    fare_rate = gross / eng_hours
+    below = [r for r in rows if r["amt"] < r["floor_value"]]
+    cut = datetime.fromisoformat(FLOOR["from"]).replace(tzinfo=SYD_TZ).timestamp()
+    eras = {}
+    for key, sel in (("before", lambda r: r["at"] < cut), ("after", lambda r: r["at"] >= cut)):
+        sub = [r for r in rows if sel(r)]
+        if len(sub) < 10:
+            continue
+        h = sum(r["engaged"] for r in sub) / 60
+        eras[key] = {"n": len(sub), "hours": round(h, 1),
+                     "fare_rate": round(sum(r["amt"] for r in sub) / h, 1),
+                     "below_pct": round(100 * sum(1 for r in sub
+                                                  if r["amt"] < r["floor_value"]) / len(sub))}
+    floor = dict(FLOOR)
+    floor.update({
+        "eng_hours": round(eng_hours, 1),
+        "fare_rate": round(fare_rate, 1),
+        "gap": round(FLOOR["rate"] - fare_rate, 1),
+        "gap_total": round(FLOOR["rate"] * eng_hours - gross, 2),
+        "below_n": len(below), "below_pct": round(100 * len(below) / len(rows)),
+        "med_engaged": round(med(lambda r: r["engaged"]), 1),
+        "med_floor_value": round(med(lambda r: r["floor_value"]), 2),
+        "med_amt": round(med(lambda r: r["amt"]), 2),
+        "eras": eras,
+        # Break-even: at this fare an order pays its own way and the clock
+        # adds nothing. Below it the minutes are worth more than the money.
+        "break_even_per_min": round(FLOOR["rate"] / 60, 3),
+        "engaged_model": {"base": round(em[0], 2), "per_km": round(em[1], 2),
+                          "r2": round(em_r2, 3)} if em else None,
+        "engaged_model_ct": {"base": round(emb[0], 2), "per_km": round(emb[1], 2),
+                             "extra": round(emb[2], 1), "r2": round(emb_r2, 3)} if emb else None,
+    })
+    promos = _read_promotions(path)
+    if promos:
+        # The promotion rows have no distance and no duration, so they cannot
+        # be matched to a shift the way an order can. Shared out per order —
+        # quests pay for trip counts, so per order is the closest thing to
+        # right — they say what the engaged hour looks like if those payouts
+        # really are on top of the fares rather than already inside them.
+        share = len(rows) / max(1, len(orders))
+        est = promos["total"] * share
+        promos.update({
+            "per_order": round(promos["total"] / max(1, len(orders)), 2),
+            "matched_est": round(est, 2),
+            "with_promo_rate": round((gross + est) / eng_hours, 1),
+            "covers_gap": round(est) >= round(FLOOR["rate"] * eng_hours - gross),
+        })
+
     return {
         "n": len(rows), "of_orders": len(orders),
         "gross": round(gross, 2), "hours": round(hours, 1),
@@ -1193,6 +1350,8 @@ def build_offers(path, shifts, subs):
             "paid_km": round(med(lambda r: r["km"]), 2),
             "marg_min": round(med(lambda r: r["marg"]), 1),
             "full_min": round(med(lambda r: r["full"]), 1),
+            "engaged_min": round(med(lambda r: r["engaged"]), 1),
+            "idle_min": round(med(lambda r: r["idle"]), 1),
             "unpaid_km_pct": round(100 * sum(r["ap_km"] for r in rows)
                                    / sum(r["ap_km"] + r["km"] for r in rows)),
         },
@@ -1203,12 +1362,14 @@ def build_offers(path, shifts, subs):
                                           / med(lambda r: r["offer_rate"])))},
         "drivers": drivers, "spread": spread, "bands": bands, "cuts": cuts,
         "targets": targets, "kinds": kinds, "by_hour": hours_rows, "tail": tail,
+        "floor": floor, "promos": promos,
         "wait": {"n": len(waits), "med": round(st.median(waits), 1),
                  "p90": round(st.quantiles(sorted(waits), n=10)[8], 1)} if waits else None,
         # One point per order for the scatter: money against the kilometres it
         # cost. No addresses, no timestamps — nothing that locates a customer.
         "points": [{"k": round(r["tot_km"], 2), "a": round(r["amt"], 2),
-                    "m": round(r["marg"], 1), "b": 1 if r["batched"] else 0,
+                    "m": round(r["marg"], 1), "e": round(r["engaged"], 1),
+                    "b": 1 if r["batched"] else 0,
                     "h": r["hour"]} for r in rows],
     }
 
@@ -1825,9 +1986,11 @@ def main():
     else:
         print("  -> no order log found, skipping validation")
     if offers:
+        f = offers["floor"]
         print(f"  -> offer model on {offers['n']} priced orders: "
               f"${offers['rates']['offer']}/h on the offer screen, "
-              f"${offers['rates']['full']}/h once the ride to the restaurant is counted")
+              f"${f['fare_rate']}/h per engaged hour, floor ${f['rate']}/h "
+              f"({f['below_pct']}% of orders pay less than their own engaged time is worth)")
 
     Z = build_zones(shifts, subs, ctx)
     zones = zone_rows(Z, subs, ctx, legs)

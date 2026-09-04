@@ -1472,156 +1472,170 @@ function renderChain() {
   }
 }
 
-// ============ 这一单该不该接 / Which offers to take ============
-// The order log knows what a job paid; the GPX knows what it cost. Joined,
-// they answer the question the offer screen refuses to: not "is this a good
-// fare" but "is this a good hour". Everything here is built on 143 orders
-// that fell inside a recorded shift, so the fares are one platform's and the
-// times are all three platforms' — the bike does not know which app rang.
+// ============ 这一单该不该接 / Take it or leave it ============
+// Rewritten around one fact that arrived on 17 August 2026: a covered
+// platform now has to compare what it paid a rider against `engaged hours x
+// $31.30` and top up the shortfall. That inverts the advice this section used
+// to give. While a rider sits under the floor, an offer's fare is not what it
+// earns them — the clock is — so declining a cheap job throws away the only
+// thing that pays. The arithmetic below is all measured, not assumed.
 
-const OF_TARGETS = [15, 18, 20, 22, 25];
+const OF_TARGETS = [15, 20, 25, 31.3, 35];
 
-// Live state of the calculator. Seeded from the medians so the first thing
-// the reader sees is their own typical order, not an invented one.
-const OFCALC = { amt: 8, ap: 2, km: 3, batched: false, target: 20 };
+// Live calculator state, seeded near this rider's median order.
+const OFCALC = { amt: 7.5, ap: 2, km: 3.3, batched: false, target: 31.3 };
 
-function ofMinutes(O, apKm, km, batched) {
-  const m = batched ? O.time_model_ct : O.time_model;
+// Minutes an offer costs. Two clocks: `marginal` is riding-only, what
+// accepting costs that declining would not; `engaged` is the order's own
+// definition, acceptance to hand-over, and is what the floor is paid against.
+function ofMinutes(O, apKm, km, batched, clock) {
+  const F = O.floor || {};
+  const m = clock === 'engaged'
+    ? (batched ? F.engaged_model_ct : F.engaged_model)
+    : (batched ? O.time_model_ct : O.time_model);
   if (!m) return null;
-  return m.base + m.per_km * (apKm + km) + (batched ? m.extra : 0);
+  return m.base + m.per_km * (apKm + km) + (batched && m.extra ? m.extra : 0);
 }
 
-// The accept line, in the only form that can be applied at the offer screen:
-// what a job has to pay, given how far it makes you ride in total.
+// What the clock alone guarantees this job, before the fare is looked at.
+function ofFloorValue(O, apKm, km, batched) {
+  const mins = ofMinutes(O, apKm, km, batched, 'engaged');
+  return mins == null ? null : mins * (O.floor.rate / 60);
+}
+
+// What a fare has to be for the job to pay its own way at a target rate.
 function ofNeeded(O, target, totKm, batched) {
-  const mins = ofMinutes(O, totKm, 0, batched);
+  const mins = ofMinutes(O, totKm, 0, batched, 'engaged');
   return mins == null ? null : target * mins / 60;
 }
 
 function renderOffers() {
   const D = dlvData();
-  if (!D || !D.offers) return;
+  if (!D || !D.offers || !D.offers.floor) return;
   const O = D.offers;
-  const sp = O.split, R = O.rates;
-
-  // ---- headline: the two hourly rates, and the gap between them ----
-  const kp = document.getElementById('dlvOfferKpis');
-  if (kp) {
-    const cards = [
-      ['派单页上的时薪', R.offer, '$/h',
-       `${O.n} 单的中位 —— 用派单页给的时长算，也就是「取到餐之后」的 ${sp.paid_min} 分钟`],
-      ['真实时薪', R.full, '$/h',
-       `同样这些单，分母换成从上一单交货到这一单交货的 ${sp.full_min} 分钟 —— 缩水 ${R.haircut}%`],
-      ['无薪的接近段', sp.ap_min, 'min',
-       `骑去餐厅 ${sp.ap_move} 分钟 + 等 ${sp.ap_stop} 分钟，中位 ${sp.ap_km} km。派单页不显示这一段`],
-      ['骑的路里没人付钱的', sp.unpaid_km_pct, '%',
-       `每骑 ${(100 / (100 - sp.unpaid_km_pct)).toFixed(1)} 公里，只有 1 公里是载着餐的`],
-    ];
-    kp.innerHTML = cards.map(([label, v, unit, foot]) => `
-      <div class="dlv-kpi">
-        <div class="dlv-kpi-label">${label}</div>
-        <div class="dlv-kpi-value">${v == null ? '—' : v}<span class="dlv-kpi-unit">${unit}</span></div>
-        <div class="dlv-kpi-foot">${dlvEsc(foot)}</div>
-      </div>`).join('');
-  }
-
-  // ---- where a single order's minutes actually go ----
-  // Drawn as one bar rather than two numbers because the point is proportion:
-  // the paid segment is a minority of the clock even though it is all the
-  // offer screen describes.
-  const sv = document.getElementById('dlvOfferSplit');
-  if (sv) {
-    const segs = [
-      ['骑去餐厅', sp.ap_move, DLV.rose, '无薪', '从上一单交货算起，中位 ' + sp.ap_km + ' km'],
-      ['等餐 / 等灯', sp.ap_stop, '#8a5f6a', '无薪', '到了餐厅还没拿到，或者路上停着'],
-      ['载着餐骑', sp.paid_move, DLV.cyan, '计价', '中位 ' + sp.paid_km + ' km'],
-      ['途中停下 + 交货', sp.paid_stop, '#4a8494', '计价', '红灯、找门牌、等客人下来'],
-    ];
-    const total = segs.reduce((s, x) => s + x[1], 0);
-    sv.innerHTML = `
-      <div class="of-bar">
-        ${segs.map(([l, v, c]) => `<span style="width:${100 * v / total}%;background:${c}" title="${dlvEsc(l)} ${v} min"></span>`).join('')}
-      </div>
-      <div class="of-bar-axis">
-        <span class="of-bar-brace unpaid" style="width:${100 * (sp.ap_move + sp.ap_stop) / total}%">无薪 ${(sp.ap_move + sp.ap_stop).toFixed(1)} min</span>
-        <span class="of-bar-brace paid" style="width:${100 * (sp.paid_move + sp.paid_stop) / total}%">派单页显示的 ${sp.paid_min} min</span>
-      </div>
-      <div class="of-legend">
-        ${segs.map(([l, v, c, tag, why]) => `
-          <div class="of-leg">
-            <i style="background:${c}"></i>
-            <b>${dlvEsc(l)}</b>
-            <span class="of-leg-v">${v} min</span>
-            <span class="of-leg-tag ${tag === '无薪' ? 'no' : 'yes'}">${tag}</span>
-            <span class="of-leg-why">${dlvEsc(why)}</span>
-          </div>`).join('')}
-      </div>`;
-  }
-
-  // ---- which of the offer's numbers is worth reading ----
-  const dv = document.getElementById('dlvOfferDrivers');
-  if (dv && O.drivers) {
-    const s = O.spread || {};
-    dv.innerHTML = O.drivers.map(d => {
-      const w = Math.abs(d.rho || 0) * 100;
-      const strong = (d.rho || 0) >= 0.6;
-      return `<div class="of-drv${strong ? ' strong' : ''}">
-        <div class="of-drv-head">
-          <span class="of-drv-name">${dlvEsc(d.cn)}</span>
-          <span class="of-drv-rho">ρ ${(d.rho >= 0 ? '+' : '') + dlvNum(d.rho, 2)}</span>
-        </div>
-        <div class="of-drv-bar"><span style="width:${w}%;background:${strong ? DLV.amber : DLV.line}"></span></div>
-      </div>`;
-    }).join('')
-      + `<div class="of-drv-foot">
-        <b>为什么钱几乎不影响时薪</b> ——
-        ${s.amt ? `单价从 $${s.amt.p10} 到 $${s.amt.p90}，只差 ${s.amt.ratio} 倍；` : ''}
-        ${s.ap_km ? `取餐距离从 ${s.ap_km.p10} km 到 ${s.ap_km.p90} km，差 ${s.ap_km.ratio} 倍。` : ''}
-        分子的变化空间比分母小一个量级，所以决定这一小时的是那个印得最小的数字。
-        <br><br>
-        接近距离本身就在时薪的分母里，所以它排在前面有一部分是算术，不是发现。
-        真正的发现是<em>这两项的量级差</em> —— 以及排第四的「每公里多少钱（只算送餐段）」，
-        那是大部分人真正在用的判断标准，而它几乎排不上号。
-      </div>`;
-  }
-
+  ofRenderHero(O);
+  ofRenderOne(O);
+  ofRenderEras(O);
   ofRenderCalc(O);
-  ofRenderBands(O);
-  ofRenderCuts(O);
+  ofRenderAbove(O);
   ofRenderKinds(O);
-  ofRenderTail(O);
   ofRenderHours(O);
+  ofRenderTail(O);
   ofRenderNote(O);
 }
 
-// ---- the calculator ----------------------------------------------------
-// Three sliders and a scatter of every priced order, with the accept line
-// drawn through it. The line is not a rule of thumb borrowed from a forum;
-// it is the fitted time model turned around: pay >= target x minutes / 60.
+// ---- ① the one sentence, and the three numbers under it ----------------
+function ofRenderHero(O) {
+  const el = document.getElementById('dlvOfferHero');
+  if (!el) return;
+  const F = O.floor;
+  el.innerHTML = `
+    <div class="of-hero-line">
+      你这 ${O.n} 单里，<b>${F.below_pct}%</b> 给的钱
+      比这段时间按底薪该值的钱<b>还少</b>。
+    </div>
+    <div class="of-hero-nums">
+      <div class="of-hn">
+        <span class="of-hn-v bad">$${F.fare_rate}</span>
+        <span class="of-hn-l">单价折成时薪</span>
+        <span class="of-hn-f">${O.n} 单、${F.eng_hours} 个 engaged 小时算出来的</span>
+      </div>
+      <div class="of-hn-op">对</div>
+      <div class="of-hn">
+        <span class="of-hn-v good">$${F.rate}</span>
+        <span class="of-hn-l">法定底薪</span>
+        <span class="of-hn-f">${F.vehicle} · ${F.from} 起</span>
+      </div>
+      <div class="of-hn-op">差</div>
+      <div class="of-hn">
+        <span class="of-hn-v">$${F.gap}<em>/h</em></span>
+        <span class="of-hn-l">这四个月共 $${Math.round(F.gap_total)}</span>
+        <span class="of-hn-f">按规定该由平台补上</span>
+      </div>
+    </div>`;
+}
+
+// ---- ② one order, worked through -------------------------------------
+// The whole section in one example. Two bars, the taller one wins, and the
+// difference is what the platform owes.
+function ofRenderOne(O) {
+  const el = document.getElementById('dlvOfferOne');
+  if (!el) return;
+  const F = O.floor;
+  const max = Math.max(F.med_amt, F.med_floor_value);
+  const bar = (label, v, cls, foot) => `
+    <div class="of-vs-row ${cls}">
+      <span class="of-vs-label">${label}</span>
+      <span class="of-vs-bar"><i style="width:${100 * v / max}%"></i></span>
+      <span class="of-vs-v">$${v.toFixed(2)}</span>
+      <span class="of-vs-foot">${foot}</span>
+    </div>`;
+  el.innerHTML = `
+    <div class="of-one-head">
+      你的中位一单：<b>${F.med_engaged} 分钟</b>的 engaged 时间
+      <span>从接单那一刻，到把餐交出去</span>
+    </div>
+    ${bar('平台给你', F.med_amt, 'lose', `每分钟 $${(F.med_amt / F.med_engaged).toFixed(2)}`)}
+    ${bar('这段时间按底薪值', F.med_floor_value, 'win', `每分钟 $${F.break_even_per_min}`)}
+    <div class="of-one-out">
+      取大的那个 —— 这一单其实值 <b>$${F.med_floor_value}</b>，
+      多出来的 $${(F.med_floor_value - F.med_amt).toFixed(2)} 由平台补。
+      <br><br>
+      <em>所以一单挣多少，不看它给多少钱，看它占掉你多少 engaged 时间。</em>
+      时钟每分钟值 $${F.break_even_per_min}，而你的中位一单每分钟只给
+      $${(F.med_amt / F.med_engaged).toFixed(2)} —— 差 ${(F.break_even_per_min / (F.med_amt / F.med_engaged)).toFixed(1)} 倍。
+    </div>`;
+}
+
+// ---- ③ the rule before and after --------------------------------------
+function ofRenderEras(O) {
+  const F = O.floor, e = F.eras || {};
+  const b = document.getElementById('dlvOfferEraBefore');
+  const a = document.getElementById('dlvOfferEraAfter');
+  if (b) {
+    b.innerHTML = `
+      <div class="of-era-rule">拒掉便宜的单是对的</div>
+      <div class="of-era-why">
+        那时候单价<em>就是</em>你的收入。一单给 $5、要骑 7 公里，接了就是亏时间，
+        拒掉换一单确实更划算。
+      </div>
+      ${e.before ? `<div class="of-era-n">${e.before.n} 单 · ${e.before.hours} engaged 小时 · 单价折时薪 $${e.before.fare_rate}</div>` : ''}`;
+  }
+  if (a) {
+    a.innerHTML = `
+      <div class="of-era-rule">拒单等于把钱扔了</div>
+      <div class="of-era-why">
+        只要你整个结算周期在底薪之下，多接一单 = 多一段 engaged 时间 =
+        多 <em>$${F.break_even_per_min}/分钟</em> 的底薪，跟这单给多少钱没关系。
+        拒掉的不是「坏单」，是<em>你自己的工时</em>。
+      </div>
+      ${e.after ? `<div class="of-era-n">${e.after.n} 单 · ${e.after.hours} engaged 小时 · 单价折时薪 $${e.after.fare_rate}</div>` : ''}
+      <div class="of-era-flip">真正的敌人从「便宜的单」换成了<b>没在单上的时间</b></div>`;
+  }
+}
+
+// ---- ④ calculator ------------------------------------------------------
 function ofRenderCalc(O) {
   const host = document.getElementById('dlvOfferCalc');
-  if (!host || !O.time_model) return;
-
+  if (!host) return;
   host.innerHTML = `
     <div class="of-calc-grid">
       <div class="of-controls">
         <label class="of-ctl">
-          <span>这一单给<b id="ofAmtV">$8.00</b></span>
+          <span>这单给<b id="ofAmtV"></b></span>
           <input type="range" id="ofAmt" min="4" max="30" step="0.5" value="${OFCALC.amt}">
         </label>
         <label class="of-ctl">
-          <span>骑去餐厅<b id="ofApV">2.0 km</b></span>
+          <span>骑去餐厅<b id="ofApV"></b></span>
           <input type="range" id="ofAp" min="0" max="7" step="0.1" value="${OFCALC.ap}">
         </label>
         <label class="of-ctl">
-          <span>餐厅到客人<b id="ofKmV">3.0 km</b></span>
+          <span>餐厅到客人<b id="ofKmV"></b></span>
           <input type="range" id="ofKm" min="0.3" max="9" step="0.1" value="${OFCALC.km}">
         </label>
+        <label class="of-check"><input type="checkbox" id="ofBatch"><span>拼单（一趟两户）</span></label>
         <div class="of-ctl-row">
-          <label class="of-check"><input type="checkbox" id="ofBatch"><span>拼单（一趟两户）</span></label>
-        </div>
-        <div class="of-ctl-row">
-          <span class="of-ctl-label">你要的时薪</span>
+          <span class="of-ctl-label">对照时薪</span>
           <div class="of-targets" id="ofTargets">
             ${OF_TARGETS.map(t => `<button data-t="${t}"${t === OFCALC.target ? ' class="on"' : ''}>$${t}</button>`).join('')}
           </div>
@@ -1631,8 +1645,8 @@ function ofRenderCalc(O) {
       <div class="of-plot">
         <svg id="ofScatter" viewBox="0 0 760 420" preserveAspectRatio="xMidYMid meet"></svg>
         <div class="of-plot-key">
-          <span><i class="of-k-dot"></i>143 单真实记录 · 颜色是实际时薪</span>
-          <span><i class="of-k-line"></i>接单线：这条线以上，达到你选的时薪</span>
+          <span><i class="of-k-dot"></i>143 单真实记录</span>
+          <span><i class="of-k-line"></i>底薪线 —— 线以下的单靠时钟挣钱，不靠单价</span>
           <span><i class="of-k-you"></i>你正在算的这一单</span>
         </div>
       </div>
@@ -1663,30 +1677,34 @@ function ofRenderCalc(O) {
 function ofDrawScatter(O) {
   const svg = document.getElementById('ofScatter');
   if (!svg) return;
-  const W = 760, H = 420, L = 50, Rr = 16, T = 16, B = 42;
+  const W = 760, H = 420, L = 50, Rr = 16, T = 16, B = 44;
   const maxK = 13, maxA = 28;
   const x = k => L + (Math.min(k, maxK) / maxK) * (W - L - Rr);
   const y = a => H - B - (Math.min(a, maxA) / maxA) * (H - T - B);
 
-  // Realised rate sets the colour, so the reader can check the line against
-  // the outcomes rather than taking it on trust.
+  // A dot's colour says which side of the floor that order fell on, which is
+  // the only distinction this section is about.
   const pts = (O.points || []).map(p => {
-    const rate = p.a / p.m * 60;
-    return `<circle cx="${x(p.k).toFixed(1)}" cy="${y(p.a).toFixed(1)}" r="${p.b ? 4.6 : 3.5}"
-      fill="${dlvRamp(Math.max(0, Math.min(1, (rate - 8) / 24)))}"
-      stroke="${p.b ? 'rgba(255,216,151,.55)' : 'none'}" stroke-width="1"
-      opacity=".85"><title>$${p.a.toFixed(2)} · ${p.k} km · ${p.m} min · $${rate.toFixed(0)}/h${p.b ? ' · 拼单' : ''}</title></circle>`;
+    const fv = (p.e || p.m) * (O.floor.rate / 60);
+    const under = p.a < fv;
+    return `<circle cx="${x(p.k).toFixed(1)}" cy="${y(p.a).toFixed(1)}" r="${p.b ? 4.4 : 3.4}"
+      fill="${under ? 'rgba(217,122,138,.55)' : 'rgba(143,191,127,.85)'}"
+      stroke="${p.b ? 'rgba(255,216,151,.5)' : 'none'}" stroke-width="1"
+      ><title>$${p.a.toFixed(2)} · 骑 ${p.k} km · engaged ${p.e || p.m} min · 底薪值 $${fv.toFixed(2)}${p.b ? ' · 拼单' : ''}</title></circle>`;
   }).join('');
 
-  const line = [];
-  for (let k = 0; k <= maxK; k += 0.5) {
-    const need = ofNeeded(O, OFCALC.target, k, OFCALC.batched);
-    line.push(`${x(k).toFixed(1)},${y(need).toFixed(1)}`);
-  }
+  const line = k => {
+    const pts2 = [];
+    for (let i = 0; i <= maxK * 2; i++) {
+      const kk = i / 2;
+      pts2.push(`${x(kk).toFixed(1)},${y(ofNeeded(O, k, kk, OFCALC.batched)).toFixed(1)}`);
+    }
+    return pts2.join(' ');
+  };
 
   const totK = OFCALC.ap + OFCALC.km;
-  const mins = ofMinutes(O, OFCALC.ap, OFCALC.km, OFCALC.batched);
-  const ok = OFCALC.amt >= ofNeeded(O, OFCALC.target, totK, OFCALC.batched);
+  const fv = ofFloorValue(O, OFCALC.ap, OFCALC.km, OFCALC.batched);
+  const under = OFCALC.amt < fv;
 
   const gridX = [0, 2, 4, 6, 8, 10, 12].map(k =>
     `<line x1="${x(k)}" y1="${T}" x2="${x(k)}" y2="${H - B}" stroke="${DLV.grid}"/>
@@ -1695,149 +1713,101 @@ function ofDrawScatter(O) {
     `<line x1="${L}" y1="${y(a)}" x2="${W - Rr}" y2="${y(a)}" stroke="${DLV.grid}"/>
      <text x="${L - 7}" y="${y(a) + 3}" text-anchor="end" fill="${DLV.axis}" font-size="10">$${a}</text>`).join('');
 
+  const showTarget = Math.abs(OFCALC.target - O.floor.rate) > 0.01;
   svg.innerHTML = `
     ${gridY}${gridX}
     <text x="${W - Rr}" y="${H - 6}" text-anchor="end" fill="${DLV.dim}" font-size="10">一共要骑多少公里（去餐厅 + 送到客人）</text>
-    <text x="${L - 7}" y="${T + 2}" text-anchor="end" fill="${DLV.dim}" font-size="10">$</text>
-    <polyline points="${line.join(' ')}" fill="none" stroke="${DLV.amberBright}" stroke-width="1.6" stroke-dasharray="5 4"/>
+    ${showTarget ? `<polyline points="${line(OFCALC.target)}" fill="none" stroke="${DLV.cyan}" stroke-width="1.4" stroke-dasharray="3 4" opacity=".8"/>` : ''}
+    <polyline points="${line(O.floor.rate)}" fill="none" stroke="${DLV.amberBright}" stroke-width="1.8" stroke-dasharray="6 4"/>
+    <text x="${x(11.4)}" y="${y(ofNeeded(O, O.floor.rate, 11.4, OFCALC.batched)) - 8}" fill="${DLV.amberBright}" font-size="10">底薪 $${O.floor.rate}/h</text>
     ${pts}
-    <line x1="${x(totK)}" y1="${y(OFCALC.amt)}" x2="${x(totK)}" y2="${H - B}" stroke="${ok ? DLV.green : DLV.rose}" stroke-width="1" stroke-dasharray="2 3" opacity=".6"/>
-    <circle cx="${x(totK)}" cy="${y(OFCALC.amt)}" r="9" fill="none" stroke="${ok ? DLV.green : DLV.rose}" stroke-width="2"/>
-    <circle cx="${x(totK)}" cy="${y(OFCALC.amt)}" r="3" fill="${ok ? DLV.green : DLV.rose}"/>
-    <text x="${x(totK) + 13}" y="${y(OFCALC.amt) - 8}" fill="${ok ? DLV.green : DLV.rose}" font-size="11">
-      $${(OFCALC.amt / mins * 60).toFixed(0)}/h</text>`;
+    <line x1="${x(totK)}" y1="${y(OFCALC.amt)}" x2="${x(totK)}" y2="${H - B}" stroke="${under ? DLV.rose : DLV.green}" stroke-width="1" stroke-dasharray="2 3" opacity=".55"/>
+    <circle cx="${x(totK)}" cy="${y(OFCALC.amt)}" r="9" fill="none" stroke="${under ? DLV.rose : DLV.green}" stroke-width="2"/>
+    <circle cx="${x(totK)}" cy="${y(OFCALC.amt)}" r="3" fill="${under ? DLV.rose : DLV.green}"/>`;
 }
 
 function ofDrawVerdict(O) {
   const el = document.getElementById('ofVerdict');
   if (!el) return;
-  const totK = OFCALC.ap + OFCALC.km;
-  const mins = ofMinutes(O, OFCALC.ap, OFCALC.km, OFCALC.batched);
-  const rate = OFCALC.amt / mins * 60;
-  const need = ofNeeded(O, OFCALC.target, totK, OFCALC.batched);
-  const gap = OFCALC.amt - need;
-  // Three verdicts, not two: within a dollar of the line the model itself
-  // cannot tell the difference, and saying so is more useful than a coin flip.
-  const near = Math.abs(gap) < 1;
-  const cls = near ? 'edge' : (gap > 0 ? 'take' : 'skip');
-  const word = near ? '差不多在线上' : (gap > 0 ? '接' : '别接');
-  const tail = O.tail;
+  const F = O.floor;
+  const eng = ofMinutes(O, OFCALC.ap, OFCALC.km, OFCALC.batched, 'engaged');
+  const fv = ofFloorValue(O, OFCALC.ap, OFCALC.km, OFCALC.batched);
+  const under = OFCALC.amt < fv;
+  const worth = Math.max(OFCALC.amt, fv);
+  const need = ofNeeded(O, OFCALC.target, OFCALC.ap + OFCALC.km, OFCALC.batched);
   el.innerHTML = `
-    <div class="of-vd ${cls}">
-      <b>${word}</b>
-      <span class="of-vd-rate">$${rate.toFixed(1)}<em>/h</em></span>
+    <div class="of-vd-pair">
+      <div class="of-vd-half ${under ? 'dim' : 'win'}">
+        <span class="of-vd-t">平台给</span>
+        <b>$${OFCALC.amt.toFixed(2)}</b>
+      </div>
+      <div class="of-vd-half ${under ? 'win' : 'dim'}">
+        <span class="of-vd-t">时钟值</span>
+        <b>$${fv.toFixed(2)}</b>
+      </div>
+    </div>
+    <div class="of-vd-out ${under ? 'floor' : 'fare'}">
+      这一单实际值 <b>$${worth.toFixed(2)}</b>
+      <span>${under
+        ? `靠底薪 —— 平台补 $${(fv - OFCALC.amt).toFixed(2)}`
+        : `靠单价 —— 高出底薪 $${(OFCALC.amt - fv).toFixed(2)}`}</span>
     </div>
     <div class="of-vd-math">
-      骑 ${totK.toFixed(1)} km · 预计 ${mins.toFixed(0)} 分钟${OFCALC.batched ? '（含第二户交货）' : ''}
-      <br>要达到 $${OFCALC.target}/h，这单至少得给 <b>$${need.toFixed(2)}</b>
-      <br>${gap >= 0 ? `多 $${gap.toFixed(2)}` : `差 $${(-gap).toFixed(2)}`}
-      · 每骑一公里 $${(OFCALC.amt / totK).toFixed(2)}
-    </div>
-    ${tail ? `<div class="of-vd-tail">送完之后还要骑约 ${(tail.base + tail.per_km * 1).toFixed(1)}–${(tail.base + tail.per_km * 3).toFixed(1)} 分钟才能接上下一单，这段没算在上面。</div>` : ''}`;
-}
-
-function ofRenderBands(O) {
-  const el = document.getElementById('dlvOfferBands');
-  if (!el || !O.bands) return;
-  const max = Math.max(...O.bands.map(b => b.rate), 1);
-  el.innerHTML = O.bands.map(b => `
-    <div class="of-band">
-      <div class="of-band-head">
-        <span class="of-band-k">$${b.lo}${b.hi ? '–' + b.hi : ' 以上'}<em>/km</em></span>
-        <span class="of-band-r">$${b.rate}<em>/h</em></span>
-        <span class="of-band-n">${b.n} 单</span>
-      </div>
-      <div class="of-band-bar"><span style="width:${100 * b.rate / max}%;background:${dlvRamp(b.rate / 34)}"></span></div>
-      <div class="of-band-why">中位单价 $${b.amt} · 送 ${b.km} km · 骑去餐厅 ${b.ap_km} km</div>
-    </div>`).join('')
-    + `<div class="of-foot">分档是<em>单调</em>的 —— 从最低一档到最高一档，实际时薪一路涨了 ${(O.bands[O.bands.length - 1].rate / O.bands[0].rate).toFixed(1)} 倍。
-        右边那列「骑去餐厅」解释了全部：最差的一档要先骑 ${O.bands[0].ap_km} km 才能拿到餐，最好的一档只要 ${O.bands[O.bands.length - 1].ap_km} km。
-        单价反而是最差那档更高的时候都有。</div>`;
-}
-
-function ofRenderCuts(O) {
-  const el = document.getElementById('dlvOfferCuts');
-  if (!el || !O.cuts || !O.cuts.length) return;
-  el.innerHTML = `
-    <table class="of-cuts-t">
-      <thead><tr>
-        <th>门槛</th><th>接下</th><th>接下的<br>时薪</th><th>拒掉的<br>时薪</th><th>补得上<br>时薪变</th><th>补不上<br>时薪变</th>
-      </tr></thead>
-      <tbody>
-        ${O.cuts.map(c => `<tr${c.thr === 1.4 ? ' class="pick"' : ''}>
-          <td class="of-thr">$${c.thr.toFixed(1)}/km</td>
-          <td>${c.keep_pct}%</td>
-          <td class="up">$${c.kept_rate}</td>
-          <td class="dn">$${c.skip_rate}</td>
-          <td class="up">$${c.refilled}</td>
-          <td class="dn">$${c.idle}</td>
-        </tr>`).join('')}
-      </tbody>
-    </table>
-    <div class="of-foot">
-      基线是 $${O.engaged_rate}/h（${O.n} 单、${O.hours} 小时的载单时间）。
-      <br><br>
-      <b>这张表最右边两列是同一个数的上下界。</b>拒掉一单，省下的时间要么被下一单填上（「补得上」），
-      要么白白空着（「补不上」）。真实情况在两者之间，而这份数据<em>无法</em>定位它 ——
-      一份只记录了「接了的单」的日志，对「没被派来的单」说不出任何话。
-      <br><br>
-      能说的是：送完之后真正站着不动的时间中位只有半分钟，
-      说明派单密度不低，往「补得上」那一侧靠。
-      按 $1.4/km 划线要放掉 ${100 - O.cuts.find(c => c.thr === 1.4).keep_pct}% 的单和 ${100 - O.cuts.find(c => c.thr === 1.4).gross_pct}% 的流水 ——
-      如果那些时间填不满，这条线是亏的。
+      engaged ${eng.toFixed(0)} 分钟${OFCALC.batched ? '（拼单）' : ''} ·
+      骑 ${(OFCALC.ap + OFCALC.km).toFixed(1)} km ·
+      每分钟 $${(OFCALC.amt / eng).toFixed(2)}
+      ${Math.abs(OFCALC.target - F.rate) > 0.01
+        ? `<br>要靠单价做到 $${OFCALC.target}/h，得给 <b>$${need.toFixed(2)}</b>`
+        : ''}
     </div>`;
 }
 
+// ---- ⑤ when the fare starts mattering again ---------------------------
+function ofRenderAbove(O) {
+  const el = document.getElementById('dlvOfferAbove');
+  if (!el || !O.bands) return;
+  const F = O.floor;
+  const max = Math.max(...O.bands.map(b => b.rate), 1);
+  el.innerHTML = `
+    <div class="of-above-lead">
+      底薪是<em>整个结算周期</em>结算的（最长 ${F.period_days} 天），不是一单一单结的。
+      所以如果一个周期下来你已经在 $${F.rate} 之上，补贴就归零，单价重新变成你唯一的收入 ——
+      这时候才轮到下面这条老规矩。
+    </div>
+    <div class="of-above-rule">
+      看<b>每骑一公里挣多少</b>，公里数要<em>算上骑去餐厅的路</em>
+    </div>
+    ${O.bands.map(b => `
+      <div class="of-band">
+        <div class="of-band-head">
+          <span class="of-band-k">$${b.lo}${b.hi ? '–' + b.hi : ' 以上'}<em>/km</em></span>
+          <span class="of-band-r">$${b.rate}<em>/h</em></span>
+          <span class="of-band-n">${b.n} 单</span>
+        </div>
+        <div class="of-band-bar"><span style="width:${100 * b.rate / max}%;background:${dlvRamp(b.rate / 34)}"></span></div>
+        <div class="of-band-why">中位单价 $${b.amt} · 送 ${b.km} km · 但先要骑 ${b.ap_km} km 去拿</div>
+      </div>`).join('')}
+    <div class="of-foot">
+      最右边那列解释了全部：最差一档要先骑 ${O.bands[0].ap_km} km 才拿到餐，最好一档只要
+      ${O.bands[O.bands.length - 1].ap_km} km。<em>单价反而是最差那档更高的时候都有</em> ——
+      派单页把钱印得最大，把决定你这一小时的那个数印得最小。
+      ${O.spread && O.spread.amt && O.spread.ap_km
+        ? `单价从 $${O.spread.amt.p10} 到 $${O.spread.amt.p90}，只差 ${O.spread.amt.ratio} 倍；
+           取餐距离差 ${O.spread.ap_km.ratio} 倍。分子没有变化空间，分母全是。` : ''}
+    </div>`;
+}
+
+// ---- ⑥ three things you can act on today ------------------------------
 function ofRenderKinds(O) {
   const el = document.getElementById('dlvOfferKinds');
   if (!el || !O.kinds || !O.kinds.single || !O.kinds.batched) return;
   const s = O.kinds.single, b = O.kinds.batched;
-  const row = (label, a, c, unit, why) => `
-    <div class="of-kd">
-      <span class="of-kd-label">${label}</span>
-      <span class="of-kd-a">${a}${unit}</span>
-      <span class="of-kd-b">${c}${unit}</span>
-      <span class="of-kd-why">${dlvEsc(why)}</span>
-    </div>`;
   el.innerHTML = `
-    <div class="of-kd-head"><span></span><span>单送</span><span>拼单</span><span></span></div>
-    ${row('派单页时薪', s.offer_rate, b.offer_rate, '', '两者几乎一样 —— 派单页看不出差别')}
-    ${row('实际时薪', s.marg_rate, b.marg_rate, '', `拼单高 ${(100 * (b.marg_rate / s.marg_rate - 1)).toFixed(0)}%`)}
-    ${row('单价', '$' + s.amt, '$' + b.amt, '', '拼单差不多正好是两单的钱')}
-    ${row('送餐距离', s.km, b.km, ' km', '也差不多是两倍')}
-    ${row('骑去餐厅', s.ap_km, b.ap_km, ' km', '这里没有翻倍 —— 一趟接近段服务了两户')}
-    <div class="of-foot">
-      拼单在派单页上完全看不出好处：$${s.offer_rate}/h 对 $${b.offer_rate}/h。
-      钱翻倍、距离翻倍、计价时长也翻倍，唯独<em>骑去餐厅的那一段没有翻倍</em> ——
-      ${s.ap_km} km 对 ${b.ap_km} km。整单唯一的固定成本被两户分摊，实际时薪就从
-      $${s.marg_rate} 变成 $${b.marg_rate}。
-      <br><br>
-      所以拼单的价值不在它给的钱里，在它<em>省掉的那一次接近</em>里。
-    </div>`;
-}
-
-function ofRenderTail(O) {
-  const el = document.getElementById('dlvOfferTail');
-  if (!el || !O.tail) return;
-  const t = O.tail;
-  const max = Math.max(...t.bands.map(b => b.min), 1);
-  el.innerHTML = t.bands.map(b => `
-    <div class="of-band">
-      <div class="of-band-head">
-        <span class="of-band-k">落点离餐厅群 ${b.lo}${b.hi ? '–' + b.hi : '+'}<em> km</em></span>
-        <span class="of-band-r">${b.min}<em> min</em></span>
-        <span class="of-band-n">${b.n} 段</span>
-      </div>
-      <div class="of-band-bar"><span style="width:${100 * b.min / max}%;background:${dlvRamp(1 - b.min / (max * 1.3))}"></span></div>
-      <div class="of-band-why">送完之后骑 ${b.km} km 才接上下一单</div>
-    </div>`).join('')
-    + `<div class="of-foot">
-      拟合下来，落点每远离餐厅群 1 公里，之后的空驶就多约 <b>${t.per_km} 分钟</b>（${t.legs} 段空驶，ρ ${(t.rho >= 0 ? '+' : '') + t.rho}）。
-      不算大，但方向稳定，而且这笔账是记在<em>下一单</em>头上的，所以派单页永远不会告诉你。
-      <br><br>
-      本来更想按 suburb 分开算「送到哪个区最划算」，但每个区只摊得到六七单有价格的记录，
-      区与区之间的差距比噪声还小，那张表不该出现在这里。换成连续变量问，就能用上全部
-      ${t.legs} 段空驶 —— 包括另外两个平台的，因为码表不认得单是哪个 app 派的。
+    <div class="of-tip-lead">能接就接</div>
+    <div class="of-tip-body">
+      拼单在派单页上看不出好处 —— $${s.offer_rate}/h 对 $${b.offer_rate}/h，一模一样。
+      钱翻倍、送餐距离翻倍，唯独<em>骑去餐厅那一段没翻倍</em>（${s.ap_km} km 对 ${b.ap_km} km）。
+      一次接近服务两户，实际时薪从 $${s.marg_rate} 变成 $${b.marg_rate}。
     </div>`;
 }
 
@@ -1847,56 +1817,80 @@ function ofRenderHours(O) {
   const max = Math.max(...O.by_hour.map(h => h.rate), 1);
   const best = O.by_hour.reduce((a, b) => (b.rate > a.rate ? b : a));
   const worst = O.by_hour.reduce((a, b) => (b.rate < a.rate ? b : a));
-  el.innerHTML = `<div class="of-hours-row">${O.by_hour.map(h => `
-    <div class="of-hr${h === best ? ' best' : ''}${h === worst ? ' worst' : ''}">
-      <div class="of-hr-bar"><span style="height:${100 * h.rate / max}%;background:${dlvRamp(h.rate / 26)}"></span></div>
-      <div class="of-hr-rate">$${h.rate}</div>
-      <div class="of-hr-h">${String(h.h).padStart(2, '0')}:00</div>
-      <div class="of-hr-n">${h.n} 单</div>
-    </div>`).join('')}</div>
-    <div class="of-foot">
-      ${String(worst.h).padStart(2, '0')}:00 是最差的一小时：$${worst.rate}/h，中位单价只有 $${worst.amt}，
-      而 ${String(best.h).padStart(2, '0')}:00 有 $${best.rate}/h。
-      差别不在骑得快慢，在<em>派给你的单变小了</em> —— 晚高峰过去之后剩下的多是短单，
-      而短单摊不动那段固定的接近成本。
-      <br><br>
-      只画了有 10 单以上的时段，所以中午和深夜不在图里。
+  el.innerHTML = `
+    <div class="of-tip-lead">${String(worst.h).padStart(2, '0')}:00 最差</div>
+    <div class="of-hours-row">${O.by_hour.map(h => `
+      <div class="of-hr${h === best ? ' best' : ''}${h === worst ? ' worst' : ''}">
+        <div class="of-hr-bar"><span style="height:${100 * h.rate / max}%;background:${dlvRamp(h.rate / 26)}"></span></div>
+        <div class="of-hr-rate">$${h.rate}</div>
+        <div class="of-hr-h">${String(h.h).padStart(2, '0')}</div>
+      </div>`).join('')}</div>
+    <div class="of-tip-body">
+      $${worst.rate}/h，中位单价掉到 $${worst.amt}；${String(best.h).padStart(2, '0')}:00 有 $${best.rate}/h。
+      不是骑得慢了，是<em>派给你的单变小了</em>。只画有 10 单以上的时段。
     </div>`;
 }
 
+function ofRenderTail(O) {
+  const el = document.getElementById('dlvOfferTail');
+  if (!el || !O.tail) return;
+  const t = O.tail;
+  const max = Math.max(...t.bands.map(b => b.min), 1);
+  el.innerHTML = `
+    <div class="of-tip-lead">送得越偏，下一单越远</div>
+    ${t.bands.map(b => `
+      <div class="of-mini">
+        <span class="of-mini-k">离餐厅群 ${b.lo}${b.hi ? '–' + b.hi : '+'} km</span>
+        <span class="of-mini-bar"><i style="width:${100 * b.min / max}%"></i></span>
+        <span class="of-mini-v">${b.min} min</span>
+      </div>`).join('')}
+    <div class="of-tip-body">
+      落点每远离餐厅群 1 公里，之后的空驶多约 <b>${t.per_km} 分钟</b>（${t.legs} 段）。
+      而空驶<em>不算 engaged 时间</em> —— 底薪一分钱都不覆盖它。这是唯一一件底薪没有帮你兜住的事。
+    </div>`;
+}
+
+// ---- ⑦ how it was worked out, and what it cannot say -------------------
 function ofRenderNote(O) {
   const el = document.getElementById('dlvOfferNote');
   if (!el) return;
-  const pm = O.pay_model, tm = O.time_model, sp = O.split, s = O.spread || {};
+  const F = O.floor, sp = O.split, pm = O.pay_model, P = O.promos;
   el.innerHTML = `<strong>这一节是怎么算的</strong> · `
     + `把订单日志和码表轨迹对起来。日志知道一单给了多少钱、计价段多长；`
-    + `轨迹知道这一单真正占掉了多少时间 —— 包括日志看不见的那一段：`
-    + `<em>从上一单交货，到这一单在餐厅取到餐</em>。`
-    + `每一单的接近段都从「上一次把餐交出去」的那一刻起算，因为那是重新变自由的时刻。`
+    + `轨迹知道这一单真正占掉多少时间。`
     + `<br><br>`
-    + `<b>两个分母，回答两个问题。</b>`
-    + `「实际时薪」用的是<em>接了才会付出</em>的时间（骑去餐厅 + 计价段），因为决定该不该接的是这个；`
-    + `「真实时薪」再加上中间站着的时间，那才是一小时真正到手的钱。`
-    + `前者中位 $${O.rates.marginal}/h，后者 $${O.rates.full}/h，派单页上是 $${O.rates.offer}/h。`
+    + `<b>engaged 时间怎么定的。</b>法规写的是「从接单到送达完成」。`
+    + `接单那一刻两份数据都没有，所以取<em>上一单交货的那一刻</em> —— 那之后的时间都花在这一单上了。`
+    + `唯一明显不属于这一单的，是停在既不是红灯也不是餐厅的地方干等派单，那部分（中位只有 ${sp.idle_min} 分钟）扣掉了。`
+    + `算下来中位 ${F.med_engaged} 分钟/单：骑去餐厅 ${sp.ap_move} + 等 ${sp.ap_stop} + 载着餐的 ${sp.paid_min} 分钟。`
+    + `如果你实际上是<em>晚一点</em>才按接单，真实 engaged 时间会比这个短，底薪值也会跟着小一点。`
     + `<br><br>`
-    + (pm ? `<b>派单页在给什么定价。</b>拟合下来，一单的钱 ≈ $${pm.base} + $${pm.per_km}/km + $${pm.per_min}/min（R² ${pm.r2}）。`
-      + `注意时间那一项几乎是零：<em>堵在路上不会多给你一分钱</em>。`
-      + `这就是为什么慢的区、堵的时段、要等的餐厅，全部由你自己承担。<br><br>` : '')
-    + (tm ? `<b>时间那一头。</b>一单要花的分钟数 ≈ ${tm.base} + ${tm.per_km} × 总公里（R² ${tm.r2}），`
-      + `也就是门到门 ${tm.kmh} km/h，加上约 ${tm.base} 分钟固定开销（等餐中位 ${O.wait ? O.wait.med : '—'} 分钟 + 交货）。`
-      + `R² ${tm.r2} 说明<em>距离几乎就决定了时间</em> —— 这也是计算器敢只用三个滑块的原因。<br><br>` : '')
-    + `<b>这份数据能说什么，不能说什么。</b>`
-    + `价格只有一个平台的（另外两个平台没有可导出的日志），所以每一个 $ 都是 Uber 的 $；`
-    + `时间不是 —— 时间来自码表，码表不认得单是哪个 app 派的。`
-    + `只有 ${O.n} 单同时有价格和完整轨迹，落在录制的班次里。`
+    + (F.engaged_model ? `<b>计算器凭什么只用三个滑块。</b>`
+      + `engaged 分钟 ≈ ${F.engaged_model.base} + ${F.engaged_model.per_km} × 总公里（R² ${F.engaged_model.r2}），`
+      + `也就是<em>距离几乎就决定了时间</em>。`
+      + (pm ? `另一头，一单给多少钱 ≈ $${pm.base} + $${pm.per_km}/km + $${pm.per_min}/min（R² ${pm.r2}）—— `
+        + `注意时间那一项几乎是零：<em>堵在路上不会多给你一分钱</em>，但会多给你 engaged 时间。` : '')
+      + `<br><br>` : '')
+    + (P ? `<b>推广收入这一块我没敢并进去。</b>`
+      + `日志里除了单价还有 ${P.n} 笔推广/调整，合计 $${P.total}（QUEST 和 MISC 两个类别有 ${P.deduped} 笔金额完全相同、时间差十分钟内，`
+      + `当成同一笔只算一次）。按每单摊 $${P.per_order}，这 ${O.n} 单大约对应 $${Math.round(P.matched_est)} ——`
+      + `加上去 engaged 时薪就是 <em>$${P.with_promo_rate}/h</em>，正好在 $${F.rate} 的底薪上方一点。`
+      + `<br><br>`
+      + `这非常像「这些钱里就包含了底薪补贴」。但我没法确认它们是<em>另给的</em>还是<em>已经含在单价里</em>了 ——`
+      + `Uber 收入页的活动和税务明细这两个页面现在都返回 404，查不到分类。`
+      + `所以正文里的每一个时薪都是<em>只算单价</em>的，这一段的 $${P.with_promo_rate} 只放在这里，不进结论。`
+      + `<br><br>` : '')
+    + `<b>这份数据答不上来的。</b>`
+    + `价格只有 Uber 一个平台的（熊猫和 DoorDash 没有可导出的日志），时间不是 —— 时间来自码表，`
+    + `码表不认得单是哪个 app 派的。${O.n} 单同时有价格和完整轨迹。`
+    + `底薪覆盖不覆盖你、平台是不是真的在补、按什么周期补，这些要看你自己的结算单，这个站看不到。`
     + `<br><br>`
-    + `更重要的一条：<em>日志里只有接下的单，没有拒掉的单</em>。`
-    + `拒掉一单之后会等多久、下一单是好是坏，这份数据一个字都答不上来 ——`
-    + `所以「定在哪一档」那张表给的是上下界，不是一个数。`
+    + `<b>还有一件事。</b>`
+    + `这一节上一版给的建议是「便宜的单该拒」。加上底薪之后那个建议是<em>反的</em> ——`
+    + `在底薪之下，拒单减少的是你自己的 engaged 时间，而那正是唯一在付钱的东西。`
+    + `会不会因为来者不拒被平台降权、补贴会不会因此缩水，这份数据答不上来，得你自己盯结算单。`
     + `<br><br>`
-    + `<b>最后一件事。</b>`
-    + `全部结论其实可以压成一句：${s.amt ? `单价的浮动只有 ${s.amt.ratio} 倍，` : ''}`
-    + `${s.ap_km ? `而取餐点远近的浮动有 ${s.ap_km.ratio} 倍。` : ''}`
-    + `派单页把最大的那个数字印得最大，把真正决定你这一小时的那个印得最小。`
-    + `${sp.unpaid_km_pct}% 的里程没人付钱，问题不在骑得不够快。`;
+    + `<span class="of-src">底薪数字来自 Fair Work Commission《${F.source.split('· ')[1]}》，`
+    + `${F.from} 生效：自行车/电动自行车 $${F.rate}，${F.other.map(o => `${o[0]} $${o[1].toFixed(2)}`).join('，')}，`
+    + `按 engaged 时间计，最长 ${F.period_days} 天一个结算周期，低于下限的部分平台补足。</span>`;
 }

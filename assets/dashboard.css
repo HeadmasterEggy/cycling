@@ -570,27 +570,15 @@ body:has(.dash) { overflow: hidden; }
 }
 .do-check { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--text-dim); cursor: pointer; }
 .do-check input { accent-color: var(--amber); margin: 0; }
-.do-row { display: flex; align-items: center; gap: 8px; }
-.do-targets { display: flex; gap: 3px; flex: 1; }
-.do-targets button {
-  flex: 1;
-  font-family: var(--mono);
-  font-size: 9.5px;
-  padding: 3px 0;
-  background: transparent;
-  border: 1px solid var(--border-bright);
-  color: var(--text-faint);
-  cursor: pointer;
-}
-.do-targets button.on { color: #14151a; background: var(--amber); border-color: var(--amber); }
 .do-out { margin-top: auto; border-top: 1px solid var(--border); padding-top: 8px; }
-.do-vd { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
-.do-vd b { font-family: var(--serif); font-size: 19px; font-weight: 400; }
-.do-vd span { font-family: var(--mono); font-size: 15px; }
-.do-vd u { text-decoration: none; font-size: 9px; color: var(--text-faint); }
-.do-vd.take b, .do-vd.take span { color: #8fbf7f; }
-.do-vd.skip b, .do-vd.skip span { color: var(--rose); }
-.do-vd.edge b, .do-vd.edge span { color: var(--amber); }
+/* Two numbers side by side; the larger one is what the job is worth, and it
+   is the only one lit. */
+.do-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.do-pair span { display: flex; flex-direction: column; }
+.do-pair i { font-family: var(--mono); font-size: 8.5px; letter-spacing: .06em; color: var(--text-faint); font-style: normal; }
+.do-pair b { font-family: var(--serif); font-size: 18px; font-weight: 400; line-height: 1.25; }
+.do-pair .win b { color: #8fbf7f; }
+.do-pair .dim b { color: var(--text-faint); }
 .do-math { margin-top: 6px; font-size: 10px; line-height: 1.65; color: var(--text-faint); }
 .do-math em { font-style: normal; color: var(--amber); font-family: var(--mono); }
 .do-bands { display: grid; gap: 3px; }

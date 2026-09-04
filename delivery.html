@@ -128,59 +128,64 @@
 
 
 <section class="analysis-section">
-  <div class="section-title">这一单该不该接<em>·</em>Which Offers to Take</div>
-  <div class="section-sub">派单页上给你三个数字：多少钱、多少公里、大概多久。三个都只描述「取到餐之后」的那一段 —— 而骑去餐厅的路，是从同一个小时里扣的</div>
+  <div class="section-title">这一单该不该接<em>·</em>Take It or Leave It</div>
+  <div class="section-sub">2026 年 8 月 17 日起，用自行车送外卖的人每个「engaged 小时」有 $31.30 的法定底薪。这一条把「该不该接」的答案整个翻了过来 —— 以下每个数字都是从你自己的 143 单里算出来的</div>
 
-  <div class="dlv-kpis" id="dlvOfferKpis"></div>
+  <!-- ① 一句话 -->
+  <div class="of-hero" id="dlvOfferHero"></div>
 
-  <div class="chart-card" style="margin-top: 20px;">
-    <div class="chart-title">一单的时间都花在哪</div>
-    <div class="chart-sub">Where the minutes go · 派单页只给你右边那一段计价</div>
-    <div class="of-split" id="dlvOfferSplit"></div>
+  <!-- ② 拿一单来看 -->
+  <div class="chart-card">
+    <div class="chart-title">拿典型的一单来看</div>
+    <div class="chart-sub">平台给你的钱，和这段时间按底薪该值的钱，取大的那个</div>
+    <div class="of-one" id="dlvOfferOne"></div>
   </div>
 
-  <div class="chart-card" style="margin-top: 20px;">
-    <div class="chart-title">决定时薪的不是钱</div>
-    <div class="chart-sub">What actually moves the hourly rate · 各项与实际时薪的秩相关</div>
-    <div class="of-drivers" id="dlvOfferDrivers"></div>
+  <!-- ③ 规则翻了过来 -->
+  <div class="analysis-grid of-two">
+    <div class="chart-card of-era before">
+      <div class="chart-title">8 月 17 日之前</div>
+      <div class="chart-sub">Before the floor</div>
+      <div class="of-era-body" id="dlvOfferEraBefore"></div>
+    </div>
+    <div class="chart-card of-era after">
+      <div class="chart-title">8 月 17 日之后</div>
+      <div class="chart-sub">After the floor</div>
+      <div class="of-era-body" id="dlvOfferEraAfter"></div>
+    </div>
   </div>
 
-  <div class="chart-card of-calc-card" style="margin-top: 20px;">
-    <div class="chart-title">接单计算器</div>
-    <div class="chart-sub">Offer calculator · 拖动三个滑块，看这一单落在 143 单真实记录的哪个位置</div>
+  <!-- ④ 计算器 -->
+  <div class="chart-card of-calc-card">
+    <div class="chart-title">算一单看看</div>
+    <div class="chart-sub">拖三个滑块 · 右边是你这四个月的 143 单，横轴是要骑多少公里，纵轴是钱</div>
     <div class="of-calc" id="dlvOfferCalc"></div>
   </div>
 
-  <div class="analysis-grid dlv-chain-grid">
-    <div class="chart-card">
-      <div class="chart-title">按「每骑一公里挣多少」分档</div>
-      <div class="chart-sub">Dollars per ridden km · 分母含骑去餐厅的路</div>
-      <div class="of-bands" id="dlvOfferBands"></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">定在哪一档</div>
-      <div class="chart-sub">Where to draw the line · 拒掉的时间能不能补回来，决定这条线值不值</div>
-      <div class="of-cuts" id="dlvOfferCuts"></div>
-    </div>
+  <!-- ⑤ 什么时候才该拒 -->
+  <div class="chart-card">
+    <div class="chart-title">那什么时候才该拒单</div>
+    <div class="chart-sub">底薪之上，单价才重新变成你的收入 —— 这时候下面这条线才有用</div>
+    <div class="of-above" id="dlvOfferAbove"></div>
   </div>
 
-  <div class="analysis-grid dlv-chain-grid">
+  <!-- ⑥ 三条能马上用的 -->
+  <div class="analysis-grid of-three">
     <div class="chart-card">
-      <div class="chart-title">拼单是白送的加速</div>
-      <div class="chart-sub">Batched vs single · 派单页上两者时薪一样</div>
-      <div class="of-kinds" id="dlvOfferKinds"></div>
+      <div class="chart-title">拼单</div>
+      <div class="chart-sub">Batched orders</div>
+      <div class="of-tip" id="dlvOfferKinds"></div>
     </div>
     <div class="chart-card">
-      <div class="chart-title">落点的隐性成本</div>
-      <div class="chart-sub">What the drop-off costs afterwards · 送得越偏，下一单越远</div>
-      <div class="of-tail" id="dlvOfferTail"></div>
+      <div class="chart-title">时段</div>
+      <div class="chart-sub">By hour</div>
+      <div class="of-tip" id="dlvOfferHours"></div>
     </div>
-  </div>
-
-  <div class="chart-card" style="margin-top: 20px;">
-    <div class="chart-title">哪个时段的单值得接</div>
-    <div class="chart-sub">By hour · 只画有 10 单以上的时段</div>
-    <div class="of-hours" id="dlvOfferHours"></div>
+    <div class="chart-card">
+      <div class="chart-title">落点</div>
+      <div class="chart-sub">Where it drops you</div>
+      <div class="of-tip" id="dlvOfferTail"></div>
+    </div>
   </div>
 
   <div class="dlv-note" id="dlvOfferNote"></div>
