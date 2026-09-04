@@ -1,596 +1,116 @@
-/* ============================================================
-   配送作战台 / Delivery console
-   A single-screen grid instead of a scrolling column. Everything the
-   delivery page says, arranged so the map keeps the middle of the screen
-   and every other panel is something you read *about* the map without
-   losing sight of it.
+/* A spacious field console. Decisions stay legible on both phones and desktops. */
+body[data-page=dashboard] { margin: 0; background: #101719; color: #e8e6de; overflow: auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif; }
+.dash { max-width: 1840px; margin: 0 auto; padding: 0 32px 28px; }
+.dash * { box-sizing: border-box; }
+.dash-top { display: flex; justify-content: space-between; align-items: center; min-height: 78px; border-bottom: 1px solid #303b3d; gap: 20px; }
+.dash-brand { color: #e4ded0; display: flex; align-items: center; gap: 12px; text-decoration: none; }
+.dash-brand-mark { border: 1px solid #b69a69; width: 34px; height: 34px; display: grid; place-items: center; color: #e6c58b; font-size: 26px; }
+.dash-brand b { display: block; font: 13px var(--mono, monospace); letter-spacing: .1em; }
+.dash-brand small { color: #8ca09f; display: block; font: 9px var(--mono, monospace); letter-spacing: .16em; margin-top: 6px; }
+.dash-links { display: flex; gap: 26px; align-items: center; }
+.dash-links a { color: #acb8b4; font-size: 12px; text-decoration: none; min-height: 44px; display: flex; align-items: center; }
+.dash-links a.active { color: #eccb95; }
+.dash-links a:hover { color: white; }
+.dash-intro { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 32px 0 25px; }
+.dash-kicker { color: #a4b7b3; letter-spacing: .14em; font-size: 11px; margin-bottom: 12px; }
+.dash-intro h1 { margin: 0; font-family: 'Noto Serif SC', serif; font-size: 32px; font-weight: 400; letter-spacing: .04em; color: #eee9dc; }
+.dash-intro p { color: #8eaaa6; font-size: 13px; margin: 12px 0 0; letter-spacing: .08em; }
+.dash-stats { display: flex; }
+.dash-stats > div { padding: 0 26px; border-left: 1px solid #35413f; }
+.dash-stats b { display: block; color: #e2d2b5; font: 25px var(--mono, monospace); }
+.dash-stats span { display: block; font-size: 11px; color: #9db0ab; margin-top: 8px; }
+.dash-status { display: flex; align-items: center; gap: 16px; color: #9dafac; font-size: 11px; border-top: 1px solid #2e3b3c; padding: 13px 0 20px; flex-wrap: wrap; }
+.dash-history-tag { color: #d4c09a; border: 1px solid #5f543f; border-radius: 4px; padding: 3px 7px; }
+.dash-status a { margin-left: auto; color: #a1d0cc; text-decoration: none; }
+.dash-main { display: grid; grid-template-columns: minmax(280px,.85fr) minmax(380px,1.5fr) minmax(350px,1fr); gap: 18px; grid-template-areas: 'zones map offer' 'zones drop offer' 'settlement ledger ledger'; align-items: start; }
+.dash-panel { background: #172023; border: 1px solid #354144; border-radius: 12px; min-width: 0; overflow: hidden; }
+.p-offer { grid-area: offer; border-color: #776344; }
+.p-zones { grid-area: zones; }
+.p-map { grid-area: map; }
+.p-drop { grid-area: drop; align-self: stretch; }
+.p-settlement { grid-area: settlement; }
+.p-ledger { grid-area: ledger; }
+.dash-head { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; padding: 17px 18px; border-bottom: 1px solid #303c3f; }
+.dash-head h2 { margin: 0; font-size: 14px; color: #e8e5da; font-weight: 500; }
+.dash-head em { font: 8px var(--mono, monospace); letter-spacing: .08em; color: #94a6a4; margin-left: auto; }
+.dash-note { color: #99b3ad; font-size: 10px; }
+.dash-step { color: #d8b780; font: 11px var(--mono, monospace); margin-right: 2px; }
+.dash-body { padding: 18px; min-width: 0; }
+.dash-mapbar { display: flex; gap: 5px; padding: 12px; flex-wrap: wrap; align-items: center; }
+.dash .dlv-chip, .dash .dlv-reset, .dash .dlv-mchip { font-family: inherit; font-size: 11px; min-height: 34px; padding: 5px 9px; border-radius: 5px; }
+.dash-mapbar-label { color: #a2b0ac; font-size: 11px; }
+.dash-mapbar .dlv-metric-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+.dash-map-scope { font-size: 10px; color: #a5b6b0; padding: 0 14px 10px; margin: 0; }
+.dash-mapwrap { position: relative; }
+.dash #dlvMap { height: 430px; min-height: 300px; width: 100%; border: 0; border-radius: 0; background: #22292c; }
+.dash-focus { position: relative; margin: 0; max-height: 180px; overflow: auto; border-radius: 0; }
+.dash-timebar { display: flex; align-items: center; gap: 8px; padding: 12px; flex-wrap: wrap; border-top: 1px solid #344145; }
+.dash-timebar input { flex: 1; min-width: 80px; }
+.dash .dlv-map-legend { width: 100%; font-size: 10px; margin: 0; }
+.dash .dlv-play { min-height: 36px; }
+.map-list-details { border-top: 1px solid #344145; }
+.map-list-details summary { padding: 13px; color: #acbfba; font-size: 12px; cursor: pointer; min-height: 44px; }
+.map-list-details .dash-tabs { display: flex; flex-wrap: wrap; padding: 10px; gap: 6px; }
+.map-list-details #dlvList { max-height: 250px; overflow: auto; padding: 0; }
+.drop-empty { padding: 12px 0 24px; }
+.drop-empty > span { font-size: 28px; color: #9dc9c4; }
+.drop-empty h3, .drop-title h3 { font-size: 22px; font-weight: 400; color: #e7ddc9; margin: 10px 0; }
+.drop-empty p, .drop-description { color: #b4c0b9; font-size: 13px; line-height: 1.8; margin: 8px 0 16px; }
+.drop-title { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.drop-title > span { color: #96b6ad; font-size: 10px; }
+.drop-metrics { display: grid; grid-template-columns: repeat(3,1fr); padding: 20px 0; gap: 14px; }
+.drop-metrics span { display: block; color: #9aafa7; font-size: 11px; margin-bottom: 9px; }
+.drop-metrics b { color: #ddcdaa; font: 25px var(--mono, monospace); }
+.drop-metrics small { font-size: 11px; }
+.drop-basis { border-top: 1px solid #34413e; padding: 14px 0 0; color: #9eb0a9; font-size: 11px; line-height: 1.8; }
+.drop-basis > span { color: #bdd0bc; }
+.dash-footer { display: flex; justify-content: space-between; gap: 15px; flex-wrap: wrap; font-size: 11px; color: #95a6a0; padding-top: 22px; }
+.dash-footer a { color: #b3c5b9; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+.dash a:focus-visible, .dash button:focus-visible, .dash summary:focus-visible { outline: 2px solid #9bdbd4; outline-offset: 3px; }
+@media (max-width: 1250px) {
+  .dash { padding: 0 20px 24px; }
+  .dash-main { grid-template-columns: minmax(280px,1fr) minmax(350px,1.25fr); grid-template-areas: 'zones offer' 'map offer' 'drop drop' 'settlement ledger'; }
+  .dash-stats > div { padding: 0 15px; }
+  .dash-intro h1 { font-size: 28px; }
+}
+@media (max-width: 760px) {
+  .dash { padding: 0 12px 24px; }
+  .dash-top { min-height: 70px; gap: 8px; }
+  .dash-brand b { font-size: 10px; }
+  .dash-brand small { font-size: 7px; }
+  .dash-brand-mark { width: 26px; height: 30px; }
+  .dash-links { gap: 12px; }
+  .dash-links a { font-size: 11px; }
+  .dash-links a:last-child { display: none; }
+  .dash-intro { display: block; padding: 25px 4px 18px; }
+  .dash-intro h1 { font-size: 27px; }
+  .dash-stats { margin-top: 26px; justify-content: space-between; }
+  .dash-stats > div { border: 0; padding: 0 6px 0 0; }
+  .dash-stats b { font-size: 20px; }
+  .dash-stats span { font-size: 10px; }
+  .dash-status { gap: 9px; font-size: 10px; }
+  .dash-status a { display: none; }
+  .dash-main { display: flex; flex-direction: column; gap: 16px; }
+  .dash-panel { width: 100%; }
+  .dash-body { padding: 16px; }
+  .p-offer { order: 0; }.p-zones { order: 1; }.p-map { order: 2; }.p-drop { order: 3; }.p-settlement { order: 4; }.p-ledger { order: 5; }
+  .dash #dlvMap { height: 360px; }
+  .drop-metrics b { font-size: 22px; }
+}
+@media (prefers-reduced-motion: reduce) { .dash *, .planner * { scroll-behavior: auto !important; transition: none !important; } }
 
-   Shares the palette and fonts with styles.css; this file only does layout
-   and the denser type scale that a dashboard needs.
-   ============================================================ */
-
-/* The console owns the whole viewport; nothing below it should scroll. */
-body:has(.dash) { overflow: hidden; }
-@media (max-width: 1180px) { body:has(.dash) { overflow: auto; } }
-
-.dash {
-  /* Fills the viewport on a desktop, falls back to normal flow on small
-     screens where cramming nine panels onto one screen helps nobody. */
-  height: 100vh;
-  box-sizing: border-box;
-  display: grid;
-  /* Fourteen rather than twelve: eight panels do not divide into twelve
-     without either crushing the hour heatmap or leaving the new offer
-     panel too narrow for its sliders. */
-  grid-template-columns: repeat(14, 1fr);
-  grid-template-rows: auto 1.55fr 1fr;
-  gap: 1px;
-  padding: 1px;
-  background: var(--border);
-  overflow: hidden;
+.dash-jump { display: none; }
+@media(max-width:760px) {
+  .dash-jump { display: flex; position: sticky; top: 0; z-index: 1001; margin: 0 -12px 16px; padding: 0 12px; background: #101719f5; border-bottom: 1px solid #354144; }
+  .dash-jump a { flex: 1; min-height: 44px; display: grid; place-items: center; color: #c9d8cf; text-decoration: none; font-size: 12px; }
+  .dash-panel { scroll-margin-top: 58px; }
+  .dash-intro { padding: 20px 4px 14px; }
+  .dash-intro p { margin-top: 8px; }
+  .dash-stats { margin-top: 18px; }
+  .dash-status { padding-bottom: 13px; }
 }
-
-.dash-panel {
-  /* A shade lifted off the 1px gutter grid, with a hairline highlight on the
-     top edge. Flat black panels on a black gutter read as one surface; this
-     is what makes the grid legible as separate instruments. */
-  background: linear-gradient(180deg, #101014 0%, var(--bg) 42%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-  position: relative;
-}
-/* Colour-coded accent per panel, so the eye learns the grid by hue rather
-   than by reading every header. */
-.dash-panel::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0;
-  width: 2px; height: 34px;
-  background: var(--accent, var(--amber));
-  opacity: 0.85;
-}
-.p-map   { --accent: var(--amber-bright); }
-.p-zones { --accent: var(--amber); }
-.p-chain { --accent: var(--rose); }
-.p-list  { --accent: var(--cyan); }
-.p-hours { --accent: var(--amber-dim); }
-.p-roads { --accent: var(--rose); }
-.p-truth { --accent: var(--cyan); }
-.p-offer { --accent: var(--amber-bright); }
-
-.dash-head {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 9px 12px 7px 14px;
-  border-bottom: 1px solid var(--border);
-  flex: 0 0 auto;
-}
-.dash-head h2 {
-  font-family: var(--chinese);
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--text);
-  letter-spacing: 0.02em;
-}
-.dash-head em {
-  font-family: var(--mono);
-  font-style: normal;
-  font-size: 8.5px;
-  color: var(--text-faint);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-.dash-head .dash-note {
-  margin-left: auto;
-  font-family: var(--mono);
-  font-size: 9.5px;
-  color: var(--text-faint);
-  white-space: nowrap;
-}
-.dash-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 8px 12px 10px; }
-.dash-body::-webkit-scrollbar { width: 7px; height: 7px; }
-.dash-body::-webkit-scrollbar-track { background: transparent; }
-.dash-body::-webkit-scrollbar-thumb {
-  background: var(--border-bright);
-  border-radius: 4px;
-  border: 2px solid transparent;
-  background-clip: content-box;
-}
-.dash-body::-webkit-scrollbar-thumb:hover { background: var(--amber-dim); background-clip: content-box; }
-.dash-body { scrollbar-width: thin; scrollbar-color: var(--border-bright) transparent; }
-.dash-body.flush { padding: 0; }
-
-/* ---- top bar ------------------------------------------------------- */
-.dash-top {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  gap: 0;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  padding: 0 14px;
-  overflow-x: auto;
-}
-.dash-brand {
-  display: flex;
-  flex-direction: column;
-  padding: 9px 20px 9px 0;
-  margin-right: 18px;
-  border-right: 1px solid var(--border);
-  flex: 0 0 auto;
-}
-.dash-brand b {
-  font-family: var(--chinese);
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--amber);
-  letter-spacing: 0.04em;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-.dash-brand b::before {
-  content: '';
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--amber);
-  box-shadow: 0 0 8px var(--amber);
-}
-.dash-brand span {
-  font-family: var(--mono);
-  font-size: 8.5px;
-  color: var(--text-faint);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  margin-top: 2px;
-}
-.dash-stats { display: flex; gap: 0; flex: 1 1 auto; }
-.dash-stat {
-  padding: 8px 17px;
-  border-right: 1px solid var(--border);
-  white-space: nowrap;
-  position: relative;
-  transition: background 0.18s;
-}
-.dash-stat:last-child { border-right: none; }
-.dash-stat:hover { background: rgba(255, 255, 255, 0.022); }
-/* A heavier rule where the meaning changes: what you produced, what it cost,
-   how much of it to believe. */
-.dash-stat.group { border-left: 1px solid var(--border-bright); }
-.dash-stat i {
-  display: block;
-  font-style: normal;
-  font-family: var(--chinese);
-  font-size: 9.5px;
-  color: var(--text-faint);
-  margin-bottom: 2px;
-}
-.dash-stat b {
-  font-family: var(--mono);
-  font-size: 19px;
-  font-weight: 300;
-  color: var(--text);
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-}
-.dash-stat b u { text-decoration: none; font-size: 9.5px; color: var(--text-faint); margin-left: 3px; }
-.dash-stat.hot b { color: var(--amber-bright); text-shadow: 0 0 18px rgba(255, 216, 151, 0.28); }
-.dash-stat.warn b { color: var(--rose); }
-.dash-links { margin-left: auto; display: flex; gap: 14px; padding-left: 18px; flex: 0 0 auto; }
-.dash-links a {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--text-faint);
-  text-decoration: none;
-  letter-spacing: 0.08em;
-  border-bottom: 1px solid transparent;
-  padding-bottom: 1px;
-}
-.dash-links a:hover { color: var(--amber); border-bottom-color: var(--amber-dim); }
-
-/* ---- placement ----------------------------------------------------- */
-.p-map    { grid-column: 1 / 8;   grid-row: 2 / 3; }
-.p-zones  { grid-column: 8 / 11;  grid-row: 2 / 3; }
-.p-chain  { grid-column: 11 / 13; grid-row: 2 / 3; }
-.p-offer  { grid-column: 13 / -1; grid-row: 2 / 3; }
-.p-list   { grid-column: 1 / 4;   grid-row: 3 / 4; }
-.p-hours  { grid-column: 4 / 9;   grid-row: 3 / 4; }
-.p-roads  { grid-column: 9 / 13;  grid-row: 3 / 4; }
-.p-truth  { grid-column: 13 / -1; grid-row: 3 / 4; }
-
-/* ---- map panel ----------------------------------------------------- */
-.p-map .dash-body { display: flex; flex-direction: column; gap: 0; }
-/* styles.css pins #dlvMap to 600px for the long page; here it has to take
-   whatever the grid row leaves it. */
-.p-map #dlvMap {
-  flex: 1 1 auto;
-  width: 100%;
-  height: auto;
-  min-height: 0;
-  border: none;
-  background: #0d0f13;
-}
-.dash-mapbar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--border);
-  flex: 0 0 auto;
-}
-.dash-mapbar .dlv-chip { font-size: 10.5px; padding: 3px 9px; gap: 5px; }
-.dash-mapbar .dlv-dot { width: 7px; height: 7px; }
-.dash-mapbar .dlv-mchip { font-size: 10px; padding: 2px 7px; }
-.dash-mapbar .dash-sep { width: 1px; height: 14px; background: var(--border); margin: 0 3px; }
-.dash-mapbar .dlv-reset { font-size: 9.5px; padding: 3px 2px; margin-left: 0; }
-.dash-timebar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 10px;
-  border-top: 1px solid var(--border);
-  flex: 0 0 auto;
-}
-.dash-timebar .dlv-play { width: 22px; height: 22px; font-size: 9px; }
-.dash-timebar input[type=range] { flex: 1 1 auto; }
-.dash-timebar .dlv-time-label { font-size: 10.5px; min-width: 44px; }
-.dash-timebar input[type=range] { flex: 0 1 190px; }
-.dash-mapbar-label {
-  font-family: var(--chinese);
-  font-size: 10px;
-  color: var(--text-faint);
-}
-.p-map #dlvMapLegend {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: nowrap;
-  padding: 0;
-  border: none;
-  margin: 0 0 0 auto;
-  overflow: hidden;
-}
-.p-map #dlvMapLegend .dlv-leg-grad { width: 74px; height: 6px; }
-.p-map #dlvMapLegend .dlv-leg-scale span,
-.p-map #dlvMapLegend .dlv-leg-dots span { font-size: 9.5px; }
-.p-map #dlvMapLegend .dlv-leg-scale em { font-size: 10px; }
-.p-map #dlvMapLegend .dlv-leg-dots i { width: 7px; height: 7px; }
-
-/* Focus bar rides on top of the map rather than pushing it down. */
-.dash-focus {
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  bottom: 8px;
-  z-index: 500;
-  background: rgba(10, 10, 12, 0.94);
-  border: 1px solid var(--amber-dim);
-  border-radius: 6px;
-  padding: 8px 12px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 14px;
-  align-items: center;
-}
-.dash-mapwrap { position: relative; flex: 1 1 auto; min-height: 0; display: flex; }
-.dash-focus .dlv-focus-name { font-size: 12.5px; }
-.dash-focus .dlv-focus-stats span { font-size: 10.5px; }
-.dash-focus .dlv-focus-parts { gap: 10px; }
-.dash-focus .dlv-focus-exit { font-size: 10px; }
-
-/* ---- zone bars ----------------------------------------------------- */
-.dz-row {
-  display: grid;
-  grid-template-columns: 82px 1fr 32px;
-  align-items: center;
-  gap: 8px;
-  padding: 3px 5px 3px 4px;
-  cursor: pointer;
-  border-radius: 3px;
-  border-left: 2px solid transparent;
-  transition: background 0.15s, border-color 0.15s;
-}
-.dz-row:hover { background: rgba(255, 255, 255, 0.03); border-left-color: var(--amber); }
-.dz-name {
-  font-size: 11px;
-  color: var(--text-dim);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.dz-row:hover .dz-name { color: var(--amber); }
-.dz-track {
-  position: relative;
-  height: 13px;
-  background: rgba(255, 255, 255, 0.045);
-  border-radius: 3px;
-  overflow: hidden;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
-}
-.dz-fill {
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  border-radius: 3px;
-  opacity: 0.92;
-}
-.dz-row:hover .dz-fill { opacity: 1; }
-.dz-ci { position: absolute; top: 0; bottom: 0; border-left: 1px solid rgba(255,255,255,.35); border-right: 1px solid rgba(255,255,255,.35); }
-.dz-med { position: absolute; top: -1px; bottom: -1px; width: 1px; background: var(--text-faint); opacity: .8; }
-.dz-val {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text);
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-.dz-legend {
-  display: flex;
-  gap: 12px;
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--text-faint);
-  padding-bottom: 6px;
-  margin-bottom: 4px;
-  border-bottom: 1px solid var(--border);
-}
-.dz-legend { flex-wrap: wrap; gap: 5px; align-items: center; }
-.dz-legend > span { margin-right: auto; }
-.dz-toggle {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--text-faint);
-  font-family: var(--chinese);
-  font-size: 9.5px;
-  padding: 2px 8px;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
-}
-.dz-toggle:hover { color: var(--text); border-color: var(--border-bright); }
-.dz-toggle.active {
-  color: var(--bg) !important;
-  background: var(--amber);
-  border-color: var(--amber) !important;
-}
-
-/* ---- one suburb, lit in every panel at once ---- */
-.dz-row.is-focused,
-.dc-zone.is-focused,
-.dh-row.is-focused .dh-label {
-  color: var(--amber-bright);
-}
-.dz-row.is-focused {
-  background: rgba(232, 183, 109, 0.09);
-  border-left-color: var(--amber-bright);
-}
-.dz-row.is-focused .dz-name { color: var(--amber-bright); }
-.dc-zone.is-focused { background: rgba(232, 183, 109, 0.09); }
-.dc-zone.is-focused b { color: var(--amber-bright); }
-.dh-row.is-focused .dh-label { font-weight: 500; }
-.dh-row.is-focused .dh-cell { outline: 1px solid rgba(255, 216, 151, 0.28); outline-offset: -1px; }
-
-/* ---- chain panel --------------------------------------------------- */
-.dc-dir { margin-bottom: 9px; }
-.dc-dir-head { display: flex; align-items: baseline; gap: 6px; margin-bottom: 3px; }
-.dc-dir-n { font-family: var(--mono); font-size: 17px; font-weight: 300; line-height: 1; font-variant-numeric: tabular-nums; }
-.dc-dir-label { font-size: 10.5px; color: var(--text); }
-.dc-dir-cost { margin-left: auto; font-family: var(--mono); font-size: 9px; color: var(--text-faint); }
-.dc-bar { height: 5px; background: rgba(255,255,255,.05); border-radius: 3px; overflow: hidden; }
-.dc-bar span { display: block; height: 100%; opacity: 0.85; }
-.dc-split {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--text-faint);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin: 10px 0 5px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border);
-}
-.dc-zone {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 4px;
-  font-size: 10.5px;
-  cursor: pointer;
-  border-radius: 3px;
-  transition: background 0.15s;
-}
-.dc-zone:hover { background: rgba(255, 255, 255, 0.03); }
-.dc-zone:hover b { color: var(--amber); }
-.dc-zone b { font-weight: 400; color: var(--text-dim); flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dc-zone .dc-num { font-family: var(--mono); font-size: 10px; color: var(--text-faint); }
-.dc-pill {
-  font-size: 8.5px;
-  padding: 0 5px;
-  border-radius: 999px;
-  border: 1px solid;
-  white-space: nowrap;
-}
-.dc-pill.trap { color: var(--rose); border-color: var(--rose); }
-.dc-pill.hub { color: var(--cyan); border-color: var(--cyan); }
-
-/* ---- hour heatmap -------------------------------------------------- */
-.dh-grid { min-width: 0; }
-.dh-row { display: flex; align-items: center; gap: 1.5px; margin-bottom: 1.5px; cursor: pointer; }
-.dh-label {
-  flex: 0 0 66px;
-  font-size: 9.5px;
-  color: var(--text-dim);
-  text-align: right;
-  padding-right: 6px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: pointer;
-}
-.dh-row:hover .dh-label { color: var(--amber); }
-.dh-cell { flex: 1 1 0; height: 14px; border-radius: 2px; min-width: 0; transition: transform 0.12s; }
-.dh-row:hover .dh-cell { transform: scaleY(1.12); }
-.dh-head .dh-cell { height: auto; background: none !important; font-family: var(--mono); font-size: 8px; color: var(--text-faint); text-align: center; }
-
-/* ---- roads / list -------------------------------------------------- */
-.dr-row {
-  padding: 5px 5px 5px 4px;
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-  border-left: 2px solid transparent;
-  transition: background 0.15s, border-color 0.15s;
-}
-.dr-row:hover { background: rgba(255, 255, 255, 0.03); border-left-color: var(--rose); }
-.dr-row:last-child { border-bottom: none; }
-.dr-row:hover .dr-name { color: var(--amber); }
-.dr-top { display: flex; align-items: baseline; gap: 6px; }
-.dr-name { font-size: 10.5px; color: var(--text-dim); flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dr-metric { font-family: var(--mono); font-size: 10.5px; color: var(--amber); font-variant-numeric: tabular-nums; }
-.dr-bar { height: 3px; background: rgba(255,255,255,.05); border-radius: 2px; overflow: hidden; margin-top: 4px; }
-.dr-bar span { display: block; height: 100%; }
-.dr-meta { font-family: var(--mono); font-size: 8.5px; color: var(--text-faint); margin-top: 2px; }
-
-.p-list .dash-body { padding: 0; }
-.p-list .dlv-row { padding: 5px 12px; border-left: 2px solid transparent; transition: background .15s, border-color .15s; }
-.p-list .dlv-row:hover { background: rgba(255,255,255,.03); border-left-color: var(--cyan); }
-.p-list .dlv-row-main { font-size: 11px; }
-.p-list .dlv-row-meta { font-size: 9px; }
-.p-list .dlv-rank { font-size: 9px; }
-.dash-tabs { display: flex; border-bottom: 1px solid var(--border); flex: 0 0 auto; }
-.dash-tabs button {
-  flex: 1 1 auto;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--text-faint);
-  font-family: var(--chinese);
-  font-size: 10.5px;
-  padding: 5px 2px;
-  cursor: pointer;
-}
-.dash-tabs button:hover { color: var(--text); }
-.dash-tabs button.active { color: var(--amber); border-bottom-color: var(--amber); }
-
-/* ---- truth panel --------------------------------------------------- */
-.dt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 9px; }
-.dt-cell {
-  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.012));
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 7px 9px;
-}
-.dt-cell i { display: block; font-style: normal; font-size: 9px; color: var(--text-faint); margin-bottom: 2px; }
-.dt-cell b {
-  font-family: var(--mono);
-  font-size: 18px;
-  font-weight: 300;
-  color: var(--amber-bright);
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-.dt-cell b u { text-decoration: none; font-size: 9px; color: var(--text-faint); }
-.dt-line { font-size: 10px; color: var(--text-dim); line-height: 1.65; margin-bottom: 6px; }
-.dt-line b { color: var(--text); font-weight: 500; }
-.dt-line em { color: var(--amber); font-style: normal; }
-
-/* ---- small screens: give up on one screen, stack it ----------------- */
-@media (max-width: 1180px) {
-  .dash {
-    height: auto;
-    grid-template-columns: repeat(6, 1fr);
-    grid-template-rows: none;
-    grid-auto-rows: min-content;
-    overflow: visible;
-  }
-  /* The base rules pin each panel to an explicit row of the desktop grid.
-     Those have to be released here or every panel lands in row 2 on top of
-     the map — overriding grid-column alone is not enough. */
-  .dash-panel { grid-row: auto; }
-  .p-map   { grid-column: 1 / -1; height: 62vh; }
-  .p-zones { grid-column: 1 / 4; height: 46vh; }
-  .p-chain { grid-column: 4 / -1; height: 46vh; }
-  .p-offer { grid-column: 1 / 4; height: 46vh; }
-  .p-list  { grid-column: 4 / -1; height: 42vh; }
-  .p-hours { grid-column: 1 / -1; height: 42vh; }
-  .p-roads { grid-column: 1 / 4; height: 40vh; }
-  .p-truth { grid-column: 4 / -1; height: 40vh; }
-}
-@media (max-width: 720px) {
-  .dash { grid-template-columns: 1fr; }
-  .dash-panel { grid-column: 1 / -1 !important; grid-row: auto; }
-  .p-map { height: 56vh; }
-  .dash-brand { margin-right: 10px; padding-right: 12px; }
-  .dash-stat { padding: 7px 12px; }
-}
-
-/* ---- 这单接不接 ------------------------------------------------------ */
-/* The narrowest panel on the board, so everything is stacked and the labels
-   sit on the same line as their values rather than above them. */
-.p-offer .dash-body { display: flex; flex-direction: column; gap: 7px; }
-.do-sliders { display: grid; gap: 7px; }
-.do-sliders label { display: block; }
-.do-sliders span {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  font-size: 10px;
-  color: var(--text-dim);
-  margin-bottom: 2px;
-}
-.do-sliders span b { font-family: var(--mono); font-size: 11.5px; color: var(--amber); font-weight: 400; }
-.do-sliders input[type="range"] {
-  width: 100%;
-  -webkit-appearance: none;
-  appearance: none;
-  height: 12px;
-  background: transparent;
-  outline: none;
-  display: block;
-  margin: 0;
-}
-/* The visible track is painted by the gradient, not the element's own box,
-   so the input can be 12px tall instead of the browser default 20-something
-   and five controls still fit the panel without it scrolling. */
-.do-sliders input[type="range"] {
-  background: linear-gradient(var(--border-bright), var(--border-bright)) center / 100% 3px no-repeat;
-}
-.do-sliders input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none; appearance: none;
-  width: 12px; height: 12px; border-radius: 50%;
-  background: var(--amber); cursor: pointer;
-}
-.do-sliders input[type="range"]::-moz-range-thumb {
-  width: 12px; height: 12px; border: none; border-radius: 50%;
-  background: var(--amber); cursor: pointer;
-}
-.do-check { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--text-dim); cursor: pointer; }
-.do-check input { accent-color: var(--amber); margin: 0; }
-.do-out { margin-top: auto; border-top: 1px solid var(--border); padding-top: 8px; }
-/* One number: what the hour comes to once Quest is counted. */
-.do-big { display: flex; align-items: baseline; gap: 4px; flex-wrap: wrap; }
-.do-big b { font-family: var(--serif); font-size: 26px; font-weight: 400; line-height: 1.1; }
-.do-big i { font-family: var(--mono); font-size: 9px; font-style: normal; color: var(--text-faint); }
-.do-big span { flex: 1 0 100%; font-size: 9.5px; margin-top: 1px; }
-.do-big.win b, .do-big.win span { color: #8fbf7f; }
-.do-big.lose b, .do-big.lose span { color: var(--rose); }
-.do-big.edge b, .do-big.edge span { color: var(--amber); }
-.do-math { margin-top: 6px; font-size: 10px; line-height: 1.65; color: var(--text-faint); }
-.do-math em { font-style: normal; color: var(--amber); font-family: var(--mono); }
-.do-bands { display: grid; gap: 3px; }
-.do-bands-t {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.06em;
-  color: var(--text-faint);
-  margin-bottom: 2px;
-}
-.do-band { display: grid; grid-template-columns: 56px 1fr 30px; gap: 6px; align-items: center; }
-.do-band-k { font-family: var(--mono); font-size: 9px; color: var(--text-dim); }
-.do-band-bar { height: 5px; background: var(--surface-2); overflow: hidden; }
-.do-band-bar i { display: block; height: 100%; background: var(--amber-dim); }
-.do-band-r { font-family: var(--mono); font-size: 9.5px; color: var(--amber); text-align: right; }
+.dash .plan-primary { margin-top: 0; }
+.dash .dlv-chip, .dash .dlv-mchip, .dash .dlv-reset { color: #b8c6bf; background: #1b2629; border-color: #455352; }
+.dash .dlv-chip.active { color: #eee3ce; background: #33312a; border-color: #9d8354; }
+.dash .dlv-mchip.active { color: #201e19; background: #e5bd7e; border-color: #e5bd7e; }

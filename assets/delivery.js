@@ -91,9 +91,9 @@ function renderDeliveryKpis() {
     ['单 / 小时', dlvNum(s.orders_per_hour, 2), '单/h', `平均每 ${s.min_per_order} 分钟一单`],
     ['送一单要多久', dlvNum(s.leg_min_med, 1), 'min', `取到餐再到门口 · 直线 ${s.leg_km_med} km`],
     ['在店里等餐', `${s.pickup_wait_med}`, 's', `中位等待 · 送达停留 ${s.drop_wait_med}s`],
-    ['等红灯', dlvNum(s.light_min_per_hour, 1), 'min/h', `${s.lights} 次 · 占在岗时间 ${(s.light_share * 100).toFixed(1)}%`],
+    ['等红灯', dlvNum(s.light_min_per_hour, 1), 'min/h', `${s.lights} 次 · 占记录时间 ${(s.light_share * 100).toFixed(1)}%`],
     ['每单里程', dlvNum(s.km_per_order, 2), 'km', `合计骑了 ${s.km} km`],
-    ['最该待的区', s.sweet_zone || '—', '', `出单密度 × 好跑指数 · ${s.zones_ranked}/${s.zones_touched} 个区够样本`],
+    ['取餐频率较高', s.sweet_zone || '—', '', '全期取餐 / 记录小时；作为试跑候选，不是利润排名'],
   ];
   host.innerHTML = cards.map(([label, value, unit, foot]) => `
     <div class="dlv-kpi">
@@ -108,7 +108,7 @@ function renderDeliveryKpis() {
   if (note) {
     const fb = m.flow_basis || {};
     const osm = m.osm && m.osm.counts ? m.osm.counts : {};
-    note.innerHTML = `<strong>怎么算的</strong> · 平台数据一条都没有，全部从 1 Hz 的 GPS 轨迹里反推。`
+    note.innerHTML = `<strong>怎么算的</strong> · 区域取送事件从 1 Hz GPS 推断；收入另用 Uber 活动账本核对。`
       + `每一次停车都对着地图判断是<em>取餐 / 送达 / 等红灯</em>（方法见下一节），`
       + `不再用「超过 90 秒就算一单」这种只看时长的规则。`
       + `一单 = 一次送达；取餐单独计数，把两者相加会把每一单算两遍。`
@@ -119,7 +119,7 @@ function renderDeliveryKpis() {
       + `所以 ${fb.free_min_per_km} 分钟/km 是理论下限，指数 60 就是「只跑出了自由流的六成」。`
       + `每个区都用班次做 ${fb.bootstrap_n} 次 bootstrap 估出 90% 区间，`
       + `区间宽超过 ${fb.max_ci_width} 分的区直接不上榜 —— ${fb.published} 个区达标，中位区间宽 ${fb.median_ci_width} 分。`
-      + `每次出勤自己的起点/终点 ${m.endpoint_m} 米内的停留已剔除（共 ${m.endpoint_stops_dropped} 次），那是家不是客户。`;
+      + `每次出勤自己的起点/终点 ${m.endpoint_m} 米内的停留已剔除（共 ${m.endpoint_stops_dropped} 次），以减少起终点停留对分析的影响。`;
   }
 }
 
@@ -179,7 +179,7 @@ function renderStopMethod() {
       + `取餐和送达是用两条互不相关的证据判的 —— 结果落在 `
       + `<b>${s.pickups} : ${s.orders}</b>（比值 ${s.pd_ratio}）。`
       + `这不是证明，只是个说得过去的旁证：规则稍微换一换，比值会在 0.8–1.4 之间晃。`
-      + `真要是大面积判错了，它没有理由这么接近 1。`;
+      + `拼单、漏判或对称的误判也会影响这个比值，接近 1 并不能说明准确。`;
   }
 }
 
@@ -191,20 +191,20 @@ function renderZoneQuadrant() {
   if (!svg) return;
   // Published zones only. A grey dot for a suburb crossed twice still invited
   // the eye to read a position that the interval says is not there.
-  const zones = D.zones.filter(z => z.ranked && z.flow != null);
+  const zones = D.zones.filter(z => z.ranked && z.flow != null && z.pickup_ranked);
   if (!zones.length) return;
 
   const W = 900, H = 460, P = { l: 58, r: 28, t: 34, b: 52 };
-  const xMax = Math.max(4, Math.max(...zones.map(z => z.jobs)) * 1.12);
+  const xMax = Math.max(4, Math.max(...zones.map(z => z.pickup_rate)) * 1.12);
   const y0 = Math.max(0, Math.min(...zones.map(z => z.flow)) - 8);
   const y1 = Math.min(100, Math.max(...zones.map(z => z.flow)) + 8);
   const xs = v => P.l + (v / xMax) * (W - P.l - P.r);
   const ys = v => H - P.b - ((v - y0) / (y1 - y0 || 1)) * (H - P.t - P.b);
 
-  const xMed = dlvMedian(zones.map(z => z.jobs));
+  const xMed = dlvMedian(zones.map(z => z.pickup_rate));
   const yMed = dlvMedian(zones.map(z => z.flow));
 
-  const xTicks = [0, 0.25, 0.5, 0.75, 1].map(f => Math.round(xMax * f));
+  const xTicks = [0, 0.25, 0.5, 0.75, 1].map(f => Number((xMax * f).toFixed(1)));
   const yTicks = [y0, (y0 + y1) / 2, y1].map(v => Math.round(v));
 
   const grid =
@@ -218,24 +218,24 @@ function renderZoneQuadrant() {
     + `<line x1="${P.l}" x2="${W - P.r}" y1="${ys(yMed)}" y2="${ys(yMed)}" stroke="${DLV.line}" stroke-dasharray="4 4"/>`;
 
   const quads =
-    `<text x="${W - P.r - 8}" y="${P.t + 14}" text-anchor="end" fill="${DLV.amberBright}" font-family="JetBrains Mono" font-size="10" letter-spacing="0.1em">活 多 · 好 跑</text>`
-    + `<text x="${P.l + 8}" y="${P.t + 14}" fill="${DLV.cyan}" font-family="JetBrains Mono" font-size="10" letter-spacing="0.1em">活 少 · 好 跑</text>`
-    + `<text x="${W - P.r - 8}" y="${H - P.b - 8}" text-anchor="end" fill="${DLV.rose}" font-family="JetBrains Mono" font-size="10" letter-spacing="0.1em">活 多 · 难 跑</text>`
-    + `<text x="${P.l + 8}" y="${H - P.b - 8}" fill="${DLV.axis}" font-family="JetBrains Mono" font-size="10" letter-spacing="0.1em">活 少 · 难 跑</text>`;
+    `<text x="${W - P.r - 8}" y="${P.t + 14}" text-anchor="end" fill="${DLV.amberBright}" font-family="JetBrains Mono" font-size="10" letter-spacing="0.1em">取餐频率高 · 好 跑</text>`
+    + `<text x="${P.l + 8}" y="${P.t + 14}" fill="${DLV.cyan}" font-family="JetBrains Mono" font-size="10" letter-spacing="0.1em">取餐频率低 · 好 跑</text>`
+    + `<text x="${W - P.r - 8}" y="${H - P.b - 8}" text-anchor="end" fill="${DLV.rose}" font-family="JetBrains Mono" font-size="10" letter-spacing="0.1em">取餐频率高 · 难 跑</text>`
+    + `<text x="${P.l + 8}" y="${H - P.b - 8}" fill="${DLV.axis}" font-family="JetBrains Mono" font-size="10" letter-spacing="0.1em">取餐频率低 · 难 跑</text>`;
 
   const hMax = Math.max(...zones.map(z => z.hours)) || 1;
   const dots = zones.map(z => {
     const r = 5 + Math.sqrt(z.hours / hMax) * 16;
-    const hot = z.jobs >= xMed && z.flow >= yMed;
-    const col = hot ? DLV.amber : (z.jobs >= xMed ? DLV.rose : DLV.cyan);
+    const hot = z.pickup_rate >= xMed && z.flow >= yMed;
+    const col = hot ? DLV.amber : (z.pickup_rate >= xMed ? DLV.rose : DLV.cyan);
     const ci = z.ci ? ` (${z.ci[0]}–${z.ci[1]})` : '';
     // A vertical whisker for the bootstrap interval: the dot is an estimate,
     // and on this chart the estimate's height is the whole point.
     const bar = z.ci
-      ? `<line x1="${xs(z.jobs)}" x2="${xs(z.jobs)}" y1="${ys(z.ci[1])}" y2="${ys(z.ci[0])}" stroke="${col}" stroke-width="1" stroke-opacity="0.5"/>`
+      ? `<line x1="${xs(z.pickup_rate)}" x2="${xs(z.pickup_rate)}" y1="${ys(z.ci[1])}" y2="${ys(z.ci[0])}" stroke="${col}" stroke-width="1" stroke-opacity="0.5"/>`
       : '';
-    return bar + `<circle cx="${xs(z.jobs)}" cy="${ys(z.flow)}" r="${r}" fill="${col}" fill-opacity="0.3" stroke="${col}" stroke-width="1.2">`
-      + `<title>${dlvEsc(z.label)} · ${z.jobs} 次活（送 ${z.orders} / 取 ${z.pickups}）· ${z.shifts} 个班次 · 好跑 ${z.flow}${ci} · ${z.min_per_km} min/km · 红灯 ${z.light_min_per_km} min/km · 爬升 ${z.climb_per_km} m/km</title></circle>`;
+    return bar + `<circle cx="${xs(z.pickup_rate)}" cy="${ys(z.flow)}" r="${r}" fill="${col}" fill-opacity="0.3" stroke="${col}" stroke-width="1.2">`
+      + `<title>${dlvEsc(z.label)} · ${z.pickup_rate} 次/记录小时（送 ${z.orders} / 取 ${z.pickups}）· ${z.shifts} 个班次 · 好跑 ${z.flow}${ci} · ${z.min_per_km} min/km · 红灯 ${z.light_min_per_km} min/km · 爬升 ${z.climb_per_km} m/km</title></circle>`;
   }).join('');
 
   // Label the zones worth reading; the rest stay hover targets. Busy suburbs
@@ -243,7 +243,7 @@ function renderZoneQuadrant() {
   // the two or three names that matter most are the ones that overlap.
   const placed = [];
   const labels = [...zones].sort((a, b) => b.jobs - a.jobs).slice(0, 10).map(z => {
-    const cx = xs(z.jobs);
+    const cx = xs(z.pickup_rate);
     let cy = ys(z.flow) - (7 + Math.sqrt(z.hours / hMax) * 16);
     for (let guard = 0; guard < 8; guard++) {
       const clash = placed.find(p => Math.abs(p.x - cx) < 72 && Math.abs(p.y - cy) < 13);
@@ -255,28 +255,28 @@ function renderZoneQuadrant() {
   }).join('');
 
   svg.innerHTML = grid + cross + quads + dots + labels
-    + `<text x="${W / 2}" y="${H - 8}" text-anchor="middle" class="eq-axis-title">识别出的活（取餐 + 送达）</text>`
+    + `<text x="${W / 2}" y="${H - 8}" text-anchor="middle" class="eq-axis-title">取餐频率（次 / 记录小时）</text>`
     + `<text x="16" y="${H / 2}" text-anchor="middle" class="eq-axis-title" transform="rotate(-90 16 ${H / 2})">好跑指数 0–100</text>`;
 
   // The grey dots stay on the chart — a suburb crossed twice is still part of
   // the picture — but only zones with enough exposure get named underneath.
-  // Reading "好跑但没活: Croydon" off two minutes of riding is worse than
+  // Reading "取餐较少 · 好跑: Croydon" off two minutes of riding is worse than
   // reading nothing.
   const buckets = { hot: [], flowOnly: [], grind: [], quiet: [] };
   zones.forEach(z => {
-    if (z.jobs >= xMed && z.flow >= yMed) buckets.hot.push(z);
-    else if (z.jobs < xMed && z.flow >= yMed) buckets.flowOnly.push(z);
-    else if (z.jobs >= xMed) buckets.grind.push(z);
+    if (z.pickup_rate >= xMed && z.flow >= yMed) buckets.hot.push(z);
+    else if (z.pickup_rate < xMed && z.flow >= yMed) buckets.flowOnly.push(z);
+    else if (z.pickup_rate >= xMed) buckets.grind.push(z);
     else buckets.quiet.push(z);
   });
   const names = list => list.sort((a, b) => b.jobs - a.jobs).slice(0, 4).map(z => z.label).join('、') || '—';
   const legend = document.getElementById('zoneQuadLegend');
   if (legend) {
     legend.innerHTML =
-      `<div class="eq-tag eff"><strong>活多又好跑</strong><span class="eq-count">${buckets.hot.length} 区</span><br>${dlvEsc(names(buckets.hot))}</div>`
-      + `<div class="eq-tag costly"><strong>活多但难跑</strong><span class="eq-count">${buckets.grind.length} 区</span><br>${dlvEsc(names(buckets.grind))}</div>`
-      + `<div class="eq-tag eff"><strong>好跑但没活</strong><span class="eq-count">${buckets.flowOnly.length} 区</span><br>${dlvEsc(names(buckets.flowOnly))}</div>`
-      + `<div class="eq-tag easy"><strong>又少又难</strong><span class="eq-count">${buckets.quiet.length} 区</span><br>${dlvEsc(names(buckets.quiet))}</div>`;
+      `<div class="eq-tag eff"><strong>取餐较频繁 · 好跑</strong><span class="eq-count">${buckets.hot.length} 区</span><br>${dlvEsc(names(buckets.hot))}</div>`
+      + `<div class="eq-tag costly"><strong>取餐较频繁 · 较慢</strong><span class="eq-count">${buckets.grind.length} 区</span><br>${dlvEsc(names(buckets.grind))}</div>`
+      + `<div class="eq-tag eff"><strong>取餐较少 · 好跑</strong><span class="eq-count">${buckets.flowOnly.length} 区</span><br>${dlvEsc(names(buckets.flowOnly))}</div>`
+      + `<div class="eq-tag easy"><strong>取餐较少 · 较慢</strong><span class="eq-count">${buckets.quiet.length} 区</span><br>${dlvEsc(names(buckets.quiet))}</div>`;
   }
 }
 
@@ -365,7 +365,7 @@ const DLVMAP = {
   hour: -1,                  // -1 = 全天
   focus: null,               // suburb name being drilled into
   selected: null,            // { kind, id }
-  metric: 'jobs',            // what the choropleth shades by
+  metric: 'worth',            // what the choropleth shades by
   play: null,
 };
 
@@ -383,8 +383,8 @@ const DLV_HOURLY = new Set(['pickups', 'drops', 'zones']);
 // What the suburb fill can be shaded by. Every one of these is a number the
 // page can defend: three measured on the bike, two read off the map.
 const DLV_METRICS = {
-  jobs: { label: '活的数量', unit: '次', get: z => z.jobs, hourly: true },
-  worth: { label: '值得去', unit: '次/h', get: z => z.worth, rankedOnly: true },
+  jobs: { label: '取送事件', unit: '次', get: z => z.jobs, hourly: true },
+  worth: { label: '取餐频率', unit: '次/记录h', get: z => z.worth },
   flow: { label: '好跑指数', unit: '', get: z => z.flow, rankedOnly: true },
   min_per_km: { label: '每公里耗时', unit: 'min/km', get: z => z.min_per_km, invert: true, rankedOnly: true },
   light_min_per_km: { label: '红灯耗时', unit: 'min/km', get: z => z.light_min_per_km, invert: true },
@@ -625,6 +625,7 @@ function dlvClearSelection() {
 // ============ 钻进一个区 / Suburb focus ============
 function dlvSetFocus(name) {
   DLVMAP.focus = name || null;
+  window.dispatchEvent(new CustomEvent('delivery-zone-focus', { detail: name || '' }));
   DLVMAP.selected = null;
   if (name && !DLVMAP.visible.zones) {
     DLVMAP.visible.zones = true;
@@ -655,7 +656,7 @@ function dlvRenderFocusBar() {
     ['送达', z.orders],
     ['取餐', z.pickups],
     ['出现班次', z.shifts],
-    ['活/小时', dlvNum(z.jobs_per_hour, 2)],
+    ['取餐/记录h', z.worth == null ? '样本不足' : dlvNum(z.worth, 2)],
     ['中位速度', `${z.med_speed} km/h`],
     ['比自由流慢', (z.min_per_km == null || !freeMin) ? '—' : `${(z.min_per_km - freeMin).toFixed(2)} min/km`],
     ['红灯', `${dlvNum(z.light_min_per_km, 2)} min/km`],
@@ -664,7 +665,7 @@ function dlvRenderFocusBar() {
     ['人口密度', z.pop_density == null ? '—' : `${Math.round(z.pop_density)}/km²`],
     ['好跑指数', z.flow == null ? '—' : `${z.flow.toFixed(0)}${z.ci ? ` (${z.ci[0]}–${z.ci[1]})` : ''}`],
     ['每公里耗时', z.min_per_km == null ? '—' : `${z.min_per_km} min`],
-    ['最忙时段', Math.max(...z.hour_hist) ? `${String(peak).padStart(2, '0')}:00` : '—'],
+    ['记录最多时段', Math.max(...z.hour_hist) ? `${String(peak).padStart(2, '0')}:00` : '—'],
   ];
   // The decomposition is in minutes lost per km, so the bars are scaled
   // against the biggest single loss rather than against 100.
@@ -814,7 +815,7 @@ function dlvRenderLegend() {
       ? `<div class="dlv-leg-scale"><span>${dlvNum(min, digits)}</span>`
         + `<span class="dlv-leg-grad${m.invert ? ' rev' : ''}"></span>`
         + `<span>${dlvNum(max, digits)}</span>`
-        + `<em>底色 = ${m.label}${m.unit ? ` (${m.unit})` : ''} · ${m.invert ? '越少越好' : '越多越好'}</em></div>`
+        + `<em>底色 = ${m.label}${m.unit ? ` (${m.unit})` : ''} · ${m.invert ? '亮色表示数值较低' : '亮色表示数值较高'}</em></div>`
       : '')
     + (dots.length
       ? `<div class="dlv-leg-dots">${dots.map(([t, c]) =>
@@ -1069,94 +1070,42 @@ function renderCorridors() {
 
 // ============ 时段规律 / Hour x zone ============
 function renderHourBars() {
-  const D = dlvData();
-  if (!D) return;
-  const svg = document.getElementById('hourBars');
-  if (!svg) return;
-  const totals = D.summary.hour_totals || [];
-  const max = Math.max(...totals, 1);
-  const W = 900, H = 180, P = { l: 40, r: 20, t: 16, b: 34 };
-  const bw = (W - P.l - P.r) / 24;
-  const bars = totals.map((v, h) => {
-    const bh = (v / max) * (H - P.t - P.b);
-    const x = P.l + h * bw;
-    const y = H - P.b - bh;
-    const peak = h === D.summary.peak_hour;
-    return `<rect x="${x + 2}" y="${y}" width="${bw - 4}" height="${Math.max(0, bh)}" fill="${peak ? DLV.amberBright : DLV.amber}" fill-opacity="${v ? 0.72 : 0.12}" rx="2">`
-      + `<title>${String(h).padStart(2, '0')}:00 · ${v} 次活</title></rect>`
-      + (h % 3 === 0 ? `<text x="${x + bw / 2}" y="${H - P.b + 16}" text-anchor="middle" fill="${DLV.axis}" font-family="JetBrains Mono" font-size="10">${h}</text>` : '');
-  }).join('');
-  const axis = `<line x1="${P.l}" x2="${W - P.r}" y1="${H - P.b}" y2="${H - P.b}" stroke="${DLV.line}"/>`
-    + `<text x="${P.l - 8}" y="${P.t + 8}" text-anchor="end" fill="${DLV.axis}" font-family="JetBrains Mono" font-size="10">${max}</text>`
-    + `<text x="${W - P.r}" y="${P.t + 8}" text-anchor="end" fill="${DLV.dim}" font-family="JetBrains Mono" font-size="10">峰值 ${String(D.summary.peak_hour).padStart(2, '0')}:00</text>`;
-  svg.innerHTML = axis + bars;
+  const D = dlvData(), svg = document.getElementById('hourBars');
+  if (!D || !svg || !window.DeliveryModel) return;
+  const rows = DeliveryModel.hourly(D), max = Math.max(...rows.map(r => r.rate || 0), 1);
+  const W = 900, H = 180, P = { l: 40, r: 20, t: 26, b: 34 }, bw = (W - P.l - P.r) / 24;
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', '每小时取餐次数除以该小时全部区域 GPS 记录时长；不足一小时、四班次或六次取餐不显示频率');
+  svg.innerHTML = rows.map(r => {
+    const bh = (r.rate || 0) / max * (H - P.t - P.b), x = P.l + r.hour * bw;
+    const title = `${r.hour}:00 · ${r.rate == null ? '样本不足' : r.rate.toFixed(1) + ' 次/记录小时'} · ${r.pickups} 次取餐 / ${r.hours.toFixed(1)} h / ${r.shifts} 班次`;
+    return `<rect x="${x + 2}" y="${H - P.b - Math.max(bh,2)}" width="${bw - 4}" height="${Math.max(bh,2)}" fill="${r.rate == null ? '#555b61' : DLV.amber}" rx="2"><title>${title}</title></rect>`
+      + (r.hour % 3 === 0 ? `<text x="${x + bw / 2}" y="${H - P.b + 18}" text-anchor="middle" fill="${DLV.axis}" font-size="10">${r.hour}</text>` : '');
+  }).join('') + `<text x="${P.l}" y="16" fill="${DLV.dim}" font-size="11">次 / 记录小时 · 最高 ${max.toFixed(1)} · 灰色表示样本不足</text>`;
 }
-
 function renderHourZone() {
-  const D = dlvData();
-  if (!D) return;
-  const host = document.getElementById('hourZoneHeat');
-  if (!host) return;
-  // Only zones with enough exposure to mean something. A suburb crossed once
-  // that happened to yield two jobs used to sit in this grid looking like a
-  // pattern; three data points are not a pattern.
-  const zones = D.zones.filter(z => z.ranked && z.jobs >= 3).slice(0, 16);
-  if (!zones.length) { host.innerHTML = '<div class="empty-range">还没有足够的数据画热力图</div>'; return; }
-
-  // Trim the all-zero hours off both ends so the grid is not mostly empty.
-  const totals = D.summary.hour_totals || [];
-  let lo = 0, hi = 23;
-  while (lo < 23 && !totals[lo]) lo++;
-  while (hi > lo && !totals[hi]) hi--;
-  const hours = [];
-  for (let h = lo; h <= hi; h++) hours.push(h);
-
-  // Row-normalised: each suburb is shaded against its own busiest hour, so a
-  // quiet suburb still shows *when* it is busy. Shading everything against one
-  // global max just redrew the leaderboard in a second form.
-  const rowMode = window.__dlvHzRow !== false;
-  const globalMax = Math.max(...zones.flatMap(z => hours.map(h => z.hour_hist[h])), 1);
-  const head = `<div class="hz-row hz-head"><div class="hz-label"></div>`
-    + hours.map(h => `<div class="hz-cell hz-hour">${String(h).padStart(2, '0')}</div>`).join('') + `</div>`;
-  const body = zones.map(z => {
-    const rowMax = Math.max(...hours.map(h => z.hour_hist[h]), 1);
-    const max = rowMode ? rowMax : globalMax;
-    return `<div class="hz-row" data-zone="${dlvEsc(z.name)}">
-      <div class="hz-label" title="${dlvEsc(z.label)} · ${z.jobs} 次活（送 ${z.orders} / 取 ${z.pickups}）">${dlvEsc(z.label)}</div>`
-      + hours.map(h => {
-        const v = z.hour_hist[h];
-        return `<div class="hz-cell" style="background:${v ? dlvRamp(v / max) : '#1c1e25'}" title="${dlvEsc(z.label)} ${String(h).padStart(2, '0')}:00 · ${v} 次活"></div>`;
-      }).join('') + `</div>`;
-  }).join('');
-  host.innerHTML = head + body;
-  host.querySelectorAll('.hz-row[data-zone]').forEach(row =>
-    row.addEventListener('click', () => {
-      dlvSetFocus(row.dataset.zone);
-      document.getElementById('dlvMap').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }));
-
+  const D = dlvData(), host = document.getElementById('hourZoneHeat');
+  if (!D || !host || !D.planning || !window.DeliveryModel) return;
+  const zones = DeliveryModel.aggregate(D).filter(z => z.enough).slice(0, 16);
+  const hours = [...new Set(D.planning.cells.map(c => c.hour))].sort((a,b)=>a-b);
+  if (!zones.length || !hours.length) { host.innerHTML = '<div class="empty-range">尚无足够样本</div>'; return; }
+  const byHour = Object.fromEntries(hours.map(h => [h, DeliveryModel.aggregate(D, {hour:h})]));
+  const max = Math.max(...hours.flatMap(h => byHour[h].map(z => z.rate || 0)), 1);
+  host.innerHTML = `<div class="hz-row hz-head"><div class="hz-label"></div>${hours.map(h => `<div class="hz-cell hz-hour">${String(h).padStart(2,'0')}</div>`).join('')}</div>`
+    + zones.map(z => `<div class="hz-row" data-zone="${dlvEsc(z.name)}"><button type="button" class="hz-label" title="在地图中查看 ${dlvEsc(z.label)}">${dlvEsc(z.label)}</button>${hours.map(h => {
+      const r = byHour[h].find(r=>r.name===z.name), rate = r && r.rate;
+      const detail = r ? `${r.pickups} 次 / ${r.hours.toFixed(1)} h / ${r.shifts} 班次` : '无记录';
+      const title = `${z.label} ${h}:00 · ${rate == null ? '样本不足' : rate.toFixed(1) + ' 次/记录小时'} · ${detail}`;
+      return `<div class="hz-cell" style="background:${rate == null ? '#1c1e25' : dlvRamp(rate/max)}" title="${dlvEsc(title)}" aria-label="${dlvEsc(title)}">${rate == null ? '·' : rate.toFixed(1)}</div>`;
+    }).join('')}</div>`).join('');
+  host.querySelectorAll('.hz-row[data-zone]').forEach(row => row.querySelector('button').addEventListener('click',()=>{
+    dlvSetFocus(row.dataset.zone);
+    document.getElementById('dlvMap').scrollIntoView({behavior:'smooth',block:'center'});
+  }));
   const foot = document.getElementById('hzFoot');
-  if (foot) {
-    let best = { v: -1 };
-    zones.forEach(z => hours.forEach(h => {
-      if (z.hour_hist[h] > best.v) best = { v: z.hour_hist[h], z: z.label, h };
-    }));
-    foot.textContent = best.v > 0
-      ? `最密：${best.z} ${String(best.h).padStart(2, '0')}:00 · ${best.v} 次活`
-      : '—';
-  }
+  if (foot) foot.textContent = '统一色阶 · · 表示样本不足，不等于没单';
 }
-
-function bindHourZone() {
-  const btn = document.getElementById('hzRowToggle');
-  if (!btn) return;
-  btn.addEventListener('click', () => {
-    window.__dlvHzRow = window.__dlvHzRow === false;
-    btn.classList.toggle('active', window.__dlvHzRow !== false);
-    btn.textContent = window.__dlvHzRow !== false ? '每区各自归一' : '全表统一色阶';
-    renderHourZone();
-  });
-}
+function bindHourZone() {} // retained for the shared page initializer
 
 // ============ 区域档案 / Structural profile ============
 // The measured numbers say what riding a suburb was like. These say what the
@@ -1178,7 +1127,7 @@ function renderZoneProfile() {
     { key: 'climb_per_km', label: '爬升', unit: 'm/km', good: 'low', fmt: v => v.toFixed(1) },
     { key: 'med_speed', label: '实测速度', unit: 'km/h', good: 'high', fmt: v => v.toFixed(1) },
     { key: 'light_min_per_km', label: '红灯耗时', unit: 'min/km', good: 'low', fmt: v => v.toFixed(2) },
-    { key: 'jobs_per_hour', label: '活/小时', unit: '', good: 'high', fmt: v => v.toFixed(2) },
+    { key: 'jobs_per_hour', label: '取送事件/记录h', unit: '', good: 'high', fmt: v => v.toFixed(2) },
   ];
   const ranges = {};
   cols.forEach(c => {
@@ -1297,11 +1246,11 @@ function renderValidation() {
       + `<br><br>`
       + `<b>时间锚点</b>：订单记录里的时间戳其实是<em>取餐</em>时刻，不是送达。`
       + `用「时间戳 + 时长」去对，送达停留的中位偏差只有 ${Math.abs(v.align_median_s)} 秒；`
-      + `直接用时间戳去对会差出几百秒。能对得这么齐，本身就说明停留检测抓到的是真事件，不是噪声。`
+      + `直接用时间戳去对会差出几百秒。时间对齐只描述匹配上的样本，不能替代整体准确率。`
       + `<br><br>`
       + `<b>只有召回率，没有准确率</b>：这一份记录只是三个平台里的一个 —— 另外两个（熊猫外卖、DoorDash）`
       + `没有记录可对。我判出的 ${v.total_drops} 个送达里，只有 ${v.matched_drops} 个能在这份记录里找到，`
-      + `约 ${v.platform_share_pct}%；剩下的绝大多数是另外两个平台的单，不是误判。`
+      + `约 ${v.platform_share_pct}%；其余可能是其他平台的单，也可能是误判，现有记录无法区分。`
       + `所以「判多了」这件事这里量不出来，页面也不会假装量得出来。`
       + `<br><br>`
       + `<b>还有 ${100 - v.coverage_pct}% 对不上是因为没录</b>：${v.orders - v.in_window} 单发生在手表没在记录的时段，`
@@ -1317,10 +1266,7 @@ function renderValidation() {
 }
 
 // ============ 接单区 vs 送达区 / Collect or deliver ============
-// A suburb is rarely good at both jobs. Haymarket hands out thirty-five
-// orders and takes six; Camperdown takes eleven and hands out none. And the
-// part that decides the hourly rate is neither — it is the unpaid ride
-// between dropping one order and collecting the next.
+// Pickup and continuation observations describe different parts of a shift.
 function renderChain() {
   const D = dlvData();
   if (!D || !D.chain) return;
@@ -1330,10 +1276,10 @@ function renderChain() {
   if (sum) {
     const dir = c.direction || {};
     const cards = [
-      ['空驶占比', c.dead_share, '%', `${c.dead_km_total} km 送完了还没接到下一单 —— 一分钱不挣，载单只有 ${c.paid_km_total} km`],
-      ['要骑回市区', dir.inward_pct, '%', `这些空驶中位 ${dir.inward_km} km / ${dir.inward_min} min，是就地续单的三倍`],
-      ['下一单还在同区', c.same_zone_pct, '%', `送完之后下一次取餐仍在同一个 suburb，中位只骑 ${dir.local_km} km`],
-      ['每次空驶', c.dead_km_med, 'km', `全部 ${c.dead_legs} 段的中位 · ${c.dead_min_med} 分钟`],
+      ['续接里程占比', c.dead_share, '%', `仅限已识别链条；链条覆盖总里程 ${c.coverage_pct}%，不表示无偿占比`],
+      ['向取餐重心移动', dir.inward_pct, '%', `中位 ${dir.inward_km} km / ${dir.inward_min} min；几何方向，不代表必须返程`],
+      ['下一单还在同区', c.same_zone_pct, '%', `送完之后下一次取餐仍在同一个 suburb；不代表无单等待时长`],
+      ['每次续接', c.dead_km_med, 'km', `全部 ${c.dead_legs} 段的中位 · ${c.dead_min_med} 分钟`],
     ];
     sum.innerHTML = cards.map(([label, v, unit, foot]) => `
       <div class="dlv-kpi">
@@ -1343,21 +1289,18 @@ function renderChain() {
       </div>`).join('');
   }
 
-  // ---- what the unpaid leg was actually doing ----
-  // The single number "41% of distance is unpaid" hides the thing that hurts.
-  // Riding two blocks to the next restaurant and riding back in from Pyrmont
-  // are both dead legs; only one of them is worth reorganising a shift around.
+  // Direction relative to the pickup centroid, not a measure of unpaid work.
   const dirs = document.getElementById('dlvChainDirs');
   if (dirs && c.direction) {
     const d = c.direction;
     const total = d.inward + d.outward + d.local || 1;
     const rows = [
       ['往回骑', d.inward, DLV.rose, d.inward_km, d.inward_min,
-       '落点离取餐重心越远，下一单越可能把你拉回来 —— 这段路最贵'],
-      ['就地续上', d.local, DLV.cyan, d.local_km, d.local_min,
-       '下一单就在手边，几乎不用移动'],
+       '落点离取餐重心越远，下一次取餐可能更靠近重心；不推断是否被迫返程'],
+      ['距重心相近', d.local, DLV.cyan, d.local_km, d.local_min,
+       '与取餐重心距离变化不大，不代表下一单就在原地'],
       ['继续往外', d.outward, DLV.amber, null, null,
-       '接着往更外围送，暂时没往回走'],
+       '下一次取餐离取餐重心更远；不推断下一次送达方向'],
     ];
     dirs.innerHTML = rows.map(([label, n, col, km, min, why]) => `
       <div class="ch-dir">
@@ -1369,7 +1312,7 @@ function renderChain() {
         <div class="ch-dir-bar"><span style="width:${(n / total) * 100}%;background:${col}"></span></div>
         <div class="ch-dir-why">${why}</div>
       </div>`).join('')
-      + `<div class="ch-dir-foot">「往回骑」= 下一次取餐比这次送达更靠近取餐重心（${d.core[0].toFixed(3)}, ${d.core[1].toFixed(3)}，302 次取餐的平均位置），至少近 200 米。</div>`;
+      + `<div class="ch-dir-foot">「往回骑」= 下一次取餐比这次送达更靠近取餐重心（${d.core[0].toFixed(3)}, ${d.core[1].toFixed(3)}，${D.summary.pickups} 次取餐的平均位置），至少近 200 米。</div>`;
   }
 
   const MIN_LEGS = 4;   // below this the per-zone medians are anecdotes
@@ -1414,21 +1357,21 @@ function renderChain() {
       const idling = ad.dead_min >= 8 && ad.dead_km <= 1.0;
       // Three verdicts a rider can act on, in the order they'd want to know.
       const verdict = ad.back_pct >= 50
-        ? ['trap', '要往回骑', `${ad.back_pct}% 的下一单把你拉回市区方向`]
+        ? ['trap', '向重心移动', `${ad.back_pct}% 的下一单把你带向取餐重心`]
         : (ad.same_pct >= 40 || ad.dead_km <= 0.8)
-          ? ['hub', '接得上', `${ad.same_pct}% 的下一单就在本区`]
+          ? ['hub', '续接较近', `${ad.same_pct}% 的下一单就在本区`]
           : null;
       return `<div class="ch-row${thin ? ' ch-row-thin' : ''}" data-zone="${dlvEsc(z.name)}">
         <div class="ch-name">${dlvEsc(z.label)}<em>${z.orders} 次送达</em>
           ${verdict ? `<b class="ch-tag ${verdict[0]}" title="${verdict[2]}">${verdict[1]}</b>` : ''}</div>
         <div class="ch-stats">
-          <span><i>空驶</i>${ad.dead_min} min</span>
+          <span><i>续接</i>${ad.dead_min} min</span>
           <span><i>骑了</i>${ad.dead_km} km</span>
           <span><i>同区续单</i>${ad.same_pct}%</span>
           <span><i>往回骑</i>${ad.back_pct}%</span>
           <span><i>常去的下一区</i>${dlvEsc(ad.next_zone || '—')}</span>
         </div>
-        ${idling ? '<div class="ch-flag">时间长但没骑多远 —— 是在原地等单，不是在跑远路</div>' : ''}
+        ${idling ? '<div class="ch-flag">时间长但没骑多远 —— 可能包含原地等待，具体原因无法从 GPS 确认</div>' : ''}
         ${thin ? `<div class="ch-thin-note">只有 ${ad.legs} 段样本</div>` : ''}
       </div>`;
     };
@@ -1456,429 +1399,28 @@ function renderChain() {
     note.innerHTML = `<strong>怎么读这一节</strong> · `
       + `一个区很少两头都好。<em>接单区</em>看的是它把单派出去的能力：取餐次数、餐厅让你等多久、`
       + `接了之后要骑多远才送到 —— 送得越近，同样时间里能跑的单越多。`
-      + `<em>落点</em>看的是完全不同的东西：把餐交出去之后，下一单离你有多远。`
+      + `<em>落点</em>看的是完全不同的东西：送达后到下次取餐有多远；其中可能包含已接单去店，不等于未接单等待。`
       + `<br><br>`
       + `<b>最贵的一段路是没人付钱的那段</b> —— 全部里程的 ${c.dead_share}% 花在「送完了、还没接到下一单」上。`
       + `而这 ${c.dead_legs} 段里有 ${d.inward_pct}% 是在往市区方向骑回来，中位 ${d.inward_km} km、${d.inward_min} 分钟，`
       + `是就地续单（${d.local_km} km / ${d.local_min} min）的三倍多。`
       + `所以真正该躲的不是「远」，是<em>落在没有餐厅的地方</em> —— 那里不会有新单找上你，只能自己骑回去。`
       + `<br><br>`
-      + `<b>两种不同的坏</b>：空驶时间长、距离也长，是真的在跑远路；时间长但距离很短，是停在原地等派单。`
-      + `后者换个位置没用，得换时段 —— 表里分别标了「要往回骑」和「原地等单」。`
+      + `<b>两种不同的坏</b>：续接时间长、距离也长，是真的在跑远路；时间长但距离很短，可能包含等待，原因仍需订单时间验证。`
+      + `后者换个位置没用，得换时段 —— 表里分别标了「向重心移动」和「原地等单」。`
       + `<br><br>`
-      + `<b>样本很薄</b>：一共只有 ${c.dead_legs} 段空驶，摊到各区每区只有几段，少于 4 段的已经标灰。`
+      + `<b>样本很薄</b>：一共只有 ${c.dead_legs} 段续接，摊到各区每区只有几段，少于 4 段的已经标灰。`
       + `这一节看趋势可以，别拿单个数字下结论。`
       + `只统计相邻两次作业间隔在 45 分钟以内的 —— 更长的是休息或跨城转场，不是接单间隙。`;
   }
 }
 
-// ============ 这一单该不该接 / Take it or leave it ============
-// Rewritten a second time, because the fare was only half the money. The
-// weekly statement splits earnings into Fare and Promotion (Quest), and two
-// of those weeks were read off the statements and matched against the export
-// line by line — Quest to the cent. Quest is paid for *completing a
-// delivery*, so a slow expensive job and a quick cheap one collect the same
-// bonus, and the fare nearly stops predicting the hourly rate at all.
-
-// Calculator state, seeded at this rider's median order.
-const OFCALC = { amt: 7.5, ap: 2, km: 3.3, batched: false, quest: null };
-
-// Engaged minutes — the clock that both the floor and the quest are paid
-// against. Distance is nearly the whole story (R^2 .78), which is why three
-// sliders are enough.
-function ofMinutes(O, apKm, km, batched) {
-  const F = O.floor || {};
-  const m = batched ? F.engaged_model_ct : F.engaged_model;
-  if (!m) return null;
-  return m.base + m.per_km * (apKm + km) + (batched && m.extra ? m.extra : 0);
-}
-
-function ofQuest(O) {
-  if (OFCALC.quest != null) return OFCALC.quest;
-  const e = (O.floor.eras || {}).after;
-  return e ? e.quest_per_order : (O.quest ? O.quest.med_per_order : 0);
-}
-
+// ============ Shared planning tools ============
 function renderOffers() {
   const D = dlvData();
-  if (!D || !D.offers || !D.offers.floor || !D.offers.quest) return;
-  const O = D.offers;
-  ofRenderHero(O);
-  ofRenderOne(O);
-  ofRenderBands(O);
-  ofRenderCalc(O);
-  ofRenderWeeks(O);
-  ofRenderKinds(O);
-  ofRenderHours(O);
-  ofRenderTail(O);
-  ofRenderNote(O);
-}
-
-// ---- ① three rates, and the floor beside them --------------------------
-function ofRenderHero(O) {
-  const el = document.getElementById('dlvOfferHero');
-  if (!el) return;
-  const F = O.floor, Q = O.quest, af = (F.eras || {}).after;
-  el.innerHTML = `
-    <div class="of-hero-line">
-      Quest 占了你收入的 <b>${Q.share}%</b>。它是<b>跑完一单就给</b>的，
-      跟这单值多少钱没关系。
-    </div>
-    <div class="of-hero-nums">
-      <div class="of-hn">
-        <span class="of-hn-v dim">$${F.fare_rate}</span>
-        <span class="of-hn-l">只算单价</span>
-        <span class="of-hn-f">${O.n} 单、${F.eng_hours} 个 engaged 小时</span>
-      </div>
-      <div class="of-hn-op">＋Quest</div>
-      <div class="of-hn">
-        <span class="of-hn-v">$${F.val_rate}</span>
-        <span class="of-hn-l">全部收入</span>
-        <span class="of-hn-f">四个月平均</span>
-      </div>
-      ${af ? `<div class="of-hn-op">8/17 之后</div>
-      <div class="of-hn">
-        <span class="of-hn-v good">$${af.val_rate}</span>
-        <span class="of-hn-l">最近两周</span>
-        <span class="of-hn-f">每单 Quest $${af.quest_per_order}</span>
-      </div>` : ''}
-      <div class="of-hn-op">对照</div>
-      <div class="of-hn">
-        <span class="of-hn-v">$${F.rate}</span>
-        <span class="of-hn-l">法定底薪</span>
-        <span class="of-hn-f">${F.vehicle} · ${F.from} 起 · 按 engaged 时间</span>
-      </div>
-    </div>`;
-}
-
-// ---- ② one order, both halves -----------------------------------------
-function ofRenderOne(O) {
-  const el = document.getElementById('dlvOfferOne');
-  if (!el) return;
-  const F = O.floor, af = (F.eras || {}).after;
-  const q = af ? af.quest_per_order : F.med_quest;
-  const total = F.med_amt + q;
-  el.innerHTML = `
-    <div class="of-stack">
-      <span class="of-stack-seg fare" style="width:${100 * F.med_amt / total}%">
-        <i>单价</i><b>$${F.med_amt}</b></span>
-      <span class="of-stack-seg quest" style="width:${100 * q / total}%">
-        <i>Quest</i><b>$${q.toFixed(2)}</b></span>
-    </div>
-    <div class="of-stack-out">
-      你的中位一单 —— 派单页上写着 <b class="fare">$${F.med_amt}</b>，
-      实际到手 <b class="all">$${total.toFixed(2)}</b>。
-      这一单占掉 ${F.med_engaged} 分钟 engaged 时间，折合
-      <b class="all">$${(total / F.med_engaged * 60).toFixed(1)}/h</b>。
-      <br><br>
-      <em>关键在于右边那块是固定的。</em>跑一单给一次，
-      不管这单是 $5 还是 $15，不管你跑了 15 分钟还是 60 分钟。
-    </div>`;
-}
-
-// ---- ③ the argument: two sorts of the same 143 orders ------------------
-function ofRenderBands(O) {
-  const eb = document.getElementById('dlvOfferEngBands');
-  const fb = document.getElementById('dlvOfferFareBands');
-  const punch = document.getElementById('dlvOfferPunch');
-  const maxRate = Math.max(...O.eng_bands.map(b => b.rate), ...O.fare_bands.map(b => b.rate));
-  const row = (label, sub, rate, n) => `
-    <div class="of-brow">
-      <span class="of-brow-k">${label}<em>${sub}</em></span>
-      <span class="of-brow-bar"><i style="width:${100 * rate / maxRate}%"></i></span>
-      <span class="of-brow-r">$${rate}</span>
-      <span class="of-brow-n">${n}</span>
-    </div>`;
-  if (eb) {
-    eb.innerHTML = O.eng_bands.map(b => row(
-      `${b.lo}–${b.hi || '∞'} 分钟`, `单价 $${b.amt} · 值 $${b.val}`, b.rate, b.n)).join('')
-      + `<div class="of-bfoot">最快一档 <b>$${O.eng_bands[0].rate}/h</b>，
-          最慢一档 <b>$${O.eng_bands[O.eng_bands.length - 1].rate}/h</b> ——
-          差 <em>${(O.eng_bands[0].rate / O.eng_bands[O.eng_bands.length - 1].rate).toFixed(1)} 倍</em></div>`;
-  }
-  if (fb) {
-    fb.innerHTML = O.fare_bands.map(b => row(
-      `$${b.lo}–${b.hi || '∞'}`, `用时 ${b.min} 分钟 · 值 $${b.val}`, b.rate, b.n)).join('')
-      + `<div class="of-bfoot">最便宜一档 <b>$${O.fare_bands[0].rate}/h</b>，
-          最贵一档 <b>$${O.fare_bands[O.fare_bands.length - 1].rate}/h</b> ——
-          差 <em>${Math.abs(Math.round(100 * (O.fare_bands[O.fare_bands.length - 1].rate / O.fare_bands[0].rate - 1)))}%</em></div>`;
-  }
-  if (punch) {
-    const fast = O.eng_bands[0], slow = O.eng_bands[O.eng_bands.length - 1];
-    punch.innerHTML = `
-      <b>同样这 ${O.n} 单，换个排法就是两个结论。</b>
-      按用时排，最快和最慢差 ${(fast.rate / slow.rate).toFixed(1)} 倍；按单价排，最便宜和最贵几乎一样。
-      一档 $${fast.amt} 的单跑 ${fast.min} 分钟，值 $${fast.rate}/h；
-      一档 $${slow.amt} 的单跑 ${slow.min} 分钟，值 $${slow.rate}/h ——
-      <em>贵的那单单价高了 $${(slow.amt - fast.amt).toFixed(2)}，时薪却低了 $${(fast.rate - slow.rate).toFixed(1)}。</em>
-      <br><br>
-      所以派单页上该看的不是那个金额，是<b>这单要花我多久</b>。`;
-  }
-}
-
-// ---- ④ calculator ------------------------------------------------------
-function ofRenderCalc(O) {
-  const host = document.getElementById('dlvOfferCalc');
-  if (!host) return;
-  const af = (O.floor.eras || {}).after;
-  OFCALC.quest = af ? af.quest_per_order : O.quest.med_per_order;
-  host.innerHTML = `
-    <div class="of-calc-grid">
-      <div class="of-controls">
-        <label class="of-ctl">
-          <span>派单页写着<b id="ofAmtV"></b></span>
-          <input type="range" id="ofAmt" min="4" max="30" step="0.5" value="${OFCALC.amt}">
-        </label>
-        <label class="of-ctl">
-          <span>骑去餐厅<b id="ofApV"></b></span>
-          <input type="range" id="ofAp" min="0" max="7" step="0.1" value="${OFCALC.ap}">
-        </label>
-        <label class="of-ctl">
-          <span>餐厅到客人<b id="ofKmV"></b></span>
-          <input type="range" id="ofKm" min="0.3" max="9" step="0.1" value="${OFCALC.km}">
-        </label>
-        <label class="of-ctl">
-          <span>每单 Quest<b id="ofQV"></b></span>
-          <input type="range" id="ofQ" min="0" max="20" step="0.5" value="${OFCALC.quest}">
-        </label>
-        <label class="of-check"><input type="checkbox" id="ofBatch"><span>拼单（一趟两户）</span></label>
-        <div class="of-verdict" id="ofVerdict"></div>
-      </div>
-      <div class="of-plot">
-        <svg id="ofScatter" viewBox="0 0 760 420" preserveAspectRatio="xMidYMid meet"></svg>
-        <div class="of-plot-key">
-          <span><i class="of-k-dot good"></i>时薪在 $${O.floor.rate} 以上</span>
-          <span><i class="of-k-dot bad"></i>以下</span>
-          <span><i class="of-k-line"></i>$${O.floor.rate}/h 底薪线</span>
-          <span><i class="of-k-you"></i>你正在算的这一单</span>
-        </div>
-        <div class="of-plot-note">
-          143 个点是四个月的真实订单，但 Quest 一律按滑块上的值重算 ——
-          所以这张图问的是「照现在的 Quest 水平，这些单分别值多少」，不是当时的历史时薪。
-        </div>
-      </div>
-    </div>`;
-
-  const $ = id => document.getElementById(id);
-  const draw = () => {
-    ofDrawScatter(O);
-    ofDrawVerdict(O);
-    $('ofAmtV').textContent = '$' + OFCALC.amt.toFixed(2);
-    $('ofApV').textContent = OFCALC.ap.toFixed(1) + ' km';
-    $('ofKmV').textContent = OFCALC.km.toFixed(1) + ' km';
-    $('ofQV').textContent = '$' + OFCALC.quest.toFixed(2);
-  };
-  $('ofAmt').addEventListener('input', e => { OFCALC.amt = +e.target.value; draw(); });
-  $('ofAp').addEventListener('input', e => { OFCALC.ap = +e.target.value; draw(); });
-  $('ofKm').addEventListener('input', e => { OFCALC.km = +e.target.value; draw(); });
-  $('ofQ').addEventListener('input', e => { OFCALC.quest = +e.target.value; draw(); });
-  $('ofBatch').addEventListener('change', e => { OFCALC.batched = e.target.checked; draw(); });
-  draw();
-}
-
-// The scatter's x axis is engaged minutes rather than distance, because that
-// is the axis the whole section turns on.
-function ofDrawScatter(O) {
-  const svg = document.getElementById('ofScatter');
-  if (!svg) return;
-  const W = 760, H = 420, L = 52, Rr = 16, T = 16, B = 44;
-  const maxM = 80, maxV = 40;
-  const x = m => L + (Math.min(m, maxM) / maxM) * (W - L - Rr);
-  const y = v => H - B - (Math.min(v, maxV) / maxV) * (H - T - B);
-  const q = OFCALC.quest;
-
-  const pts = (O.points || []).map(p => {
-    const val = p.a + q;
-    const rate = val / p.e * 60;
-    const ok = rate >= O.floor.rate;
-    return `<circle cx="${x(p.e).toFixed(1)}" cy="${y(val).toFixed(1)}" r="${p.b ? 4.4 : 3.4}"
-      fill="${ok ? 'rgba(143,191,127,.8)' : 'rgba(217,122,138,.6)'}"
-      stroke="${p.b ? 'rgba(255,216,151,.5)' : 'none'}" stroke-width="1"
-      ><title>单价 $${p.a.toFixed(2)} + Quest $${q.toFixed(2)} = $${val.toFixed(2)} · ${p.e} 分钟 · $${rate.toFixed(0)}/h${p.b ? ' · 拼单' : ''}</title></circle>`;
-  }).join('');
-
-  // The floor line: value = rate x minutes / 60.
-  const line = [];
-  for (let m = 0; m <= maxM; m += 2) line.push(`${x(m).toFixed(1)},${y(O.floor.rate * m / 60).toFixed(1)}`);
-
-  const eng = ofMinutes(O, OFCALC.ap, OFCALC.km, OFCALC.batched);
-  const val = OFCALC.amt + q;
-  const ok = (val / eng * 60) >= O.floor.rate;
-
-  const gridX = [0, 20, 40, 60, 80].map(m =>
-    `<line x1="${x(m)}" y1="${T}" x2="${x(m)}" y2="${H - B}" stroke="${DLV.grid}"/>
-     <text x="${x(m)}" y="${H - B + 16}" text-anchor="middle" fill="${DLV.axis}" font-size="10">${m}</text>`).join('');
-  const gridY = [0, 10, 20, 30, 40].map(v =>
-    `<line x1="${L}" y1="${y(v)}" x2="${W - Rr}" y2="${y(v)}" stroke="${DLV.grid}"/>
-     <text x="${L - 7}" y="${y(v) + 3}" text-anchor="end" fill="${DLV.axis}" font-size="10">$${v}</text>`).join('');
-
-  svg.innerHTML = `
-    ${gridY}${gridX}
-    <text x="${W - Rr}" y="${H - 6}" text-anchor="end" fill="${DLV.dim}" font-size="10">这单花了多少分钟（engaged）</text>
-    <text x="${L - 7}" y="${T + 2}" text-anchor="end" fill="${DLV.dim}" font-size="10">$</text>
-    <polyline points="${line.join(' ')}" fill="none" stroke="${DLV.amberBright}" stroke-width="1.8" stroke-dasharray="6 4"/>
-    <text x="${x(72)}" y="${y(O.floor.rate * 72 / 60) - 8}" text-anchor="end" fill="${DLV.amberBright}" font-size="10">$${O.floor.rate}/h</text>
-    ${pts}
-    <line x1="${x(eng)}" y1="${y(val)}" x2="${x(eng)}" y2="${H - B}" stroke="${ok ? DLV.green : DLV.rose}" stroke-width="1" stroke-dasharray="2 3" opacity=".55"/>
-    <circle cx="${x(eng)}" cy="${y(val)}" r="9" fill="none" stroke="${ok ? DLV.green : DLV.rose}" stroke-width="2"/>
-    <circle cx="${x(eng)}" cy="${y(val)}" r="3" fill="${ok ? DLV.green : DLV.rose}"/>`;
-}
-
-function ofDrawVerdict(O) {
-  const el = document.getElementById('ofVerdict');
-  if (!el) return;
-  const F = O.floor;
-  const eng = ofMinutes(O, OFCALC.ap, OFCALC.km, OFCALC.batched);
-  const q = OFCALC.quest;
-  const val = OFCALC.amt + q;
-  const rate = val / eng * 60;
-  const gap = rate - F.rate;
-  const ok = gap >= 0;
-  // Within a dollar the model cannot tell the two apart, and "低于底薪 $0"
-  // reads like a bug rather than a near miss.
-  const near = Math.abs(gap) < 1;
-  el.innerHTML = `
-    <div class="of-vd-big ${near ? 'edge' : (ok ? 'take' : 'skip')}">
-      <b>$${rate.toFixed(0)}</b><em>/h</em>
-      <span>${near ? `正好卡在 $${F.rate} 底薪线上`
-        : (ok ? `高过底薪 $${gap.toFixed(0)}` : `低于底薪 $${(-gap).toFixed(0)}`)}</span>
-    </div>
-    <div class="of-vd-math">
-      单价 $${OFCALC.amt.toFixed(2)} ＋ Quest $${q.toFixed(2)} ＝ <b>$${val.toFixed(2)}</b>
-      <br>engaged ${eng.toFixed(0)} 分钟${OFCALC.batched ? '（拼单）' : ''} · 骑 ${(OFCALC.ap + OFCALC.km).toFixed(1)} km
-      <br><span class="of-vd-hint">${
-        rate >= 45 ? '这种单是你时薪的来源 —— 快、近、能连着跑' :
-        ok ? '够格，但不是最好的那一档' :
-        eng > 45 ? '太慢了 —— 同样一次 Quest，你花了太多时间去换' :
-        '单价撑不住这个用时'}</span>
-    </div>`;
-}
-
-// ---- ⑤ what happened on 17 August -------------------------------------
-function ofRenderWeeks(O) {
-  const el = document.getElementById('dlvOfferWeeks');
-  if (!el || !O.quest.weeks.length) return;
-  const W = O.quest.weeks;
-  const max = Math.max(...W.map(w => w.per_order), 1);
-  const cut = O.floor.from;
-  el.innerHTML = `<div class="of-wk-rows">${W.map(w => `
-    <div class="of-wk${w.w >= cut ? ' after' : ''}">
-      <span class="of-wk-d">${w.w.slice(5)}</span>
-      <span class="of-wk-bar"><i style="width:${100 * w.per_order / max}%"></i></span>
-      <span class="of-wk-v">$${w.per_order.toFixed(2)}</span>
-      <span class="of-wk-n">${w.n} 单</span>
-    </div>`).join('')}</div>
-    <div class="of-foot">
-      每单 Quest 从 $4–6 跳到 <em>$${W[W.length - 1].per_order.toFixed(2)}</em>，
-      正好是法定底薪生效的那一周（${cut}）。同期你的 engaged 时薪从
-      $${O.floor.eras.before.val_rate} 变成 <b>$${O.floor.eras.after.val_rate}</b>，
-      越过了 $${O.floor.rate} 的下限。
-      <br><br>
-      这不是巧合能解释的量级，但也不能就此断定「Quest 就是底薪补贴」——
-      结算单上没有单独的补贴条目，我只能说两件事发生在同一周。
-      要确认，看你自己周结算单上 Promotion 那一行有没有变过名目。
-    </div>`;
-}
-
-// ---- ⑥ three short cards ----------------------------------------------
-function ofRenderKinds(O) {
-  const el = document.getElementById('dlvOfferKinds');
-  if (!el || !O.kinds || !O.kinds.single || !O.kinds.batched) return;
-  const s = O.kinds.single, b = O.kinds.batched;
-  el.innerHTML = `
-    <div class="of-tip-lead">一定要接</div>
-    <div class="of-tip-body">
-      拼单是一趟路送两户 —— 但在 Quest 眼里那是<em>两单</em>。
-      骑去餐厅那一段没有翻倍（${s.ap_km} km 对 ${b.ap_km} km），
-      多送一户只多花约 ${O.floor.engaged_model_ct ? O.floor.engaged_model_ct.extra : 1} 分钟。
-      一次接近、一次等餐，换两次 Quest。
-    </div>`;
-}
-
-function ofRenderHours(O) {
-  const el = document.getElementById('dlvOfferHours');
-  if (!el || !O.by_hour || !O.by_hour.length) return;
-  const max = Math.max(...O.by_hour.map(h => h.rate), 1);
-  const best = O.by_hour.reduce((a, b) => (b.rate > a.rate ? b : a));
-  const worst = O.by_hour.reduce((a, b) => (b.rate < a.rate ? b : a));
-  el.innerHTML = `
-    <div class="of-tip-lead">${String(worst.h).padStart(2, '0')}:00 最差</div>
-    <div class="of-hours-row">${O.by_hour.map(h => `
-      <div class="of-hr${h === best ? ' best' : ''}${h === worst ? ' worst' : ''}">
-        <div class="of-hr-bar"><span style="height:${100 * h.rate / max}%;background:${dlvRamp(h.rate / 26)}"></span></div>
-        <div class="of-hr-rate">$${h.rate}</div>
-        <div class="of-hr-h">${String(h.h).padStart(2, '0')}</div>
-      </div>`).join('')}</div>
-    <div class="of-tip-body">
-      这里画的是<em>单价</em>时薪（Quest 是按周结的，摊不到小时上）。
-      ${String(worst.h).padStart(2, '0')}:00 单价掉到 $${worst.amt}，
-      ${String(best.h).padStart(2, '0')}:00 有 $${best.rate}/h。只画有 10 单以上的时段。
-    </div>`;
-}
-
-function ofRenderTail(O) {
-  const el = document.getElementById('dlvOfferTail');
-  if (!el || !O.tail) return;
-  const t = O.tail;
-  const max = Math.max(...t.bands.map(b => b.min), 1);
-  el.innerHTML = `
-    <div class="of-tip-lead">别被送到郊区</div>
-    ${t.bands.map(b => `
-      <div class="of-mini">
-        <span class="of-mini-k">离餐厅群 ${b.lo}${b.hi ? '–' + b.hi : '+'} km</span>
-        <span class="of-mini-bar"><i style="width:${100 * b.min / max}%"></i></span>
-        <span class="of-mini-v">${b.min} min</span>
-      </div>`).join('')}
-    <div class="of-tip-body">
-      落点每远离餐厅群 1 公里，之后的空驶多约 <b>${t.per_km} 分钟</b>（${t.legs} 段）。
-      空驶<em>既不算 engaged 时间，也不产生 Quest</em> —— 是这份工作里唯一完全白干的部分。
-    </div>`;
-}
-
-// ---- ⑦ method ----------------------------------------------------------
-function ofRenderNote(O) {
-  const el = document.getElementById('dlvOfferNote');
-  if (!el) return;
-  const F = O.floor, Q = O.quest, sp = O.split;
-  const v = Q.verified || [];
-  el.innerHTML = `<strong>这一节是怎么算的</strong> · `
-    + `订单日志给钱，码表轨迹给时间，两边按时间戳对起来。`
-    + `<br><br>`
-    + `<b>Quest 这笔钱是核对过的。</b>`
-    + `Uber 的周结算单把收入拆成 Fare / Promotion (Quest) / Other / Tip 四行。`
-    + `我打开了其中两周的结算单，和这份导出逐行对：`
-    + v.map(x => `${x.week} 那周 Quest 结算单 $${x.quest_stmt}、日志 $${x.quest_log}`).join('；')
-    + ` —— <em>一分不差</em>。Fare 每周差 $3 上下，是跨周界的那一单（结算周从周一 04:00 起算）。`
-    + `所以「Quest 是单独一笔、不含在单价里」不是猜的。`
-    + `<br><br>`
-    + `<b>怎么摊到每一单。</b>Quest 是「跑满 N 单给 $X」，按单发不按钱发，`
-    + `所以每周的 Quest 总额平摊到那一周的订单数上。日志里 MISC 那个类别不是独立收入 ——`
-    + `${Q.dupes} 笔和 QUEST 金额相同、时间差十分钟内，是同一笔列了两次，只算一次。`
-    + (Q.one_offs && Q.one_offs.length
-      ? `另有 ${Q.one_offs.map(o => `${o.on} 一笔 $${o.amt}`).join('、')}，单笔太大不像跑单挣的，没有摊进每单。` : '')
-    + `<br><br>`
-    + `<b>engaged 时间怎么定的。</b>法规写的是「从接单到送达完成」。接单那一刻两份数据都没有，`
-    + `所以取<em>上一单交货的那一刻</em>，再扣掉停在既不是红灯也不是餐厅的地方干等派单的时间`
-    + `（中位 ${sp.idle_min} 分钟）。中位每单 ${F.med_engaged} 分钟。`
-    + `如果你实际上晚一点才按接单，真实 engaged 时间会更短，时薪会更高。`
-    + `<br><br>`
-    + (F.engaged_model ? `<b>计算器凭什么只用三个滑块。</b>`
-      + `engaged 分钟 ≈ ${F.engaged_model.base} + ${F.engaged_model.per_km} × 总公里（R² ${F.engaged_model.r2}）——`
-      + `距离几乎就决定了时间。Quest 那个滑块默认放在 $${(F.eras.after || {}).quest_per_order}，`
-      + `是你最近两周的实际水平；Quest 每周都在变，所以它是可调的。<br><br>` : '')
-    + `<b>这份数据答不上来的。</b>`
-    + `钱只有 Uber 一个平台的（熊猫和 DoorDash 没有可导出的日志），时间不是 ——`
-    + `时间来自码表，码表不认得单是哪个 app 派的。${O.n} 单同时有价格和完整轨迹。`
-    + `小费没有进这份导出（结算单上那两周分别是 $8.65 和 $0.70，很小）。`
-    + `<br><br>`
-    + `<b>这一节改过两次，方向都变了。</b>`
-    + `第一版说「便宜的单该拒」—— 那是只看单价的结论。`
-    + `第二版加进法定底薪，说「拒单等于扔工时」—— 那时我还没把 Quest 算进收入，`
-    + `以为你在底薪之下。把 Quest 核对清楚之后才是现在这版：`
-    + `你在底薪之上，而真正该看的是<em>用时</em>，不是单价。`
-    + `<br><br>`
-    + `<span class="of-src">底薪：Fair Work Commission《${F.source.split('· ')[1]}》，`
-    + `${F.from} 生效，自行车/电动自行车 $${F.rate}/h，`
-    + `${F.other.map(o => `${o[0]} $${o[1].toFixed(2)}`).join('，')}，按 engaged 时间计，`
-    + `最长 ${F.period_days} 天一个结算周期，低于下限平台补足。</span>`;
+  if (!D || !window.DeliveryPlanner) return;
+  DeliveryPlanner.mountOffer(document.getElementById('dlvOfferCalc'), D);
+  DeliveryPlanner.mountSettlement(document.getElementById('dlvSettlement'), D);
+  DeliveryPlanner.mountLedger(document.getElementById('dlvOfferWeeks'), D);
+  DeliveryPlanner.mountZones(document.getElementById('dlvZonePlanner'), D);
 }

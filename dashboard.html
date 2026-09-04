@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>配送作战台 · Delivery Console</title>
-<meta name="description" content="悉尼送外卖的单屏作战台 —— 取餐点、送达点、红灯堵点、区域好跑指数、落点之后的空驶，全部在一个页面上。">
+<meta name="description" content="悉尼配送决策：选择试跑区域，估算整轮收益，核对 Quest 与三周最低收入。">
 <meta name="theme-color" content="#0a0a0c">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Cycling Atlas">
 <meta property="og:title" content="配送作战台 · Delivery Console">
-<meta property="og:description" content="悉尼送外卖的单屏作战台 —— 取餐点、送达点、红灯堵点、区域好跑指数、落点之后的空驶，全部在一个页面上。">
+<meta property="og:description" content="悉尼配送决策：选择试跑区域，估算整轮收益，核对 Quest 与三周最低收入。">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,34 +19,23 @@
   integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
   crossorigin=""/>
 <link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/delivery-planner.css">
 <link rel="stylesheet" href="assets/dashboard.css">
 </head>
 <body data-page="dashboard">
-
 <div class="dash">
-
-  <!-- ================= top bar ================= -->
-  <header class="dash-top">
-    <div class="dash-brand">
-      <b>配送作战台</b>
-      <span>Delivery Console</span>
-    </div>
-    <div class="dash-stats" id="dashStats"></div>
-    <!-- The console does not load app.js, so it has no shared top nav. The
-         full ten-page bar plus nine stats does not fit one row anyway; these
-         three are the trips that matter — its own narrative twin, the site
-         root, and the everything-page. -->
-    <nav class="dash-links">
-      <a href="delivery.html" title="同样的数据，写成一篇可以读的分析">配送 ↗</a>
-      <a href="index.html">总览 ↗</a>
-      <a href="cycling-analysis.html">全景 ↗</a>
-    </nav>
+  <header class="dash-top"><a class="dash-brand" href="index.html"><span class="dash-brand-mark">↗</span><span><b>CYCLING ATLAS</b><small>SYDNEY · DELIVERY</small></span></a>
+    <nav class="dash-links" aria-label="主导航"><a class="active" href="dashboard.html" aria-current="page">作战台</a><a href="delivery.html">配送分析 ↗</a><a href="index.html">骑行总览 ↗</a></nav>
   </header>
-
-  <!-- ================= map ================= -->
-  <section class="dash-panel p-map">
+  <div class="dash-intro"><div><div class="dash-kicker">从记录，到下一步</div><h1>每一趟，都算清楚。</h1><p>去哪等 · 接什么单 · 送完去哪</p></div><div id="dashStats" class="dash-stats"></div></div>
+  <div class="dash-status" id="dashStatus"></div>
+  <nav class="dash-jump" aria-label="作战台快速跳转"><a href="#offer">算一单</a><a href="#zones">选区域</a><a href="#map">看地图</a><a href="#ledger">查收入</a></nav>
+  <main class="dash-main">
+    <section class="dash-panel p-offer" id="offer"><div class="dash-head"><span class="dash-step">02</span><h2>这单值不值</h2><em>OFFER CHECK</em></div><div class="dash-body" id="dashOffer"></div></section>
+    <section class="dash-panel p-zones" id="zones"><div class="dash-head"><span class="dash-step">01</span><h2>去哪试跑</h2><em>FIND YOUR AREA</em></div><div class="dash-body" id="dashZones"></div></section>
+  <section class="dash-panel p-map" id="map">
     <div class="dash-head">
-      <h2>热点地图</h2><em>Hotspots</em>
+      <h2>取餐与落点</h2><em>ALL RECORDED SHIFTS</em>
       <span class="dash-note" id="dashMapNote"></span>
     </div>
     <div class="dash-mapbar" id="dlvLayerChips">
@@ -62,6 +51,7 @@
       <span class="dash-mapbar-label">底色</span>
       <div class="dlv-metric-chips" id="dlvMetricChips"></div>
     </div>
+    <p class="dash-map-scope">全期轨迹 · 下方时段仅筛地图点位，与区域候选筛选独立</p>
     <div class="dash-mapwrap">
       <div id="dlvMap"></div>
       <div class="dlv-focus-bar dash-focus" id="dlvFocusBar" hidden></div>
@@ -72,41 +62,7 @@
       <span class="dlv-time-label" id="dlvHourLabel">全天</span>
       <div class="dlv-map-legend" id="dlvMapLegend"></div>
     </div>
-  </section>
-
-  <!-- ================= zone ranking ================= -->
-  <section class="dash-panel p-zones">
-    <div class="dash-head">
-      <h2>区域排行</h2><em>Zones</em>
-      <span class="dash-note" id="dashZonesNote"></span>
-    </div>
-    <div class="dash-body" id="dashZones"></div>
-  </section>
-
-  <!-- ================= chaining ================= -->
-  <section class="dash-panel p-chain">
-    <div class="dash-head">
-      <h2>落点之后</h2><em>After the drop</em>
-    </div>
-    <div class="dash-body" id="dashChain"></div>
-  </section>
-
-  <!-- ================= offer decision ================= -->
-  <section class="dash-panel p-offer">
-    <div class="dash-head">
-      <h2>这单接不接</h2><em>Take it?</em>
-      <span class="dash-note" id="dashOfferNote"></span>
-    </div>
-    <div class="dash-body" id="dashOffer"></div>
-  </section>
-
-  <!-- ================= map side list ================= -->
-  <section class="dash-panel p-list">
-    <div class="dash-head">
-      <h2 id="dlvPanelTitle">取餐点</h2><em>Stops</em>
-      <span class="dash-note" id="dlvPanelCount">—</span>
-    </div>
-    <div class="dash-tabs" id="dlvPanelTabs">
+<details class="map-list-details"><summary>地图点位列表 <span id="dlvPanelCount"></span></summary><span id="dlvPanelTitle" class="sr-only">取餐点</span>    <div class="dash-tabs" id="dlvPanelTabs">
       <button class="dlv-ptab active" data-list="pickups">取餐</button>
       <button class="dlv-ptab" data-list="drops">送达</button>
       <button class="dlv-ptab" data-list="lights">红灯</button>
@@ -115,40 +71,20 @@
       <button class="dlv-ptab" data-list="hard">难走</button>
     </div>
     <div class="dash-body flush" id="dlvList"></div>
+</details>
   </section>
 
-  <!-- ================= hour x zone ================= -->
-  <section class="dash-panel p-hours">
-    <div class="dash-head">
-      <h2>时段 × 区域</h2><em>Hour × zone</em>
-      <span class="dash-note" id="dashHoursNote"></span>
-    </div>
-    <div class="dash-body" id="dashHours"></div>
-  </section>
 
-  <!-- ================= corridors ================= -->
-  <section class="dash-panel p-roads">
-    <div class="dash-head">
-      <h2>最难走的路段</h2><em>Slowest corridors</em>
-    </div>
-    <div class="dash-body" id="dashRoads"></div>
-  </section>
-
-  <!-- ================= ground truth ================= -->
-  <section class="dash-panel p-truth">
-    <div class="dash-head">
-      <h2>判得准不准</h2><em>Ground truth</em>
-    </div>
-    <div class="dash-body" id="dashTruth"></div>
-  </section>
-
+    <section class="dash-panel p-drop"><div class="dash-head"><span class="dash-step">03</span><h2>送完之后</h2><em>THE NEXT PICKUP</em></div><div class="dash-body" id="dashDrop"></div></section>
+    <section class="dash-panel p-settlement"><div class="dash-head"><h2>三周最低收入核对</h2><em>UBER</em></div><div class="dash-body" id="dashSettlement"></div></section>
+    <section class="dash-panel p-ledger" id="ledger"><div class="dash-head"><h2>历史收入，分开看</h2><em>VERIFIED LEDGER</em></div><div class="dash-body" id="dashLedger"></div></section>
+  </main>
+  <footer class="dash-footer"><span>GPS 推断 · Uber 账本 · 手动情景估算</span><a href="delivery.html">查看路段、骑行效率与识别方法 ↗</a></footer>
 </div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-  crossorigin=""></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="assets/delivery-data.js"></script>
+<script src="assets/delivery-model.js"></script>
+<script src="assets/delivery-planner.js"></script>
 <script src="assets/delivery.js"></script>
 <script src="assets/dashboard.js"></script>
-</body>
-</html>
+</body></html>

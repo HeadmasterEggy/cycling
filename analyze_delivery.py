@@ -25,7 +25,7 @@ by `fetch_osm.py` (traffic signals, food venues, road centre-lines).
              not nearest-centroid — a centroid lookup put stops in the wrong
              suburb wherever two suburbs interlock, which inner Sydney does
              constantly.
-  flow       0-100 composite of how easy a zone is to ride. Components are
+  flow       Free-flow travel time / observed travel time (0-100). Components are
              normalised against the exposure-weighted 10th/90th percentile of
              the data itself rather than hand-picked bounds, and every zone's
              value is shrunk toward the city figure in proportion to how
@@ -177,10 +177,11 @@ class SuburbIndex:
         self._cache = {}
 
     def lookup(self, lat, lon):
-        key = (round(lat, 4), round(lon, 4))       # ~11 m — plenty for a suburb
-        hit = self._cache.get(key)
-        if hit is not None:
-            return hit
+        # Cache exact coordinates, including misses. Rounded keys made a
+        # boundary point change suburbs after a nearby point populated the cache.
+        key = (lat, lon)
+        if key in self._cache:
+            return self._cache[key]
         name = None
         for si, ring, (x0, x1, y0, y1) in self.tiles.get(
                 (int(lon / self.TILE), int(lat / self.TILE)), ()):
@@ -670,12 +671,17 @@ def build_transitions(shifts, subs):
         }
 
     dead_km = sum(dead_all)
+    observed_km = sum(s["d"] for r in shifts for s in r["samples"]) / 1000
     paid_km = sum(paid_all)
     top_flows = [{"from": DISPLAY_NAMES.get(a, a), "to": DISPLAY_NAMES.get(b, b),
                   "n": n, "same": a == b}
                  for (a, b), n in sorted(flows.items(), key=lambda kv: -kv[1])[:14]
                  if b and n >= 2]
     summary = {
+        "basis": "送达停留结束 → 下次取餐停留开始；包含已接单去店，不等于无偿空驶",
+        "matched_km": round(dead_km + paid_km, 1),
+        "observed_km": round(observed_km, 1),
+        "coverage_pct": round(100 * (dead_km + paid_km) / observed_km, 1) if observed_km else None,
         "dead_legs": len(dead_all),
         "dead_min_med": round(st.median([m for legs in into_zone.values()
                                          for m, _, _, _, _ in legs]), 1)
@@ -690,7 +696,7 @@ def build_transitions(shifts, subs):
                                / max(1, sum(len(v) for v in into_zone.values()))),
         "flows": top_flows,
     }
-    # Citywide split of what the unpaid leg was actually doing.
+    # Geometric direction of observed drop-to-next-pickup travel; pay status is unknown.
     all_legs = [lg for legs in into_zone.values() for lg in legs]
     inward = [lg for lg in all_legs if lg[3] is not None and lg[4] < lg[3] - 0.2]
     outward = [lg for lg in all_legs if lg[3] is not None and lg[4] > lg[3] + 0.2]
@@ -757,8 +763,8 @@ def validate_against_uber(path, shifts, dwells, subs):
     """Score the classifier against a real order log.
 
     Only recall is measurable. The rider also runs two other platforms, so an
-    inferred stop with no Uber order behind it is not an error — it is most
-    likely a HungryPanda or DoorDash job that this file simply cannot see.
+    unmatched inferred stop may be another platform or a false positive.
+    This source alone cannot distinguish them.
     Precision would need every platform's log; claiming it from one would be
     a straight lie about a number the page displays.
 
@@ -847,7 +853,7 @@ def validate_against_uber(path, shifts, dwells, subs):
         "misses": dict(misses),
         "match_window_s": MATCH_WINDOW_S,
         # What share of the inferred drop-offs this one platform accounts for.
-        # The remainder is the other two apps, not a pile of false positives.
+        # The remainder may include other platforms or false positives; precision is unknown.
         "matched_drops": len(matched_ids),
         "total_drops": len(drops),
         "platform_share_pct": pct(len(matched_ids), len(drops)),
@@ -857,111 +863,16 @@ def validate_against_uber(path, shifts, dwells, subs):
     }
 
 
-# -- which offers are worth taking ------------------------------------------
-# The offer screen shows three numbers: the fare, the distance, and an ETA.
-# All three describe the *paid* leg. None of them describe the ride to the
-# restaurant, which the rider pays for out of the same hour. This block joins
-# the order log to the ridden track so the hidden half can be measured, and
-# turns the result into a rule that can be applied in the eight seconds an
-# offer stays on screen.
-OFFER_APPROACH_CAP_S = 45 * 60     # longer than this is a break, not an approach
-OFFER_MIN_ROWS = 40                # below this the fits are not worth printing
-OFFER_TARGET_RATES = (15, 20, 25, 31.3, 35)
-OFFER_RULE_CUTS = (1.0, 1.2, 1.4, 1.6, 1.8, 2.0)
-OFFER_KM_BANDS = ((0, 1.2), (1.2, 1.6), (1.6, 2.0), (2.0, 2.6), (2.6, 99))
-ENG_BANDS = ((0, 25), (25, 32), (32, 40), (40, 55), (55, 190))
-FARE_BANDS = ((0, 6), (6, 8), (8, 11), (11, 15), (15, 90))
-
-# The Interim On-Demand Delivery Employee-like Worker Minimum Standards Order.
-# From 17 August 2026 a covered platform must compare what it paid against
-# `engaged hours x rate` over an earnings period and top up the shortfall.
-# That single fact reorganises this whole section: below the floor an offer's
-# fare stops being what it earns you, and the clock does the earning instead.
+# -- historical earnings; not an offer acceptance model ----------------------
 FLOOR = {
-    "rate": 31.30,                 # bicycle / e-bike / e-scooter
-    "from": "2026-08-17",
+    "rate": 31.30, "from": "2026-08-17", "through": "2026-12-31",
+    "period_days": 21, "checked_on": "2026-09-05",
     "vehicle": "自行车 / 电动自行车",
-    "other": [("摩托车 / 燃油踏板", 31.50), ("汽车 / 面包车（≤1 吨）", 32.00)],
-    "basis": "engaged time — 从接单那一刻到送达完成",
-    "period_days": 21,
-    "source": "Fair Work Commission · Interim On-Demand Delivery "
-              "Employee-like Worker Minimum Standards Order",
-    "url": "https://www.fairwork.gov.au/about-us/workplace-laws/"
-           "fair-work-commission-orders/minimum-standards-order-on-demand-delivery-workers",
+    "url": "https://help.uber.com/en-AU/driving-and-delivering/article/how-the-earnings-guarantee-works?nodeId=e04e6771-1b43-4ecc-8635-75334369f67a",
+    "time_url": "https://help.uber.com/en-AU/driving-and-delivering/article/understanding-engaged-time?nodeId=df2a6923-00a1-4fbc-acea-4ee0606d2fb5",
+    "basis": "三周内的有效接单时间；重叠时段只计一次；收入比较包括运费和促销，不包括小费",
 }
 
-
-def _ols(X, y):
-    """Least squares by Gaussian elimination. Returns (coefficients, R^2).
-
-    Three predictors at most and a few hundred rows, so the normal equations
-    are fine and the file stays dependency-free.
-    """
-    n, p = len(y), len(X[0])
-    A = [[sum(X[i][a] * X[i][b] for i in range(n)) for b in range(p)]
-         + [sum(X[i][a] * y[i] for i in range(n))] for a in range(p)]
-    for c in range(p):
-        piv = max(range(c, p), key=lambda r: abs(A[r][c]))
-        A[c], A[piv] = A[piv], A[c]
-        if abs(A[c][c]) < 1e-12:
-            return None, None
-        d = A[c][c]
-        A[c] = [v / d for v in A[c]]
-        for r in range(p):
-            if r != c and A[r][c]:
-                f = A[r][c]
-                A[r] = [x - f * z for x, z in zip(A[r], A[c])]
-    beta = [A[i][p] for i in range(p)]
-    fit = [sum(X[i][a] * beta[a] for a in range(p)) for i in range(n)]
-    ybar = sum(y) / n
-    ss_tot = sum((v - ybar) ** 2 for v in y)
-    if ss_tot <= 0:
-        return beta, None
-    return beta, 1 - sum((y[i] - fit[i]) ** 2 for i in range(n)) / ss_tot
-
-
-def _spearman(a, b):
-    """Rank correlation — the relationships here are monotone, not linear."""
-    n = len(a)
-    if n < 3:
-        return None
-    ra, rb = [0] * n, [0] * n
-    for r, i in enumerate(sorted(range(n), key=lambda i: a[i])):
-        ra[i] = r
-    for r, i in enumerate(sorted(range(n), key=lambda i: b[i])):
-        rb[i] = r
-    ma, mb = sum(ra) / n, sum(rb) / n
-    num = sum((ra[i] - ma) * (rb[i] - mb) for i in range(n))
-    den = (sum((ra[i] - ma) ** 2 for i in range(n))
-           * sum((rb[i] - mb) ** 2 for i in range(n))) ** 0.5
-    return round(num / den, 3) if den else None
-
-
-def _window(ride, t0, t1):
-    """Moving seconds, stopped seconds and kilometres inside a time window."""
-    move = stop = 0.0
-    metres = 0.0
-    for s in ride["samples"]:
-        t = s["t"].timestamp()
-        if t < t0:
-            continue
-        if t > t1:
-            break
-        if s["state"] == "stop":
-            stop += s["dt"]
-        else:
-            move += s["dt"]
-        metres += s["d"]
-    return move, stop, metres / 1000
-
-
-
-# Uber settles a courier week Monday 04:00 local to Monday 04:00, and the
-# weekly statement breaks the money into Fare / Promotion (Quest) / Other
-# earnings / Tip. Two of those weeks were read off the statements and checked
-# against this export line by line: Quest matched to the cent both times
-# ($715.00 and $507.00), Fare to within one order that straddles the week
-# boundary. So the labels below are verified, not guessed.
 QUEST_VERIFIED = [
     {"week": "2026-08-17", "fare_log": 368.12, "fare_stmt": 364.95,
      "quest_log": 507.00, "quest_stmt": 507.00},
@@ -970,7 +881,7 @@ QUEST_VERIFIED = [
 ]
 PROMO_PAIR_S = 600      # a MISC row this close to a QUEST row of the same
                         # amount is the same payout listed twice
-ONE_OFF_MIN = 200.0     # a single payout this large is not per-delivery money
+ONE_OFF_MIN = 200.0     # separately disclose large adjustments; do not guess their purpose
 WEEK_ANCHOR_H = 4       # statement weeks start Monday 04:00
 
 
@@ -981,18 +892,10 @@ def _stmt_week(ts):
 
 
 def read_earnings(path):
-    """Split the log into what the weekly statement calls things.
+    """Read historical categories. QUEST and Other remain separate.
 
-    Fare is the trip rows. Promotion is the QUEST rows. MISC is not a separate
-    category — it is the same quest payouts listed a second time plus the odd
-    adjustment, so a MISC row only counts when no QUEST row of the same amount
-    sits within ten minutes of it. One payout of $500 is held out of the
-    per-delivery share: whatever it was, it was not earned by a delivery.
-
-    Quest is paid for *completing deliveries*, not for the money they carry,
-    so it is shared out evenly across the week's orders. That is the whole
-    reason this block exists — a flat amount per job changes which jobs are
-    worth taking far more than any difference between two fares does.
+    The per-record Quest average is retrospective bookkeeping only; it is
+    never used as the incremental reward for accepting another offer.
     """
     try:
         text = Path(path).read_text(encoding="utf-8")
@@ -1021,440 +924,59 @@ def read_earnings(path):
     one_offs = []
     for w, rows in m_rows.items():
         for at, amt in rows:
-            if amt <= 0:
+            if amt == 0:
                 continue
-            if any(abs(at - t2) <= PROMO_PAIR_S and abs(amt - a2) < 0.005
-                   for t2, a2 in q_rows.get(w, [])):
+            candidates = q_rows.get(w, [])
+            match = next((i for i, (t2, a2) in enumerate(candidates)
+                          if abs(at - t2) <= PROMO_PAIR_S and abs(amt - a2) < 0.005), None)
+            if match is not None:
+                candidates.pop(match)  # one Quest row can explain at most one MISC row
                 dupes += 1
             elif amt >= ONE_OFF_MIN:
                 one_offs.append({"on": _stmt_week(at), "amt": round(amt, 2)})
             else:
                 weeks[w]["other"] += amt
     for w, v in weeks.items():
-        v["per_order"] = (v["quest"] + v["other"]) / v["n"] if v["n"] else 0.0
+        v["per_order"] = v["quest"] / v["n"] if v["n"] else 0.0
     return {"weeks": dict(weeks), "dupes": dupes, "one_offs": one_offs}
 
 
-def _idle_seconds(ride, t0, t1):
-    """Stopped seconds inside a window that fall outside every detected dwell.
-
-    A light, a restaurant counter and a customer's door are all stops that
-    belong to the job. Standing anywhere else is the rider waiting to be given
-    one, which is the only part of the gap between two jobs that the minimum
-    standards order would not call engaged time.
-    """
-    spans = [(d["t"].timestamp(), d["t"].timestamp() + d["secs"]) for d in ride["dwells"]]
-    idle = 0.0
-    for s in ride["samples"]:
-        t = s["t"].timestamp()
-        if t < t0:
-            continue
-        if t > t1:
-            break
-        if s["state"] == "stop" and not any(a <= t <= b for a, b in spans):
-            idle += s["dt"]
-    return idle
-
-
-TAIL_BANDS = ((0, 1), (1, 2), (2, 3), (3, 99))
-
-
-def _drop_tail(shifts):
-    """How much the *next* order costs, as a function of where this one ended.
-
-    A fare buys a ride to a front door and stops paying there. The ride out of
-    that door is charged to the following order, which is why a drop-off deep
-    in a quiet suburb can be a bad job at a good price. Measured against the
-    middle of the restaurant cluster, since that is where the next collection
-    almost always is.
-    """
-    picks = [d for r in shifts for d in r["dwells"] if d["kind"] == "pickup"]
-    if len(picks) < 20:
-        return None
-    core = (sum(d["lat"] for d in picks) / len(picks),
-            sum(d["lon"] for d in picks) / len(picks))
-
-    legs = []
-    for r in shifts:
-        seq = sorted([d for d in r["dwells"] if d["kind"] in ("pickup", "dropoff")],
-                     key=lambda d: d["t"])
-        for a, b in zip(seq, seq[1:]):
-            if a["kind"] != "dropoff" or b["kind"] != "pickup":
-                continue
-            t0 = a["t"].timestamp() + a["secs"]
-            t1 = b["t"].timestamp()
-            mins = (t1 - t0) / 60
-            if not 0 <= mins <= 45:
-                continue
-            km = sum(s["d"] for s in r["samples"] if t0 <= s["t"].timestamp() < t1) / 1000
-            legs.append((haversine(a["lat"], a["lon"], core[0], core[1]) / 1000, mins, km))
-    if len(legs) < 40:
-        return None
-
-    n = len(legs)
-    mx = sum(l[0] for l in legs) / n
-    my = sum(l[1] for l in legs) / n
-    den = sum((l[0] - mx) ** 2 for l in legs)
-    slope = sum((l[0] - mx) * (l[1] - my) for l in legs) / den if den else 0.0
-
-    bands = []
-    for lo, hi in TAIL_BANDS:
-        sub = [l for l in legs if lo <= l[0] < hi]
-        if len(sub) < 8:
-            continue
-        bands.append({"lo": lo, "hi": hi if hi < 90 else None, "n": len(sub),
-                      "min": round(st.median([l[1] for l in sub]), 1),
-                      "km": round(st.median([l[2] for l in sub]), 2)})
-    return {
-        "legs": n,
-        "rho": _spearman([l[0] for l in legs], [l[1] for l in legs]),
-        "base": round(my - slope * mx, 1),
-        "per_km": round(slope, 2),
-        "bands": bands,
-    }
-
-
 def build_offers(path, shifts, subs):
-    """Measure what an accepted order actually costs, and what that implies.
+    """Publish observed prices and ledger totals, without fabricated acceptance times.
 
-    Every order in the log is placed inside the shift that contains it, which
-    gives each one the thing the log itself cannot know: the ride that led to
-    the restaurant. That approach leg starts at the end of the previous
-    hand-over — the moment the rider became free — and ends at the collection.
-
-    Two denominators are reported, because they answer different questions.
-    *Marginal* time is approach riding plus the paid leg: what accepting this
-    offer costs that declining it would not. *Full* time adds the standing
-    around, and is what an hour of the evening actually pays. The first drives
-    the accept rule; the second is the honest headline.
-
-    Only this one platform's fares are visible, so every dollar figure here is
-    an Uber figure. The times are not — they come from the track, which does
-    not know which app the job came from.
+    Neither source has acceptance timestamps. Previous-drop-to-pickup gaps
+    mix idle time, other apps and accepted approach travel; they cannot be
+    used as legal engaged time, or multiplied by a guaranteed hourly rate.
+    CT is an export type, not proof of a particular eligible Quest trip count.
     """
-    orders = [o for o in read_uber(path) if o["dist"] and o["dur"] > 0]
-    if not orders:
-        return None
-    orders.sort(key=lambda o: o["at"])
+    orders = read_uber(path)
     earn = read_earnings(path)
-
-    rows = []
-    for o in orders:
-        ride = next((r for r in shifts
-                     if r["samples"][0]["t"].timestamp() - 60 <= o["at"]
-                     and o["at"] + o["dur"] <= r["samples"][-1]["t"].timestamp() + 60), None)
-        if ride is None:
-            continue
-        # Free again at the end of the last hand-over; before the first one,
-        # free from the moment the recording started.
-        released = ride["samples"][0]["t"].timestamp()
-        for d in ride["dwells"]:
-            end = d["t"].timestamp() + d["secs"]
-            if d["kind"] == "dropoff" and end <= o["at"]:
-                released = max(released, end)
-        released = max(released, o["at"] - OFFER_APPROACH_CAP_S)
-        ap_move, ap_stop, ap_km = _window(ride, released, o["at"])
-        lg_move, lg_stop, lg_km = _window(ride, o["at"], o["at"] + o["dur"])
-        marg = (ap_move + o["dur"]) / 60
-        full = (o["at"] - released + o["dur"]) / 60
-        if marg <= 0:
-            continue
-        # Engaged time as the order defines it: acceptance to hand-over. The
-        # acceptance moment is not in either source, so it is taken as the
-        # moment the rider became free — everything after that was spent on
-        # this job. The one part that plainly was not is standing still
-        # somewhere that is not a light and not a restaurant, which is waiting
-        # for an offer rather than working on one, so it comes back out.
-        idle = _idle_seconds(ride, released, o["at"])
-        engaged = (o["at"] - released - idle + o["dur"]) / 60
-        tot_km = o["dist"] + ap_km
-        week = _stmt_week(o["at"])
-        qshare = earn["weeks"].get(week, {}).get("per_order", 0.0) if earn else 0.0
-        rows.append({
-            "at": o["at"], "week": week, "qshare": qshare,
-            "val": o["total"] + qshare,
-            "amt": o["total"], "km": o["dist"], "ap_km": ap_km, "tot_km": tot_km,
-            "dur_min": o["dur"] / 60, "ap_move": ap_move / 60, "ap_stop": ap_stop / 60,
-            "lg_move": lg_move / 60, "lg_stop": lg_stop / 60, "lg_km": lg_km,
-            "marg": marg, "full": full, "engaged": engaged, "idle": idle / 60,
-            "offer_rate": o["total"] / (o["dur"] / 3600),
-            "marg_rate": o["total"] / (marg / 60),
-            "full_rate": o["total"] / (full / 60),
-            "eng_rate": o["total"] / (engaged / 60),
-            # The number that actually matters: fare plus the delivery's share
-            # of the week's quest, over the clock it ran.
-            "val_rate": (o["total"] + qshare) / (engaged / 60),
-            # What the order guarantees this job on its own: the clock times
-            # the rate. Whichever of this and the fare is larger is what the
-            # hour is worth, once the platform settles the period.
-            "floor_value": engaged * FLOOR["rate"] / 60,
-            "per_km": o["total"] / o["dist"],
-            "per_tot_km": o["total"] / tot_km if tot_km > 0 else 0.0,
-            "batched": o["kind"] == "CT",
-            "hour": datetime.fromtimestamp(o["at"], timezone.utc).astimezone(SYD_TZ).hour,
-        })
-    if len(rows) < OFFER_MIN_ROWS:
+    if not orders or not earn:
         return None
-
-    med = lambda f, src=None: st.median([f(r) for r in (src or rows)])
-
-    # -- what the offer screen is paying for
-    pay, pay_r2 = _ols([[1.0, r["km"], r["dur_min"]] for r in rows],
-                       [r["amt"] for r in rows])
-    # -- what an accepted offer costs in minutes
-    tm, tm_r2 = _ols([[1.0, r["tot_km"]] for r in rows], [r["marg"] for r in rows])
-    tmb, tmb_r2 = _ols([[1.0, r["tot_km"], 1.0 if r["batched"] else 0.0] for r in rows],
-                       [r["marg"] for r in rows])
-    # -- and in engaged minutes, which is the clock the floor is paid against
-    em, em_r2 = _ols([[1.0, r["tot_km"]] for r in rows], [r["engaged"] for r in rows])
-    emb, emb_r2 = _ols([[1.0, r["tot_km"], 1.0 if r["batched"] else 0.0] for r in rows],
-                       [r["engaged"] for r in rows])
-
-    # -- which of the offer's visible numbers actually moves the hourly rate.
-    # The approach distance sits in the denominator of the rate, so some of
-    # this correlation is arithmetic rather than discovery. What is not
-    # arithmetic is the comparison: the fare varies by a factor of three
-    # across orders and the approach by a factor of twenty, so the small
-    # number on the screen is the one with room to decide the hour.
-    y = [r["marg_rate"] for r in rows]
-    drivers = [
-        {"key": "ap_km", "cn": "取餐点有多远", "en": "distance to the restaurant",
-         "rho": _spearman([-r["ap_km"] for r in rows], y)},
-        {"key": "amt", "cn": "这一单给多少钱", "en": "what the offer pays",
-         "rho": _spearman([r["amt"] for r in rows], y)},
-        {"key": "per_km", "cn": "每公里多少钱（只算送餐段）", "en": "dollars per delivered km",
-         "rho": _spearman([r["per_km"] for r in rows], y)},
-        {"key": "km", "cn": "送多远", "en": "how far the delivery runs",
-         "rho": _spearman([r["km"] for r in rows], y)},
-        {"key": "per_tot_km", "cn": "每公里多少钱（含去餐厅的路）", "en": "dollars per ridden km",
-         "rho": _spearman([r["per_tot_km"] for r in rows], y)},
-    ]
-    drivers.sort(key=lambda d: -(d["rho"] or 0))
-
-    q = lambda vals, k: round(st.quantiles(sorted(vals), n=10)[k], 2)
-    spread = {}
-    for key, label in (("ap_km", "取餐距离"), ("km", "送餐距离"), ("amt", "单价")):
-        v = [r[key] for r in rows]
-        spread[key] = {"label": label, "p10": q(v, 0), "med": round(st.median(v), 2),
-                       "p90": q(v, 8), "ratio": round(q(v, 8) / max(q(v, 0), 0.01), 1)}
-
-    bands = []
-    for lo, hi in OFFER_KM_BANDS:
-        sub = [r for r in rows if lo <= r["per_tot_km"] < hi]
-        if len(sub) < 8:
-            continue
-        bands.append({"lo": lo, "hi": hi if hi < 90 else None, "n": len(sub),
-                      "rate": round(med(lambda r: r["marg_rate"], sub), 1),
-                      "amt": round(med(lambda r: r["amt"], sub), 2),
-                      "km": round(med(lambda r: r["km"], sub), 2),
-                      "ap_km": round(med(lambda r: r["ap_km"], sub), 2)})
-
-    # -- the rule, swept. `refilled` assumes a declined order is replaced by
-    # another at the kept set's rate; `idle` assumes the freed minutes earn
-    # nothing at all. The truth is in between and this data cannot locate it,
-    # because a log of accepted orders has nothing to say about the ones that
-    # were never offered.
-    gross = sum(r["amt"] for r in rows)
-    hours = sum(r["marg"] for r in rows) / 60
-    cuts = []
-    for thr in OFFER_RULE_CUTS:
-        keep = [r for r in rows if r["per_tot_km"] >= thr]
-        skip = [r for r in rows if r["per_tot_km"] < thr]
-        if len(keep) < 10 or len(skip) < 10:
-            continue
-        kh = sum(r["marg"] for r in keep) / 60
-        cuts.append({"thr": thr, "keep": len(keep),
-                     "keep_pct": round(100 * len(keep) / len(rows)),
-                     "kept_rate": round(med(lambda r: r["marg_rate"], keep), 1),
-                     "skip_rate": round(med(lambda r: r["marg_rate"], skip), 1),
-                     "gross_pct": round(100 * sum(r["amt"] for r in keep) / gross),
-                     "refilled": round(sum(r["amt"] for r in keep) / kh, 1),
-                     "idle": round(sum(r["amt"] for r in keep) / hours, 1)})
-
-    targets = []
-    if tm:
-        for t in OFFER_TARGET_RATES:
-            targets.append({"rate": t, "base": round(t / 60 * tm[0], 2),
-                            "per_km": round(t / 60 * tm[1], 2),
-                            "at4": round(t / 60 * (tm[0] + tm[1] * 4), 2)})
-
-    kinds = {}
-    for key, sub in (("single", [r for r in rows if not r["batched"]]),
-                     ("batched", [r for r in rows if r["batched"]])):
-        if len(sub) < 10:
-            continue
-        kinds[key] = {"n": len(sub),
-                      "amt": round(med(lambda r: r["amt"], sub), 2),
-                      "km": round(med(lambda r: r["km"], sub), 2),
-                      "ap_km": round(med(lambda r: r["ap_km"], sub), 2),
-                      "paid_min": round(med(lambda r: r["dur_min"], sub), 1),
-                      "offer_rate": round(med(lambda r: r["offer_rate"], sub), 1),
-                      "marg_rate": round(med(lambda r: r["marg_rate"], sub), 1)}
-
-    hours_rows = []
-    for h in sorted({r["hour"] for r in rows}):
-        sub = [r for r in rows if r["hour"] == h]
-        if len(sub) < 10:
-            continue
-        hours_rows.append({"h": h, "n": len(sub),
-                           "rate": round(med(lambda r: r["marg_rate"], sub), 1),
-                           "amt": round(med(lambda r: r["amt"], sub), 2),
-                           "ap_km": round(med(lambda r: r["ap_km"], sub), 2)})
-
-    # -- what the drop-off point costs *after* the order is over.
-    # Splitting the fares by destination suburb was the obvious way to ask
-    # this and it does not survive contact with the sample: six or seven
-    # priced orders per suburb, and the spread between the best and worst is
-    # smaller than the noise. Asked as a continuous question it holds up,
-    # because it can use every drop the watch saw rather than only the ones
-    # this platform priced — how far the drop lands from the middle of the
-    # restaurant cluster, against the unpaid ride that follows it.
-    tail = _drop_tail(shifts)
-
-    waits = [d["secs"] / 60 for r in shifts for d in r["dwells"] if d["kind"] == "pickup"]
-
-    # -- what an hour is actually worth, and where the floor sits -----------
-    eng_hours = sum(r["engaged"] for r in rows) / 60
-    value = sum(r["val"] for r in rows)
-    fare_rate = gross / eng_hours
-    val_rate = value / eng_hours
-    cut = datetime.fromisoformat(FLOOR["from"]).replace(tzinfo=SYD_TZ).timestamp()
-    eras = {}
-    for key, sel in (("before", lambda r: r["at"] < cut), ("after", lambda r: r["at"] >= cut)):
-        sub = [r for r in rows if sel(r)]
-        if len(sub) < 10:
-            continue
-        h = sum(r["engaged"] for r in sub) / 60
-        eras[key] = {"n": len(sub), "hours": round(h, 1),
-                     "fare_rate": round(sum(r["amt"] for r in sub) / h, 1),
-                     "val_rate": round(sum(r["val"] for r in sub) / h, 1),
-                     "quest_per_order": round(sum(r["qshare"] for r in sub) / len(sub), 2),
-                     "orders_per_hour": round(len(sub) / h, 2)}
-    floor = dict(FLOOR)
-    floor.update({
-        "eng_hours": round(eng_hours, 1),
-        "fare_rate": round(fare_rate, 1),
-        "val_rate": round(val_rate, 1),
-        "over": round(val_rate - FLOOR["rate"], 1),
-        "clears": val_rate >= FLOOR["rate"],
-        "med_engaged": round(med(lambda r: r["engaged"]), 1),
-        "med_amt": round(med(lambda r: r["amt"]), 2),
-        "med_quest": round(med(lambda r: r["qshare"]), 2),
-        "med_val": round(med(lambda r: r["val"]), 2),
-        "eras": eras,
-        "break_even_per_min": round(FLOOR["rate"] / 60, 3),
-        "engaged_model": {"base": round(em[0], 2), "per_km": round(em[1], 2),
-                          "r2": round(em_r2, 3)} if em else None,
-        "engaged_model_ct": {"base": round(emb[0], 2), "per_km": round(emb[1], 2),
-                             "extra": round(emb[2], 1), "r2": round(emb_r2, 3)} if emb else None,
-    })
-
-    # -- the finding this section now turns on.
-    # Quest pays for finishing a delivery, not for what the delivery carried,
-    # so a slow expensive job and a quick cheap one collect the same bonus.
-    # Sorted by how long they took, the orders separate cleanly; sorted by
-    # what they paid, they barely separate at all.
-    eng_bands = []
-    for lo, hi in ENG_BANDS:
-        sub = [r for r in rows if lo <= r["engaged"] < hi]
-        if len(sub) < 8:
-            continue
-        eng_bands.append({"lo": lo, "hi": hi if hi < 190 else None, "n": len(sub),
-                          "min": round(med(lambda r: r["engaged"], sub), 1),
-                          "amt": round(med(lambda r: r["amt"], sub), 2),
-                          "val": round(med(lambda r: r["val"], sub), 2),
-                          "rate": round(med(lambda r: r["val_rate"], sub), 1),
-                          "fare_rate": round(med(lambda r: r["eng_rate"], sub), 1),
-                          "km": round(med(lambda r: r["tot_km"], sub), 1)})
-    fare_bands = []
-    for lo, hi in FARE_BANDS:
-        sub = [r for r in rows if lo <= r["amt"] < hi]
-        if len(sub) < 8:
-            continue
-        fare_bands.append({"lo": lo, "hi": hi if hi < 90 else None, "n": len(sub),
-                           "amt": round(med(lambda r: r["amt"], sub), 2),
-                           "val": round(med(lambda r: r["val"], sub), 2),
-                           "min": round(med(lambda r: r["engaged"], sub), 1),
-                           "rate": round(med(lambda r: r["val_rate"], sub), 1)})
-    y = [r["val_rate"] for r in rows]
-    what_matters = [
-        {"cn": "多快能跑完", "key": "engaged",
-         "rho": _spearman([-r["engaged"] for r in rows], y)},
-        {"cn": "一共要骑多远", "key": "km",
-         "rho": _spearman([-r["tot_km"] for r in rows], y)},
-        {"cn": "这单给多少钱", "key": "amt",
-         "rho": _spearman([r["amt"] for r in rows], y)},
-    ]
-
-    quest = None
-    if earn:
-        wk = []
-        for w in sorted(earn["weeks"]):
-            v = earn["weeks"][w]
-            if v["n"] < 4:
-                continue
-            wk.append({"w": w, "n": v["n"], "fare": round(v["fare"], 2),
-                       "quest": round(v["quest"] + v["other"], 2),
-                       "per_order": round(v["per_order"], 2)})
-        tot_q = sum(v["quest"] + v["other"] for v in earn["weeks"].values())
-        quest = {
-            "weeks": wk, "dupes": earn["dupes"], "one_offs": earn["one_offs"],
-            "total": round(tot_q, 2),
-            "share": round(100 * tot_q / (sum(v["fare"] for v in earn["weeks"].values()) + tot_q)),
-            "verified": QUEST_VERIFIED,
-            "med_per_order": round(med(lambda r: r["qshare"]), 2),
-        }
-
+    weeks = []
+    for week, row in sorted(earn["weeks"].items()):
+        weeks.append({"week": week, "records": row["n"],
+                      "fare": round(row["fare"], 2), "quest": round(row["quest"], 2),
+                      "other": round(row["other"], 2),
+                      "quest_per_record": round(row["per_order"], 2)})
     return {
-        "n": len(rows), "of_orders": len(orders),
-        "gross": round(gross, 2), "hours": round(hours, 1),
-        "engaged_rate": round(gross / hours, 1),
-        "pay_model": {"base": round(pay[0], 2), "per_km": round(pay[1], 2),
-                      "per_min": round(pay[2], 3), "r2": round(pay_r2, 3)} if pay else None,
-        # Two fits of the same thing. The plain one is what the calculator
-        # quotes and what the accept rule is derived from; the second adds a
-        # batched flag, and its own base/slope must be used with its own
-        # coefficient rather than bolted onto the first.
-        "time_model": {"base": round(tm[0], 2), "per_km": round(tm[1], 2),
-                       "r2": round(tm_r2, 3), "kmh": round(60 / tm[1], 1)} if tm else None,
-        "time_model_ct": {"base": round(tmb[0], 2), "per_km": round(tmb[1], 2),
-                          "extra": round(tmb[2], 1), "r2": round(tmb_r2, 3)} if tmb else None,
-        "split": {
-            "ap_min": round(med(lambda r: r["ap_move"] + r["ap_stop"]), 1),
-            "ap_move": round(med(lambda r: r["ap_move"]), 1),
-            "ap_stop": round(med(lambda r: r["ap_stop"]), 1),
-            "ap_km": round(med(lambda r: r["ap_km"]), 2),
-            "paid_min": round(med(lambda r: r["dur_min"]), 1),
-            "paid_move": round(med(lambda r: r["lg_move"]), 1),
-            "paid_stop": round(med(lambda r: r["lg_stop"]), 1),
-            "paid_km": round(med(lambda r: r["km"]), 2),
-            "marg_min": round(med(lambda r: r["marg"]), 1),
-            "full_min": round(med(lambda r: r["full"]), 1),
-            "engaged_min": round(med(lambda r: r["engaged"]), 1),
-            "idle_min": round(med(lambda r: r["idle"]), 1),
-            "unpaid_km_pct": round(100 * sum(r["ap_km"] for r in rows)
-                                   / sum(r["ap_km"] + r["km"] for r in rows)),
-        },
-        "rates": {"offer": round(med(lambda r: r["offer_rate"]), 1),
-                  "marginal": round(med(lambda r: r["marg_rate"]), 1),
-                  "full": round(med(lambda r: r["full_rate"]), 1),
-                  "haircut": round(100 * (1 - med(lambda r: r["full_rate"])
-                                          / med(lambda r: r["offer_rate"])))},
-        "drivers": drivers, "spread": spread, "bands": bands, "cuts": cuts,
-        "targets": targets, "kinds": kinds, "by_hour": hours_rows, "tail": tail,
-        "floor": floor, "quest": quest,
-        "eng_bands": eng_bands, "fare_bands": fare_bands, "what_matters": what_matters,
-        "value": round(value, 2), "val_rate": round(val_rate, 1),
-        "wait": {"n": len(waits), "med": round(st.median(waits), 1),
-                 "p90": round(st.quantiles(sorted(waits), n=10)[8], 1)} if waits else None,
-        # One point per order for the scatter: money against the kilometres it
-        # cost. No addresses, no timestamps — nothing that locates a customer.
-        "points": [{"k": round(r["tot_km"], 2), "a": round(r["amt"], 2),
-                    "m": round(r["marg"], 1), "e": round(r["engaged"], 1),
-                    "v": round(r["val"], 2), "r": round(r["val_rate"], 1),
-                    "b": 1 if r["batched"] else 0,
-                    "h": r["hour"]} for r in rows],
+        "n": len(orders), "floor": FLOOR,
+        "basis": "Uber 活动记录；仅作历史账本，不代表在线时薪或下一单奖励",
+        "acceptance_time_available": False,
+        "median_fare": round(st.median(o["total"] for o in orders), 2),
+        "weeks": weeks, "duplicates_removed": earn["dupes"],
+        "large_adjustments": earn["one_offs"],
+        "verified": QUEST_VERIFIED,
+        "statement_checks": [
+            {"week": "2026-08-17", "fare": 364.95, "quest": 507.0,
+             "other": 12.47, "tips": 0.70, "total": 885.12,
+             "checked_on": "2026-09-05", "source": "Uber weekly statement · earnings breakdown"},
+            {"week": "2026-08-24", "fare": 517.66, "quest": 715.0,
+             "other": 27.0, "tips": 8.65, "total": 1268.31,
+             "checked_on": "2026-09-05", "source": "Uber weekly statement · earnings breakdown"},
+        ],
     }
+
 
 # -- per-ride pass ----------------------------------------------------------
 ENDPOINT_M = 150
@@ -1770,7 +1292,7 @@ def score_rideability(rows):
     The parts sum to the measured total instead of to an arbitrary 100.
     """
     for r in rows:
-        km, T = r["km"], r["_ride_min"]
+        km, T = sum(d for _, d in r["_by_shift"]) / 1000, r["_ride_min"]
         if not km or T <= 0:
             r["flow"] = None
             r["flow_parts"] = None
@@ -1846,31 +1368,64 @@ def score_rideability(rows):
 
 
 def score_worth(rows):
-    """Expected job touches per hour, discounted by how hard the zone rides.
+    """Pickup frequency per recorded zone hour, with an explicit evidence gate.
 
-    The old "worth" was a 0-100 index built from a ratio to the best zone,
-    which moved whenever the best zone moved and meant nothing on its own.
-    This is in the unit the question is actually asked in — jobs per hour —
-    with two corrections: the observed rate is shrunk toward the city rate by
-    how many hours were spent there, and it is scaled by the zone's rideability
-    against the city's, because a job picked up where you average 22 km/h costs
-    less of your evening than one where you average 15.
-
-    Jobs rather than deliveries, because a suburb that hands you thirty-five
-    orders to carry elsewhere is somewhere worth being, and counting only
-    drop-offs scores it as though nothing happened there.
+    This is a descriptive rate, not dispatch probability or a profit score.
+    Drop-offs and rideability do not increase it. Legacy `worth` is retained
+    as an alias for the static table/map; the planner uses the same raw rate.
     """
-    ranked = [r for r in rows if r["ranked"]]
-    basis = ranked or rows
-    city_rate = wpercentile([(r["jobs_per_hour"], r["hours"]) for r in basis], 0.5) or 0.0
-    city_flow = wpercentile([(r["flow"], r["km"]) for r in basis
-                             if r["flow"] is not None], 0.5) or 50.0
     for r in rows:
-        rate = shrink(r["jobs_per_hour"], r["hours"], city_rate, PRIOR_HOURS)
-        r["rate_shrunk"] = round(rate, 2)
-        r["worth"] = (round(rate * (r["flow"] / city_flow), 2)
-                      if (r["ranked"] and r["flow"] is not None) else None)
-    return {"city_rate": round(city_rate, 2), "city_flow": round(city_flow, 1)}
+        r["pickup_ranked"] = r["hours"] >= 1 and r["shifts"] >= 4 and r["pickups"] >= 6
+        r["pickup_rate"] = round(r["pickups"] / r["hours"], 2) if r["hours"] else None
+        r["worth"] = r["pickup_rate"] if r["pickup_ranked"] else None
+    return {"basis": "推断取餐次数 / 区内有效 GPS 记录小时；非派单概率或利润排名",
+            "min_hours": 1, "min_shifts": 4, "min_pickups": 6}
+
+
+def build_planning(shifts, subs):
+    """Aggregate exposure and events to shift/suburb/hour for honest filtering.
+
+    No customer addresses or precise coordinates. Zero-event exposure is kept
+    so selecting a quiet period does not remove time from the denominator.
+    Sample intervals crossing an hour are split, using Sydney local time.
+    """
+    cells = {}
+    def cell(shift, zone, t):
+        key = (shift, zone, t.date().isoformat(), t.hour)
+        if key not in cells:
+            cells[key] = {"shift": shift, "zone": zone, "date": key[2],
+                          "weekday": t.weekday(), "hour": t.hour,
+                          "seconds": 0.0, "pickups": 0, "drops": 0, "wait_s": []}
+        return cells[key]
+    for si, ride in enumerate(shifts):
+        for sample in ride["samples"]:
+            zone = subs.lookup(sample["lat"], sample["lon"])
+            if not zone:
+                continue
+            t = sample["t"].astimezone(SYD_TZ)
+            remaining = sample["dt"]
+            while remaining > 0:
+                until_hour = 3600 - t.minute * 60 - t.second - t.microsecond / 1e6
+                dt = min(remaining, until_hour)
+                cell(si, zone, t)["seconds"] += dt
+                # Advance on the UTC timeline across Sydney daylight-saving changes.
+                t = datetime.fromtimestamp(t.timestamp() + dt, SYD_TZ)
+                remaining -= dt
+        for dwell in ride["dwells"]:
+            if not dwell["zone"] or dwell["kind"] not in ("pickup", "dropoff"):
+                continue
+            c = cell(si, dwell["zone"], dwell["t"].astimezone(SYD_TZ))
+            if dwell["kind"] == "pickup":
+                c["pickups"] += 1
+                c["wait_s"].append(round(dwell["secs"]))
+            else:
+                c["drops"] += 1
+    rows = sorted(cells.values(), key=lambda c: (c["date"], c["shift"], c["hour"], c["zone"]))
+    for c in rows:
+        c["seconds"] = round(c["seconds"], 2)
+    return {"cells": rows, "min_hours": 1, "min_shifts": 4, "min_pickups": 6,
+            "recent_days": 28, "recent_anchor": max((c["date"] for c in rows), default=max(r["date"] for r in shifts)),
+            "basis": "GPS 推断，包含跨平台活动；记录时间不等于平台在线可接单时间"}
 
 
 # -- street-level grid ------------------------------------------------------
@@ -2060,7 +1615,7 @@ def main():
           f"{endpoint_dropped} dropped as shift endpoints)")
     print(f"  -> {len(legs)} pickup→drop-off legs paired")
     print(f"  -> {chain['dead_legs']} dead legs: median {chain['dead_km_med']} km / "
-          f"{chain['dead_min_med']} min, {chain['dead_share']}% of distance unpaid, "
+          f"{chain['dead_min_med']} min, {chain['dead_share']}% of matched-chain distance in continuation, "
           f"{chain['same_zone_pct']}% next job in the same suburb")
     if validation:
         print(f"  -> validated against {validation['orders']} real orders: "
@@ -2069,12 +1624,7 @@ def main():
     else:
         print("  -> no order log found, skipping validation")
     if offers:
-        f = offers["floor"]
-        q = offers.get("quest") or {}
-        print(f"  -> offer model on {offers['n']} priced orders: fares alone "
-              f"${f['fare_rate']}/h per engaged hour, +quest ${f['val_rate']}/h "
-              f"(quest is {q.get('share')}% of earnings, ${q.get('med_per_order')} a delivery), "
-              f"floor ${f['rate']}/h")
+        print(f"  -> {offers['n']} Uber records; historical ledger only (acceptance time unavailable)")
 
     Z = build_zones(shifts, subs, ctx)
     zones = zone_rows(Z, subs, ctx, legs)
@@ -2206,7 +1756,7 @@ def main():
     light_secs = sum(d["secs"] for d in all_dwells if d["kind"] == "light")
     pickup_waits = [d["secs"] for d in all_dwells if d["kind"] == "pickup"]
     drop_waits = [d["secs"] for d in all_dwells if d["kind"] == "dropoff"]
-    sweet = sorted([z for z in zones if z["ranked"]], key=lambda z: -(z["worth"] or 0))
+    sweet = sorted([z for z in zones if z["pickup_ranked"]], key=lambda z: -(z["worth"] or 0))
 
     hour_totals = [0] * 24
     for z in zones:
@@ -2273,6 +1823,7 @@ def main():
         "validation": validation,
         "offers": offers,
         "chain": chain,
+        "planning": build_planning(shifts, subs),
         "samples": {"quick_pickups": quick_work, "long_lights": long_light},
     }
 

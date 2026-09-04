@@ -16,3 +16,5 @@ osm_context.json
 data/
 health_data/
 .claude/
+
+tests/

@@ -212,6 +212,8 @@ LEAFLET_JS = """<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
 
 # app.js reads window.DELIVERY_DATA, so the data file has to come first.
 DELIVERY_JS = """<script src="assets/delivery-data.js"></script>
+<script src="assets/delivery-model.js"></script>
+<script src="assets/delivery-planner.js"></script>
 <script src="assets/delivery.js"></script>
 """
 
@@ -232,7 +234,7 @@ PAGE_TEMPLATE = """<!DOCTYPE html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,700&family=JetBrains+Mono:wght@300;400;500&family=Noto+Serif+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
-{leaflet_css}<link rel="stylesheet" href="assets/styles.css">
+{leaflet_css}<link rel="stylesheet" href="assets/styles.css">{planner_css}
 </head>
 <body data-page="{page_key}">
 
@@ -368,13 +370,11 @@ PAGES = [
         'title': '配送 · Delivery',
         'hero': make_hero(
             custom_h1='哪儿的单好跑<br><em>区域与路段</em>',
-            custom_sub='从 GPS 轨迹反推出的接单节奏 —— 每一次停车都对着地图判断是取餐、送达还是等红灯，再看哪个区活最多、哪个区跑得动、哪几段路最费时间、几点该在哪儿。没有平台数据，全部是从停车、速度和 OpenStreetMap 里读出来的。',
+            custom_sub='把区域记录与眼前的订单放在一起：看取餐频率、算整轮收益、核对 Quest 与落点成本。GPS 提供历史线索，Uber 账本提供收入分类；每个估算都保留口径和样本。',
             custom_meta='配送 · Delivery'),
         'intro': '',
-        # Map first: it is the thing worth looking at, and every other section
-        # is a way of reading it. Method and scoring go last — a reader who
-        # wants them will scroll, and one who does not should not have to.
-        'sections': ['dlv_map', 'dlv_kpis', 'dlv_zones', 'dlv_offers', 'dlv_chain',
+        # Start with planning, then supporting observations and methodology.
+        'sections': ['dlv_offers', 'dlv_zones', 'dlv_map', 'dlv_chain', 'dlv_kpis',
                      'dlv_hours', 'dlv_roads', 'dlv_profile', 'dlv_method', 'dlv_truth'],
         'has_filter': False,
         # Delivery analysis is Sydney-only by construction — a city picker
@@ -412,6 +412,7 @@ for p in PAGES:
         leaflet_css=LEAFLET_CSS if has_map else '',
         leaflet_js=LEAFLET_JS if has_map else '',
         delivery_js=DELIVERY_JS if has_delivery else '',
+        planner_css='\n<link rel="stylesheet" href="assets/delivery-planner.css">' if has_delivery else '',
     )
     (ROOT / p['file']).write_text(fill_stat_spans(out), encoding="utf-8")
     print(f"wrote {p['file']:18s} ({len(out)//1024} KB, {len(p['sections'])} sections)")
@@ -440,6 +441,7 @@ all_html = PAGE_TEMPLATE.format(
     leaflet_css=LEAFLET_CSS,
     leaflet_js=LEAFLET_JS,
     delivery_js=DELIVERY_JS,
+    planner_css='\n<link rel="stylesheet" href="assets/delivery-planner.css">',
 )
 (ROOT / 'cycling-analysis.html').write_text(fill_stat_spans(all_html), encoding="utf-8")
 print(f"wrote cycling-analysis.html ({len(all_html)//1024} KB, all sections)")

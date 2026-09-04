@@ -19,6 +19,7 @@
   integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
   crossorigin=""/>
 <link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/delivery-planner.css">
 </head>
 <body data-page="all">
 
@@ -693,7 +694,7 @@
 
 <section class="analysis-section">
   <div class="section-title">热点地图<em>·</em>Order Hotspots</div>
-  <div class="section-sub">一整年的送餐轨迹里，每一次停车都判过是取餐、送达还是等红灯 —— 蓝点是取的，橙点是送的，红点是反复堵住你的路口。底色可以换成任意一项指标，点一个区钻进去只看它，拖时间轴看某个时段。已排除每次出勤自己起点/终点 150 米内的停留。</div>
+  <div class="section-sub">已记录的悉尼骑行里，每一次停车都判过是取餐、送达还是等红灯 —— 蓝点是取的，橙点是送的，红点是反复堵住你的路口。底色可以换成任意一项指标，点一个区钻进去只看它，拖时间轴看某个时段。已排除每次出勤自己起点/终点 150 米内的停留。</div>
   <div class="dlv-map-controls">
     <div class="dlv-layer-chips" id="dlvLayerChips">
       <button class="dlv-chip active" data-layer="pickups"><i class="dlv-dot dot-pickup"></i>取餐点</button>
@@ -743,7 +744,7 @@
 
 <section class="analysis-section">
   <div class="section-title">配送概览<em>·</em>Shift Economics</div>
-  <div class="section-sub">一单从取到送要花多久、路上有多少时间根本没在挣钱 —— 全部从 GPS 停留反推，每一次超过 <span id="dlvStopSec">20</span> 秒的停车都对着地图判过（方法见最后两节）</div>
+  <div class="section-sub">一单从取到送要花多久、路上与停留各花多少时间 —— 全部从 GPS 停留反推，每一次超过 <span id="dlvStopSec">20</span> 秒的停车都对着地图判过（方法见最后两节）</div>
   <div class="dlv-kpis" id="dlvKpis"></div>
   <div class="dlv-note" id="dlvMethod"></div>
 </section>
@@ -751,8 +752,9 @@
 
 <section class="analysis-section">
   <div class="section-title">区域排行<em>·</em>Zone Leaderboard</div>
-  <div class="section-sub">横轴是这个区给了你多少活，纵轴是它让你跑多快。右上角「活多又好跑」是该待的地方，右下角「活多但难跑」是单多但每单都磨时间。圈大小 = 在这个区待过的时长，竖线是好跑指数的 90% 置信区间 —— 线越长说明跑得越少、越不确定</div>
+  <div class="section-sub">先按相同时间范围比较取餐频率，再结合全期骑行效率与落点续接。下方散点横轴为取餐 / 记录小时，纵轴为好跑指数；二者不能直接换算成利润。竖线仅表示好跑指数的 90% 区间。</div>
   <div class="chart-card">
+    <div id="dlvZonePlanner" style="margin-bottom:28px"></div>
     <svg id="zoneQuadrant" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid meet"></svg>
     <div class="eq-legend" id="zoneQuadLegend"></div>
     <div class="dlv-table-foot" style="padding: 10px 2px 0;">只画样本够的区。竖线越长说明这个区跑得越少、分数越不确定</div>
@@ -765,17 +767,17 @@
       <table class="rides-table dlv-table" id="zoneTable">
         <thead><tr>
           <th data-sort="jobs" data-dir="desc" class="sorted">区 Suburb</th>
-          <th data-sort="jobs" data-dir="desc" title="取餐 + 送达">活</th>
+          <th data-sort="jobs" data-dir="desc" title="取餐 + 送达，不代表订单量">事件</th>
           <th data-sort="orders" data-dir="desc">送达</th>
           <th data-sort="pickups" data-dir="desc">取餐</th>
           <th data-sort="shifts" data-dir="desc">班次</th>
-          <th data-sort="jobs_per_hour" data-dir="desc">活/小时</th>
+          <th data-sort="jobs_per_hour" data-dir="desc">取送事件/记录h</th>
           <th data-sort="min_per_km" data-dir="asc" title="每公里实际耗时；自由通行下限是 2.4 min/km">每km耗时</th>
           <th data-sort="light_min_per_km" data-dir="asc" title="每公里花在等红灯上的分钟数">红灯 min/km</th>
           <th data-sort="climb_per_km" data-dir="asc">爬升 m/km</th>
           <th data-sort="prep_per_km2" data-dir="desc" title="OpenStreetMap 里每平方公里的餐厅、外卖店、咖啡馆数量">餐厅/km²</th>
           <th data-sort="flow" data-dir="desc" title="自由通行耗时 ÷ 实际耗时。100 = 全程跑出 25 km/h">好跑指数</th>
-          <th data-sort="worth" data-dir="desc" title="收缩后的活/小时 × 好跑相对城市中位数">值得去</th>
+          <th data-sort="worth" data-dir="desc" title="推断取餐 / 区内记录小时；不足样本不显示">取餐频率</th>
         </tr></thead>
         <tbody id="zoneTbody"></tbody>
       </table>
@@ -785,68 +787,13 @@
 
 
 <section class="analysis-section">
-  <div class="section-title">这一单该不该接<em>·</em>Take It or Leave It</div>
-  <div class="section-sub">Quest 奖励是按「跑完一单」发的，不是按「这单值多少钱」发的。它占了收入的一半 —— 所以决定你时薪的不是单价，是你多快能把一单跑完</div>
-
-  <!-- ① -->
-  <div class="of-hero" id="dlvOfferHero"></div>
-
-  <!-- ② 一单到底值多少 -->
-  <div class="chart-card">
-    <div class="chart-title">一单到底值多少</div>
-    <div class="chart-sub">派单页只显示左边那一半</div>
-    <div class="of-one" id="dlvOfferOne"></div>
+  <div class="section-title">这一单该不该接<em>·</em>Offer Planner</div>
+  <div class="section-sub">先算整轮时间，再看报价和奖励增量。输入当前派单的实际情况；历史账本和三周保底单独核对。</div>
+  <div class="delivery-tools">
+    <div class="chart-card"><div id="dlvOfferCalc"></div></div>
+    <div class="chart-card"><div class="chart-title">Uber 三周最低收入</div><div id="dlvSettlement"></div></div>
   </div>
-
-  <!-- ③ 核心：快 vs 贵 -->
-  <div class="analysis-grid of-two">
-    <div class="chart-card of-key">
-      <div class="chart-title">按「跑得多快」分</div>
-      <div class="chart-sub">Sorted by how long it took</div>
-      <div class="of-bandbox" id="dlvOfferEngBands"></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">按「给多少钱」分</div>
-      <div class="chart-sub">Sorted by what it paid</div>
-      <div class="of-bandbox" id="dlvOfferFareBands"></div>
-    </div>
-  </div>
-  <div class="of-punch" id="dlvOfferPunch"></div>
-
-  <!-- ④ 计算器 -->
-  <div class="chart-card of-calc-card">
-    <div class="chart-title">算一单看看</div>
-    <div class="chart-sub">拖三个滑块 · 右边是你这四个月的 143 单，横轴是这单花了多久</div>
-    <div class="of-calc" id="dlvOfferCalc"></div>
-  </div>
-
-  <!-- ⑤ 8 月 17 日 -->
-  <div class="chart-card">
-    <div class="chart-title">8 月 17 日那一周，Quest 翻了三倍</div>
-    <div class="chart-sub">法定底薪生效的同一周 · 每格是一个结算周（周一 04:00 起算）</div>
-    <div class="of-weeks" id="dlvOfferWeeks"></div>
-  </div>
-
-  <!-- ⑥ 三条 -->
-  <div class="analysis-grid of-three">
-    <div class="chart-card">
-      <div class="chart-title">拼单</div>
-      <div class="chart-sub">Batched</div>
-      <div class="of-tip" id="dlvOfferKinds"></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">时段</div>
-      <div class="chart-sub">By hour</div>
-      <div class="of-tip" id="dlvOfferHours"></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">落点</div>
-      <div class="chart-sub">Where it drops you</div>
-      <div class="of-tip" id="dlvOfferTail"></div>
-    </div>
-  </div>
-
-  <div class="dlv-note" id="dlvOfferNote"></div>
+  <div class="chart-card" style="margin-top:24px"><div class="chart-title">历史收入分类</div><div id="dlvOfferWeeks"></div></div>
 </section>
 
 
@@ -858,19 +805,19 @@
 
   <div class="chart-card" style="margin-top: 20px;">
     <div class="chart-title">送完之后，你在往哪儿骑</div>
-    <div class="chart-sub">Where the unpaid leg goes · 每一段空驶都归到三种里的一种</div>
+    <div class="chart-sub">Observed transitions · 送达之后到下次取餐，不代表未付费时间</div>
     <div class="ch-dirs" id="dlvChainDirs"></div>
   </div>
 
   <div class="analysis-grid dlv-chain-grid">
     <div class="chart-card">
-      <div class="chart-title">最好接单的区</div>
+      <div class="chart-title">取餐较多的区</div>
       <div class="chart-sub">Where the orders come from · 按取餐次数排 · 送出去越近越能多跑</div>
       <div class="ch-list" id="dlvPickupRank"></div>
     </div>
     <div class="chart-card">
       <div class="chart-title">落在这里之后</div>
-      <div class="chart-sub">What landing here costs · 按送完之后的空驶时间排，越短越好</div>
+      <div class="chart-sub">What landing here costs · 按送完之后的续接时间排，越短越好</div>
       <div class="ch-list" id="dlvDropRank"></div>
     </div>
   </div>
@@ -887,18 +834,17 @@
 
 <section class="analysis-section">
   <div class="section-title">时段规律<em>·</em>Hour × Zone</div>
-  <div class="section-sub">几点该在哪。行是区，列是本地时间，颜色越亮那个时段该区的活越密 —— 点一行直接在上面的地图里钻进那个区。只列样本够、活在 3 次以上的区</div>
+  <div class="section-sub">按悉尼本地小时比较历史取餐频率，分母包含没有取餐的记录时间。每个区每小时至少 1 小时、4 班次、6 次取餐才显示；点区域名定位地图。</div>
   <div class="chart-card">
-    <div class="chart-title">全天活量分布</div>
-    <div class="chart-sub">Jobs by hour of day · 取餐 + 送达 · 所有班次合计</div>
+    <div class="chart-title">各小时取餐频率</div>
+    <div class="chart-sub">推断取餐 ÷ 区内 GPS 记录小时 · 全部记录汇总，不代表平台在线效率</div>
     <svg id="hourBars" viewBox="0 0 900 180" preserveAspectRatio="xMidYMid meet"></svg>
   </div>
   <div class="chart-card" style="margin-top: 20px;">
     <div class="chart-title">时段 × 区域</div>
     <div class="chart-sub">Hour × zone heatmap · 点一行在上方地图里钻进那个区</div>
     <div class="dlv-table-bar">
-      <button class="dlv-chip active" id="hzRowToggle">每区各自归一</button>
-      <span class="dlv-table-foot">各自归一时，每个区都跟自己最忙的时段比 —— 冷门区也能看出它什么时候忙</span>
+      <span class="dlv-table-foot">各区使用同一色阶；数值为每记录小时的取餐次数，样本不足留空。</span>
     </div>
     <div class="hz-wrap"><div class="hz-grid" id="hourZoneHeat"></div></div>
     <div class="heatmap-legend">
@@ -943,7 +889,7 @@
 
   <div class="analysis-grid dlv-method-grid">
     <div class="chart-card">
-      <div class="chart-title">1140 次停车的去向</div>
+      <div class="chart-title">停车事件的去向</div>
       <div class="chart-sub">Every dwell, classified</div>
       <div class="dlv-tally" id="dlvTally"></div>
       <div class="dlv-howto">
@@ -1012,6 +958,8 @@
 <script src="assets/health-data.js"></script>
 <script src="assets/recovery.js"></script>
 <script src="assets/delivery-data.js"></script>
+<script src="assets/delivery-model.js"></script>
+<script src="assets/delivery-planner.js"></script>
 <script src="assets/delivery.js"></script>
 <script src="assets/app.js"></script>
 </body>
