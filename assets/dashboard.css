@@ -571,14 +571,14 @@ body:has(.dash) { overflow: hidden; }
 .do-check { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--text-dim); cursor: pointer; }
 .do-check input { accent-color: var(--amber); margin: 0; }
 .do-out { margin-top: auto; border-top: 1px solid var(--border); padding-top: 8px; }
-/* Two numbers side by side; the larger one is what the job is worth, and it
-   is the only one lit. */
-.do-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.do-pair span { display: flex; flex-direction: column; }
-.do-pair i { font-family: var(--mono); font-size: 8.5px; letter-spacing: .06em; color: var(--text-faint); font-style: normal; }
-.do-pair b { font-family: var(--serif); font-size: 18px; font-weight: 400; line-height: 1.25; }
-.do-pair .win b { color: #8fbf7f; }
-.do-pair .dim b { color: var(--text-faint); }
+/* One number: what the hour comes to once Quest is counted. */
+.do-big { display: flex; align-items: baseline; gap: 4px; flex-wrap: wrap; }
+.do-big b { font-family: var(--serif); font-size: 26px; font-weight: 400; line-height: 1.1; }
+.do-big i { font-family: var(--mono); font-size: 9px; font-style: normal; color: var(--text-faint); }
+.do-big span { flex: 1 0 100%; font-size: 9.5px; margin-top: 1px; }
+.do-big.win b, .do-big.win span { color: #8fbf7f; }
+.do-big.lose b, .do-big.lose span { color: var(--rose); }
+.do-big.edge b, .do-big.edge span { color: var(--amber); }
 .do-math { margin-top: 6px; font-size: 10px; line-height: 1.65; color: var(--text-faint); }
 .do-math em { font-style: normal; color: var(--amber); font-family: var(--mono); }
 .do-bands { display: grid; gap: 3px; }
@@ -589,7 +589,7 @@ body:has(.dash) { overflow: hidden; }
   color: var(--text-faint);
   margin-bottom: 2px;
 }
-.do-band { display: grid; grid-template-columns: 46px 1fr 30px; gap: 6px; align-items: center; }
+.do-band { display: grid; grid-template-columns: 56px 1fr 30px; gap: 6px; align-items: center; }
 .do-band-k { font-family: var(--mono); font-size: 9px; color: var(--text-dim); }
 .do-band-bar { height: 5px; background: var(--surface-2); overflow: hidden; }
 .do-band-bar i { display: block; height: 100%; background: var(--amber-dim); }

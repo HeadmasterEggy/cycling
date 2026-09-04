@@ -321,13 +321,14 @@
   // the same axis the sliders move along, so the reader can see which band
   // the offer they are typing in would have landed in.
   function ofBandStrip(O) {
-    if (!O.bands || !O.bands.length) return '';
-    const max = Math.max(...O.bands.map(b => b.rate), 1);
+    const B = O.eng_bands;
+    if (!B || !B.length) return '';
+    const max = Math.max(...B.map(b => b.rate), 1);
     return `<div class="do-bands">
-      <div class="do-bands-t">底薪之上才用：每骑一公里挣到</div>
-      ${O.bands.map(b => `
+      <div class="do-bands-t">按这单花了多久排 · 实测时薪</div>
+      ${B.map(b => `
         <div class="do-band">
-          <span class="do-band-k">$${b.lo}${b.hi ? '–' + b.hi : '+'}</span>
+          <span class="do-band-k">${b.lo}–${b.hi || '∞'} min</span>
           <span class="do-band-bar"><i style="width:${100 * b.rate / max}%"></i></span>
           <span class="do-band-r">$${b.rate}</span>
         </div>`).join('')}
@@ -339,12 +340,12 @@
     const host = document.getElementById('dashOffer');
     if (!host) return;
     const O = d && d.offers;
-    if (!O || !O.floor || typeof ofFloorValue !== 'function') {
+    if (!O || !O.floor || !O.quest || typeof ofMinutes !== 'function') {
       host.innerHTML = '<div class="empty-range">没有可用的订单价格记录</div>';
       return;
     }
     const note = document.getElementById('dashOfferNote');
-    if (note) note.textContent = `单价 $${O.floor.fare_rate}/h · 底薪 $${O.floor.rate}/h`;
+    if (note) note.textContent = `含 Quest $${O.floor.val_rate}/h · 底薪 $${O.floor.rate}/h`;
 
     host.innerHTML = `
       <div class="do-sliders">
@@ -358,22 +359,22 @@
 
     const paint = () => {
       const F = O.floor;
-      const eng = ofMinutes(O, OFP.ap, OFP.km, OFP.batched, 'engaged');
-      const fv = ofFloorValue(O, OFP.ap, OFP.km, OFP.batched);
-      const under = OFP.amt < fv;
+      const q = (F.eras && F.eras.after) ? F.eras.after.quest_per_order : O.quest.med_per_order;
+      const eng = ofMinutes(O, OFP.ap, OFP.km, OFP.batched);
+      const val = OFP.amt + q;
+      const rate = val / eng * 60;
+      const gap = rate - F.rate, ok = gap >= 0, near = Math.abs(gap) < 1;
       document.getElementById('doAmtV').textContent = '$' + OFP.amt.toFixed(2);
       document.getElementById('doApV').textContent = OFP.ap.toFixed(1) + ' km';
       document.getElementById('doKmV').textContent = OFP.km.toFixed(1) + ' km';
       document.getElementById('doOut').innerHTML = `
-        <div class="do-pair">
-          <span class="${under ? 'dim' : 'win'}"><i>平台给</i><b>$${OFP.amt.toFixed(2)}</b></span>
-          <span class="${under ? 'win' : 'dim'}"><i>时钟值</i><b>$${fv.toFixed(2)}</b></span>
+        <div class="do-big ${near ? 'edge' : (ok ? 'win' : 'lose')}"><b>$${rate.toFixed(0)}</b><i>/h</i>
+          <span>${near ? `正好在 $${F.rate} 底薪线上`
+            : (ok ? `高过底薪 $${gap.toFixed(0)}` : `低于底薪 $${(-gap).toFixed(0)}`)}</span>
         </div>
         <div class="do-math">
-          engaged ${eng.toFixed(0)} min · 骑 ${(OFP.ap + OFP.km).toFixed(1)} km<br>
-          实际值 <em>$${Math.max(OFP.amt, fv).toFixed(2)}</em> —— ${under
-            ? `靠底薪 $${F.rate}/h，平台补 $${(fv - OFP.amt).toFixed(2)}`
-            : `靠单价，高出底薪 $${(OFP.amt - fv).toFixed(2)}`}
+          单价 $${OFP.amt.toFixed(2)} ＋ Quest $${q.toFixed(2)} ＝ <em>$${val.toFixed(2)}</em><br>
+          engaged ${eng.toFixed(0)} min · 骑 ${(OFP.ap + OFP.km).toFixed(1)} km
         </div>`;
     };
     const on = (id, key, num) => document.getElementById(id).addEventListener(

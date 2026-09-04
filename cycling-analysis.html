@@ -786,51 +786,52 @@
 
 <section class="analysis-section">
   <div class="section-title">这一单该不该接<em>·</em>Take It or Leave It</div>
-  <div class="section-sub">2026 年 8 月 17 日起，用自行车送外卖的人每个「engaged 小时」有 $31.30 的法定底薪。这一条把「该不该接」的答案整个翻了过来 —— 以下每个数字都是从你自己的 143 单里算出来的</div>
+  <div class="section-sub">Quest 奖励是按「跑完一单」发的，不是按「这单值多少钱」发的。它占了收入的一半 —— 所以决定你时薪的不是单价，是你多快能把一单跑完</div>
 
-  <!-- ① 一句话 -->
+  <!-- ① -->
   <div class="of-hero" id="dlvOfferHero"></div>
 
-  <!-- ② 拿一单来看 -->
+  <!-- ② 一单到底值多少 -->
   <div class="chart-card">
-    <div class="chart-title">拿典型的一单来看</div>
-    <div class="chart-sub">平台给你的钱，和这段时间按底薪该值的钱，取大的那个</div>
+    <div class="chart-title">一单到底值多少</div>
+    <div class="chart-sub">派单页只显示左边那一半</div>
     <div class="of-one" id="dlvOfferOne"></div>
   </div>
 
-  <!-- ③ 规则翻了过来 -->
+  <!-- ③ 核心：快 vs 贵 -->
   <div class="analysis-grid of-two">
-    <div class="chart-card of-era before">
-      <div class="chart-title">8 月 17 日之前</div>
-      <div class="chart-sub">Before the floor</div>
-      <div class="of-era-body" id="dlvOfferEraBefore"></div>
+    <div class="chart-card of-key">
+      <div class="chart-title">按「跑得多快」分</div>
+      <div class="chart-sub">Sorted by how long it took</div>
+      <div class="of-bandbox" id="dlvOfferEngBands"></div>
     </div>
-    <div class="chart-card of-era after">
-      <div class="chart-title">8 月 17 日之后</div>
-      <div class="chart-sub">After the floor</div>
-      <div class="of-era-body" id="dlvOfferEraAfter"></div>
+    <div class="chart-card">
+      <div class="chart-title">按「给多少钱」分</div>
+      <div class="chart-sub">Sorted by what it paid</div>
+      <div class="of-bandbox" id="dlvOfferFareBands"></div>
     </div>
   </div>
+  <div class="of-punch" id="dlvOfferPunch"></div>
 
   <!-- ④ 计算器 -->
   <div class="chart-card of-calc-card">
     <div class="chart-title">算一单看看</div>
-    <div class="chart-sub">拖三个滑块 · 右边是你这四个月的 143 单，横轴是要骑多少公里，纵轴是钱</div>
+    <div class="chart-sub">拖三个滑块 · 右边是你这四个月的 143 单，横轴是这单花了多久</div>
     <div class="of-calc" id="dlvOfferCalc"></div>
   </div>
 
-  <!-- ⑤ 什么时候才该拒 -->
+  <!-- ⑤ 8 月 17 日 -->
   <div class="chart-card">
-    <div class="chart-title">那什么时候才该拒单</div>
-    <div class="chart-sub">底薪之上，单价才重新变成你的收入 —— 这时候下面这条线才有用</div>
-    <div class="of-above" id="dlvOfferAbove"></div>
+    <div class="chart-title">8 月 17 日那一周，Quest 翻了三倍</div>
+    <div class="chart-sub">法定底薪生效的同一周 · 每格是一个结算周（周一 04:00 起算）</div>
+    <div class="of-weeks" id="dlvOfferWeeks"></div>
   </div>
 
-  <!-- ⑥ 三条能马上用的 -->
+  <!-- ⑥ 三条 -->
   <div class="analysis-grid of-three">
     <div class="chart-card">
       <div class="chart-title">拼单</div>
-      <div class="chart-sub">Batched orders</div>
+      <div class="chart-sub">Batched</div>
       <div class="of-tip" id="dlvOfferKinds"></div>
     </div>
     <div class="chart-card">

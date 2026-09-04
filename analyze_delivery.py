@@ -869,6 +869,8 @@ OFFER_MIN_ROWS = 40                # below this the fits are not worth printing
 OFFER_TARGET_RATES = (15, 20, 25, 31.3, 35)
 OFFER_RULE_CUTS = (1.0, 1.2, 1.4, 1.6, 1.8, 2.0)
 OFFER_KM_BANDS = ((0, 1.2), (1.2, 1.6), (1.6, 2.0), (2.0, 2.6), (2.6, 99))
+ENG_BANDS = ((0, 25), (25, 32), (32, 40), (40, 55), (55, 190))
+FARE_BANDS = ((0, 6), (6, 8), (8, 11), (11, 15), (15, 90))
 
 # The Interim On-Demand Delivery Employee-like Worker Minimum Standards Order.
 # From 17 August 2026 a covered platform must compare what it paid against
@@ -954,54 +956,83 @@ def _window(ride, t0, t1):
 
 
 
-PROMO_TYPES = {"QUEST", "MISC"}
-PROMO_PAIR_S = 600
+# Uber settles a courier week Monday 04:00 local to Monday 04:00, and the
+# weekly statement breaks the money into Fare / Promotion (Quest) / Other
+# earnings / Tip. Two of those weeks were read off the statements and checked
+# against this export line by line: Quest matched to the cent both times
+# ($715.00 and $507.00), Fare to within one order that straddles the week
+# boundary. So the labels below are verified, not guessed.
+QUEST_VERIFIED = [
+    {"week": "2026-08-17", "fare_log": 368.12, "fare_stmt": 364.95,
+     "quest_log": 507.00, "quest_stmt": 507.00},
+    {"week": "2026-08-24", "fare_log": 520.72, "fare_stmt": 517.66,
+     "quest_log": 715.00, "quest_stmt": 715.00},
+]
+PROMO_PAIR_S = 600      # a MISC row this close to a QUEST row of the same
+                        # amount is the same payout listed twice
+ONE_OFF_MIN = 200.0     # a single payout this large is not per-delivery money
+WEEK_ANCHOR_H = 4       # statement weeks start Monday 04:00
 
 
-def _read_promotions(path):
-    """Total the log's non-trip payouts, without counting them twice.
+def _stmt_week(ts):
+    """The Monday-04:00 statement week a timestamp falls in."""
+    d = datetime.fromtimestamp(ts, timezone.utc).astimezone(SYD_TZ) - timedelta(hours=WEEK_ANCHOR_H)
+    return (d - timedelta(days=d.weekday())).date().isoformat()
 
-    The export carries promotion payouts under two labels, and 73 of the 81
-    MISC rows have a QUEST row of exactly the same amount within ten minutes.
-    They are one payout listed twice, so MISC only counts where it has no
-    QUEST twin. What none of it settles is whether these amounts are already
-    inside the trip totals or sit on top of them, and the earnings site's own
-    breakdown is not reachable to check — so this is reported beside the fare
-    figures, never folded into them.
+
+def read_earnings(path):
+    """Split the log into what the weekly statement calls things.
+
+    Fare is the trip rows. Promotion is the QUEST rows. MISC is not a separate
+    category — it is the same quest payouts listed a second time plus the odd
+    adjustment, so a MISC row only counts when no QUEST row of the same amount
+    sits within ten minutes of it. One payout of $500 is held out of the
+    per-delivery share: whatever it was, it was not earned by a delivery.
+
+    Quest is paid for *completing deliveries*, not for the money they carry,
+    so it is shared out evenly across the week's orders. That is the whole
+    reason this block exists — a flat amount per job changes which jobs are
+    worth taking far more than any difference between two fares does.
     """
     try:
         text = Path(path).read_text(encoding="utf-8")
     except OSError:
         return None
-    quest, misc = [], []
+    weeks = defaultdict(lambda: {"fare": 0.0, "quest": 0.0, "other": 0.0, "n": 0})
+    q_rows, m_rows = defaultdict(list), defaultdict(list)
     for line in text.splitlines():
         parts = line.split("|")
-        if len(parts) < 3 or parts[1] not in PROMO_TYPES:
+        if len(parts) < 3:
             continue
-        (quest if parts[1] == "QUEST" else misc).append(
-            (int(parts[0]), float(parts[2] or 0)))
-    if not quest and not misc:
+        at, kind = int(parts[0]), parts[1]
+        amt = float(parts[2] or 0)
+        w = _stmt_week(at)
+        if kind in UBER_ORDER_TYPES:
+            weeks[w]["fare"] += amt
+            weeks[w]["n"] += 1
+        elif kind == "QUEST":
+            weeks[w]["quest"] += amt
+            q_rows[w].append((at, amt))
+        elif kind == "MISC":
+            m_rows[w].append((at, amt))
+    if not weeks:
         return None
-    rows = [(t, a) for t, a in quest if a > 0]
     dupes = 0
-    for t, a in misc:
-        if a <= 0:
-            continue
-        if any(abs(t - t2) <= PROMO_PAIR_S and abs(a - a2) < 0.005 for t2, a2 in quest):
-            dupes += 1
-        else:
-            rows.append((t, a))
-    if not rows:
-        return None
-    amounts = sorted(a for _, a in rows)
-    return {
-        "n": len(rows), "total": round(sum(amounts), 2),
-        "med": round(st.median(amounts), 2),
-        "max": round(amounts[-1], 2),
-        "deduped": dupes,
-        "raw_quest": round(sum(a for _, a in quest), 2),
-        "raw_misc": round(sum(a for _, a in misc), 2),
-    }
+    one_offs = []
+    for w, rows in m_rows.items():
+        for at, amt in rows:
+            if amt <= 0:
+                continue
+            if any(abs(at - t2) <= PROMO_PAIR_S and abs(amt - a2) < 0.005
+                   for t2, a2 in q_rows.get(w, [])):
+                dupes += 1
+            elif amt >= ONE_OFF_MIN:
+                one_offs.append({"on": _stmt_week(at), "amt": round(amt, 2)})
+            else:
+                weeks[w]["other"] += amt
+    for w, v in weeks.items():
+        v["per_order"] = (v["quest"] + v["other"]) / v["n"] if v["n"] else 0.0
+    return {"weeks": dict(weeks), "dupes": dupes, "one_offs": one_offs}
 
 
 def _idle_seconds(ride, t0, t1):
@@ -1105,6 +1136,7 @@ def build_offers(path, shifts, subs):
     if not orders:
         return None
     orders.sort(key=lambda o: o["at"])
+    earn = read_earnings(path)
 
     rows = []
     for o in orders:
@@ -1136,8 +1168,11 @@ def build_offers(path, shifts, subs):
         idle = _idle_seconds(ride, released, o["at"])
         engaged = (o["at"] - released - idle + o["dur"]) / 60
         tot_km = o["dist"] + ap_km
+        week = _stmt_week(o["at"])
+        qshare = earn["weeks"].get(week, {}).get("per_order", 0.0) if earn else 0.0
         rows.append({
-            "at": o["at"],
+            "at": o["at"], "week": week, "qshare": qshare,
+            "val": o["total"] + qshare,
             "amt": o["total"], "km": o["dist"], "ap_km": ap_km, "tot_km": tot_km,
             "dur_min": o["dur"] / 60, "ap_move": ap_move / 60, "ap_stop": ap_stop / 60,
             "lg_move": lg_move / 60, "lg_stop": lg_stop / 60, "lg_km": lg_km,
@@ -1146,6 +1181,9 @@ def build_offers(path, shifts, subs):
             "marg_rate": o["total"] / (marg / 60),
             "full_rate": o["total"] / (full / 60),
             "eng_rate": o["total"] / (engaged / 60),
+            # The number that actually matters: fare plus the delivery's share
+            # of the week's quest, over the clock it ran.
+            "val_rate": (o["total"] + qshare) / (engaged / 60),
             # What the order guarantees this job on its own: the clock times
             # the rate. Whichever of this and the fare is larger is what the
             # hour is worth, once the platform settles the period.
@@ -1275,10 +1313,11 @@ def build_offers(path, shifts, subs):
 
     waits = [d["secs"] / 60 for r in shifts for d in r["dwells"] if d["kind"] == "pickup"]
 
-    # -- the floor, and which side of it this work sits on ------------------
+    # -- what an hour is actually worth, and where the floor sits -----------
     eng_hours = sum(r["engaged"] for r in rows) / 60
+    value = sum(r["val"] for r in rows)
     fare_rate = gross / eng_hours
-    below = [r for r in rows if r["amt"] < r["floor_value"]]
+    val_rate = value / eng_hours
     cut = datetime.fromisoformat(FLOOR["from"]).replace(tzinfo=SYD_TZ).timestamp()
     eras = {}
     for key, sel in (("before", lambda r: r["at"] < cut), ("after", lambda r: r["at"] >= cut)):
@@ -1288,42 +1327,83 @@ def build_offers(path, shifts, subs):
         h = sum(r["engaged"] for r in sub) / 60
         eras[key] = {"n": len(sub), "hours": round(h, 1),
                      "fare_rate": round(sum(r["amt"] for r in sub) / h, 1),
-                     "below_pct": round(100 * sum(1 for r in sub
-                                                  if r["amt"] < r["floor_value"]) / len(sub))}
+                     "val_rate": round(sum(r["val"] for r in sub) / h, 1),
+                     "quest_per_order": round(sum(r["qshare"] for r in sub) / len(sub), 2),
+                     "orders_per_hour": round(len(sub) / h, 2)}
     floor = dict(FLOOR)
     floor.update({
         "eng_hours": round(eng_hours, 1),
         "fare_rate": round(fare_rate, 1),
-        "gap": round(FLOOR["rate"] - fare_rate, 1),
-        "gap_total": round(FLOOR["rate"] * eng_hours - gross, 2),
-        "below_n": len(below), "below_pct": round(100 * len(below) / len(rows)),
+        "val_rate": round(val_rate, 1),
+        "over": round(val_rate - FLOOR["rate"], 1),
+        "clears": val_rate >= FLOOR["rate"],
         "med_engaged": round(med(lambda r: r["engaged"]), 1),
-        "med_floor_value": round(med(lambda r: r["floor_value"]), 2),
         "med_amt": round(med(lambda r: r["amt"]), 2),
+        "med_quest": round(med(lambda r: r["qshare"]), 2),
+        "med_val": round(med(lambda r: r["val"]), 2),
         "eras": eras,
-        # Break-even: at this fare an order pays its own way and the clock
-        # adds nothing. Below it the minutes are worth more than the money.
         "break_even_per_min": round(FLOOR["rate"] / 60, 3),
         "engaged_model": {"base": round(em[0], 2), "per_km": round(em[1], 2),
                           "r2": round(em_r2, 3)} if em else None,
         "engaged_model_ct": {"base": round(emb[0], 2), "per_km": round(emb[1], 2),
                              "extra": round(emb[2], 1), "r2": round(emb_r2, 3)} if emb else None,
     })
-    promos = _read_promotions(path)
-    if promos:
-        # The promotion rows have no distance and no duration, so they cannot
-        # be matched to a shift the way an order can. Shared out per order —
-        # quests pay for trip counts, so per order is the closest thing to
-        # right — they say what the engaged hour looks like if those payouts
-        # really are on top of the fares rather than already inside them.
-        share = len(rows) / max(1, len(orders))
-        est = promos["total"] * share
-        promos.update({
-            "per_order": round(promos["total"] / max(1, len(orders)), 2),
-            "matched_est": round(est, 2),
-            "with_promo_rate": round((gross + est) / eng_hours, 1),
-            "covers_gap": round(est) >= round(FLOOR["rate"] * eng_hours - gross),
-        })
+
+    # -- the finding this section now turns on.
+    # Quest pays for finishing a delivery, not for what the delivery carried,
+    # so a slow expensive job and a quick cheap one collect the same bonus.
+    # Sorted by how long they took, the orders separate cleanly; sorted by
+    # what they paid, they barely separate at all.
+    eng_bands = []
+    for lo, hi in ENG_BANDS:
+        sub = [r for r in rows if lo <= r["engaged"] < hi]
+        if len(sub) < 8:
+            continue
+        eng_bands.append({"lo": lo, "hi": hi if hi < 190 else None, "n": len(sub),
+                          "min": round(med(lambda r: r["engaged"], sub), 1),
+                          "amt": round(med(lambda r: r["amt"], sub), 2),
+                          "val": round(med(lambda r: r["val"], sub), 2),
+                          "rate": round(med(lambda r: r["val_rate"], sub), 1),
+                          "fare_rate": round(med(lambda r: r["eng_rate"], sub), 1),
+                          "km": round(med(lambda r: r["tot_km"], sub), 1)})
+    fare_bands = []
+    for lo, hi in FARE_BANDS:
+        sub = [r for r in rows if lo <= r["amt"] < hi]
+        if len(sub) < 8:
+            continue
+        fare_bands.append({"lo": lo, "hi": hi if hi < 90 else None, "n": len(sub),
+                           "amt": round(med(lambda r: r["amt"], sub), 2),
+                           "val": round(med(lambda r: r["val"], sub), 2),
+                           "min": round(med(lambda r: r["engaged"], sub), 1),
+                           "rate": round(med(lambda r: r["val_rate"], sub), 1)})
+    y = [r["val_rate"] for r in rows]
+    what_matters = [
+        {"cn": "多快能跑完", "key": "engaged",
+         "rho": _spearman([-r["engaged"] for r in rows], y)},
+        {"cn": "一共要骑多远", "key": "km",
+         "rho": _spearman([-r["tot_km"] for r in rows], y)},
+        {"cn": "这单给多少钱", "key": "amt",
+         "rho": _spearman([r["amt"] for r in rows], y)},
+    ]
+
+    quest = None
+    if earn:
+        wk = []
+        for w in sorted(earn["weeks"]):
+            v = earn["weeks"][w]
+            if v["n"] < 4:
+                continue
+            wk.append({"w": w, "n": v["n"], "fare": round(v["fare"], 2),
+                       "quest": round(v["quest"] + v["other"], 2),
+                       "per_order": round(v["per_order"], 2)})
+        tot_q = sum(v["quest"] + v["other"] for v in earn["weeks"].values())
+        quest = {
+            "weeks": wk, "dupes": earn["dupes"], "one_offs": earn["one_offs"],
+            "total": round(tot_q, 2),
+            "share": round(100 * tot_q / (sum(v["fare"] for v in earn["weeks"].values()) + tot_q)),
+            "verified": QUEST_VERIFIED,
+            "med_per_order": round(med(lambda r: r["qshare"]), 2),
+        }
 
     return {
         "n": len(rows), "of_orders": len(orders),
@@ -1362,13 +1442,16 @@ def build_offers(path, shifts, subs):
                                           / med(lambda r: r["offer_rate"])))},
         "drivers": drivers, "spread": spread, "bands": bands, "cuts": cuts,
         "targets": targets, "kinds": kinds, "by_hour": hours_rows, "tail": tail,
-        "floor": floor, "promos": promos,
+        "floor": floor, "quest": quest,
+        "eng_bands": eng_bands, "fare_bands": fare_bands, "what_matters": what_matters,
+        "value": round(value, 2), "val_rate": round(val_rate, 1),
         "wait": {"n": len(waits), "med": round(st.median(waits), 1),
                  "p90": round(st.quantiles(sorted(waits), n=10)[8], 1)} if waits else None,
         # One point per order for the scatter: money against the kilometres it
         # cost. No addresses, no timestamps — nothing that locates a customer.
         "points": [{"k": round(r["tot_km"], 2), "a": round(r["amt"], 2),
                     "m": round(r["marg"], 1), "e": round(r["engaged"], 1),
+                    "v": round(r["val"], 2), "r": round(r["val_rate"], 1),
                     "b": 1 if r["batched"] else 0,
                     "h": r["hour"]} for r in rows],
     }
@@ -1987,10 +2070,11 @@ def main():
         print("  -> no order log found, skipping validation")
     if offers:
         f = offers["floor"]
-        print(f"  -> offer model on {offers['n']} priced orders: "
-              f"${offers['rates']['offer']}/h on the offer screen, "
-              f"${f['fare_rate']}/h per engaged hour, floor ${f['rate']}/h "
-              f"({f['below_pct']}% of orders pay less than their own engaged time is worth)")
+        q = offers.get("quest") or {}
+        print(f"  -> offer model on {offers['n']} priced orders: fares alone "
+              f"${f['fare_rate']}/h per engaged hour, +quest ${f['val_rate']}/h "
+              f"(quest is {q.get('share')}% of earnings, ${q.get('med_per_order')} a delivery), "
+              f"floor ${f['rate']}/h")
 
     Z = build_zones(shifts, subs, ctx)
     zones = zone_rows(Z, subs, ctx, legs)
