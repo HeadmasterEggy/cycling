@@ -11,11 +11,12 @@
 <meta property="og:title" content="骑行 · Per-Ride Detail">
 <meta property="og:description" content="逐条骑行的记录 —— 能量构成、海拔剖面画廊、爬升与下降,以及完整骑行明细表。">
 <meta name="twitter:card" content="summary">
-<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon.svg?v=69ad9d413362" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,700&family=JetBrains+Mono:wght@300;400;500&family=Noto+Serif+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/styles.css?v=d1652980118b">
+<link rel="stylesheet" href="assets/site-ui.css?v=4959f520de7e">
 </head>
 <body data-page="rides">
 
@@ -24,7 +25,7 @@
 <section class="hero">
   <div class="hero-meta"><span id="heroMetaText">骑行 · Rides</span><span class="hero-fresh" id="heroFresh"></span></div>
   <h1 id="heroH1">每一次出门<br><em>逐次拆解</em></h1>
-  <p class="hero-sub" id="heroSub">34 条骑行的能量、爬升画像、明细表。挑一条放大,看那一天的身体怎么花掉了那 1000 千焦。</p>
+  <p class="hero-sub" id="heroSub">把每次骑行的距离、消耗与海拔放在一起。筛选记录、比较爬升，再进入逐次视图查看细节。</p>
 </section>
 
 
@@ -41,9 +42,9 @@
     <button class="range-preset" data-preset="all">全部</button>
   </div>
   <div class="range-filter-inputs">
-    <input type="date" id="rangeFrom">
+    <input type="date" id="rangeFrom" aria-label="开始日期">
     <span class="range-filter-sep">→</span>
-    <input type="date" id="rangeTo">
+    <input type="date" id="rangeTo" aria-label="结束日期">
   </div>
   <div class="range-filter-summary" id="rangeFilterSummary">全部数据</div>
 </div>
@@ -122,9 +123,11 @@
 
 <div class="tooltip" id="tooltip"></div>
 
-<script src="assets/routes.js"></script>
-<script src="assets/health-data.js"></script>
-<script src="assets/recovery.js"></script>
-<script src="assets/app.js"></script>
+<script src="assets/routes.js?v=eb19ea933c0e"></script>
+<script src="assets/health-data.js?v=a6cb8464c15a"></script>
+<script src="assets/chart-model.js?v=a23f28d1bc84"></script>
+<script src="assets/recovery.js?v=2b35cf9c8f19"></script>
+<script src="assets/app.js?v=40b227072a13"></script>
+<script src="assets/site-ui.js?v=01dd1afd6670"></script>
 </body>
 </html>

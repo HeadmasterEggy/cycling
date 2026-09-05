@@ -14,12 +14,25 @@ is safe to re-run at any time.
 """
 import json
 import re
+import hashlib
+from functools import lru_cache
 from datetime import datetime
 from pathlib import Path
 from textwrap import dedent
 
 ROOT = Path(__file__).parent
 SRC = ROOT / "cycling-analysis.html"
+
+
+@lru_cache(maxsize=None)
+def asset_version(path):
+    return hashlib.sha256((ROOT / path).read_bytes()).hexdigest()[:12]
+
+
+def version_assets(html):
+    """Changed files get new URLs so cached scripts cannot mix with new HTML."""
+    return re.sub(r'((?:src|href)=")(assets/[^"?]+)(?:\?v=[a-f0-9]+)?"',
+                  lambda m: f'{m[1]}{m[2]}?v={asset_version(m[2])}"', html)
 
 
 def _js_payload(path):
@@ -132,7 +145,7 @@ SECTIONS = {
     'body':         find_section_by_title('身体适应'),
     'climb':        find_section_by_title('爬升 × 配速'),
     'quadrant':     find_section_by_title('强度象限'),
-    'daily_stack':  find_section_by_title('送外卖期'),
+    'daily_stack':  find_section_by_title('骑行与日常活动'),
     'efficiency':   find_section_by_title('训练效率'),
     'fitness_form': find_section_by_title('训练负荷与状态'),
     'hr_range':     find_section_by_title('心率范围'),
@@ -149,7 +162,7 @@ SECTIONS = {
     'rhr':          find_section_by_title('静息心率'),
     'resp':         find_section_by_title('呼吸节律'),
     'sleep':        find_section_by_title('睡眠时长'),
-    'walking_reserve': find_section_by_title('心率储备'),
+    'walking_reserve': find_section_by_title('步行与静息心率差'),
     'recovery_composite': find_section_by_title('晨间生理'),
     'dlv_kpis':     find_section_by_title('配送概览'),
     'dlv_method':   find_section_by_title('这一脚是在干嘛'),
@@ -191,9 +204,9 @@ RANGE_FILTER_HTML = """
     <button class="range-preset" data-preset="all">全部</button>
   </div>
   <div class="range-filter-inputs">
-    <input type="date" id="rangeFrom">
+    <input type="date" id="rangeFrom" aria-label="开始日期">
     <span class="range-filter-sep">→</span>
-    <input type="date" id="rangeTo">
+    <input type="date" id="rangeTo" aria-label="结束日期">
   </div>
   <div class="range-filter-summary" id="rangeFilterSummary">全部数据</div>
 </div>
@@ -235,6 +248,7 @@ PAGE_TEMPLATE = """<!DOCTYPE html>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,700&family=JetBrains+Mono:wght@300;400;500&family=Noto+Serif+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
 {leaflet_css}<link rel="stylesheet" href="assets/styles.css">{planner_css}
+<link rel="stylesheet" href="assets/site-ui.css">
 </head>
 <body data-page="{page_key}">
 
@@ -261,8 +275,10 @@ PAGE_TEMPLATE = """<!DOCTYPE html>
 
 {leaflet_js}<script src="assets/routes.js"></script>
 <script src="assets/health-data.js"></script>
+<script src="assets/chart-model.js"></script>
 <script src="assets/recovery.js"></script>
 {delivery_js}<script src="assets/app.js"></script>
+<script src="assets/site-ui.js"></script>
 </body>
 </html>
 """
@@ -304,7 +320,7 @@ PAGES = [
         'title': '节律 · Patterns',
         'hero': make_hero(
             custom_h1='何时出门<br><em>节律与日历</em>',
-            custom_sub='出发的时刻、星期、月份。把全部 411 天活动摊开,看身体在一周中怎么呼吸,在一年中怎么变形。',
+            custom_sub='从一天里的出发时刻，到每周与每月的骑行节奏。选择城市和日期，比较频率、里程与连续骑行的变化。',
             custom_meta='节律 · Patterns'),
         'intro': '',
         'sections': ['temporal', 'monthly', 'departure', 'calendar'],
@@ -344,7 +360,7 @@ PAGES = [
         'title': '骑行 · Per-Ride Detail',
         'hero': make_hero(
             custom_h1='每一次出门<br><em>逐次拆解</em>',
-            custom_sub='34 条骑行的能量、爬升画像、明细表。挑一条放大,看那一天的身体怎么花掉了那 1000 千焦。',
+            custom_sub='把每次骑行的距离、消耗与海拔放在一起。筛选记录、比较爬升，再进入逐次视图查看细节。',
             custom_meta='骑行 · Rides'),
         'intro': '',
         'sections': ['energy', 'elev_gallery', 'ascent_descent', 'rides_table'],
@@ -388,7 +404,7 @@ PAGES = [
         'title': '复元 · Recovery',
         'hero': make_hero(
             custom_h1='身体在恢复<br><em>HRV · 静息 · 睡眠</em>',
-            custom_sub='晨间的生理读数 —— 心率变异性、静息心率、呼吸频率、血氧、睡眠。骑行写下的力,身体在凌晨偷偷地还回去。拖动密集曲线可框选任一时间窗。',
+            custom_sub='从心率变异性、静息心率到呼吸与睡眠，观察个人记录如何变化。选择日期，放大曲线，或拖动框选一段时间细看。',
             custom_meta='复元 · Recovery'),
         'intro': '',
         'sections': ['hrv', 'rhr', 'resp', 'sleep', 'walking_reserve', 'recovery_composite'],
@@ -412,9 +428,9 @@ for p in PAGES:
         leaflet_css=LEAFLET_CSS if has_map else '',
         leaflet_js=LEAFLET_JS if has_map else '',
         delivery_js=DELIVERY_JS if has_delivery else '',
-        planner_css='\n<link rel="stylesheet" href="assets/delivery-planner.css">' if has_delivery else '',
+        planner_css='\n<link rel="stylesheet" href="assets/delivery-planner.css">\n<link rel="stylesheet" href="assets/delivery-charts.css">' if has_delivery else '',
     )
-    (ROOT / p['file']).write_text(fill_stat_spans(out), encoding="utf-8")
+    (ROOT / p['file']).write_text(version_assets(fill_stat_spans(out)), encoding="utf-8")
     print(f"wrote {p['file']:18s} ({len(out)//1024} KB, {len(p['sections'])} sections)")
 
 # -- 4. rewrite cycling-analysis.html as a slim shell loading shared assets -
@@ -441,7 +457,12 @@ all_html = PAGE_TEMPLATE.format(
     leaflet_css=LEAFLET_CSS,
     leaflet_js=LEAFLET_JS,
     delivery_js=DELIVERY_JS,
-    planner_css='\n<link rel="stylesheet" href="assets/delivery-planner.css">',
+    planner_css='\n<link rel="stylesheet" href="assets/delivery-planner.css">\n<link rel="stylesheet" href="assets/delivery-charts.css">',
 )
-(ROOT / 'cycling-analysis.html').write_text(fill_stat_spans(all_html), encoding="utf-8")
+(ROOT / 'cycling-analysis.html').write_text(version_assets(fill_stat_spans(all_html)), encoding="utf-8")
 print(f"wrote cycling-analysis.html ({len(all_html)//1024} KB, all sections)")
+
+# The console keeps its own layout, while sharing the same asset versions.
+dashboard = ROOT / 'dashboard.html'
+if dashboard.exists():
+    dashboard.write_text(version_assets(dashboard.read_text(encoding='utf-8')), encoding='utf-8')

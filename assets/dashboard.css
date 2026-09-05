@@ -22,7 +22,9 @@ body[data-page=dashboard] { margin: 0; background: #101719; color: #e8e6de; over
 .dash-status { display: flex; align-items: center; gap: 16px; color: #9dafac; font-size: 11px; border-top: 1px solid #2e3b3c; padding: 13px 0 20px; flex-wrap: wrap; }
 .dash-history-tag { color: #d4c09a; border: 1px solid #5f543f; border-radius: 4px; padding: 3px 7px; }
 .dash-status a { margin-left: auto; color: #a1d0cc; text-decoration: none; }
-.dash-main { display: grid; grid-template-columns: minmax(280px,.85fr) minmax(380px,1.5fr) minmax(350px,1fr); gap: 18px; grid-template-areas: 'zones map offer' 'zones drop offer' 'settlement ledger ledger'; align-items: start; }
+.dash-main { display: grid; grid-template-columns: minmax(310px,1fr) minmax(380px,1.4fr) minmax(350px,1fr); gap: 18px; grid-template-areas: 'zones middle offer' 'settlement ledger ledger'; align-items: start; }
+.dash-middle { grid-area: middle; display: grid; gap: 18px; min-width: 0; }
+.dash-middle > .dash-panel { grid-area: auto; }
 .dash-panel { background: #172023; border: 1px solid #354144; border-radius: 12px; min-width: 0; overflow: hidden; }
 .p-offer { grid-area: offer; border-color: #776344; }
 .p-zones { grid-area: zones; }
@@ -70,7 +72,7 @@ body[data-page=dashboard] { margin: 0; background: #101719; color: #e8e6de; over
 .dash a:focus-visible, .dash button:focus-visible, .dash summary:focus-visible { outline: 2px solid #9bdbd4; outline-offset: 3px; }
 @media (max-width: 1250px) {
   .dash { padding: 0 20px 24px; }
-  .dash-main { grid-template-columns: minmax(280px,1fr) minmax(350px,1.25fr); grid-template-areas: 'zones offer' 'map offer' 'drop drop' 'settlement ledger'; }
+  .dash-main { grid-template-columns: minmax(280px,1fr) minmax(350px,1.25fr); grid-template-areas: 'zones offer' 'middle offer' 'settlement ledger'; }
   .dash-stats > div { padding: 0 15px; }
   .dash-intro h1 { font-size: 28px; }
 }
@@ -92,6 +94,7 @@ body[data-page=dashboard] { margin: 0; background: #101719; color: #e8e6de; over
   .dash-status { gap: 9px; font-size: 10px; }
   .dash-status a { display: none; }
   .dash-main { display: flex; flex-direction: column; gap: 16px; }
+  .dash-middle { display: contents; }
   .dash-panel { width: 100%; }
   .dash-body { padding: 16px; }
   .p-offer { order: 0; }.p-zones { order: 1; }.p-map { order: 2; }.p-drop { order: 3; }.p-settlement { order: 4; }.p-ledger { order: 5; }

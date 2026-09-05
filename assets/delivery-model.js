@@ -71,21 +71,28 @@
     const s = a.slice().sort((x, y) => x - y), m = Math.floor(s.length / 2);
     return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
   }
-  function aggregate(data, filters = {}) {
+  function filteredCells(data, filters = {}) {
     const p = data.planning;
     if (!p) return [];
     const cutoff = new Date(p.recent_anchor + 'T00:00:00Z');
     cutoff.setUTCDate(cutoff.getUTCDate() - (p.recent_days - 1));
     const since = cutoff.toISOString().slice(0, 10);
     const ranges = { lunch: [11, 14], dinner: [17, 20], late: [20, 23] };
-    const groups = new Map();
-    for (const c of p.cells) {
-      if (filters.period === 'recent' && c.date < since) continue;
-      if (filters.day === 'weekday' && c.weekday >= 5) continue;
-      if (filters.day === 'weekend' && c.weekday < 5) continue;
-      if (filters.hour != null && c.hour !== filters.hour) continue;
+    return p.cells.filter(c => {
+      if (filters.period === 'recent' && (c.date < since || c.date > p.recent_anchor)) return false;
+      if (filters.day === 'weekday' && c.weekday >= 5) return false;
+      if (filters.day === 'weekend' && c.weekday < 5) return false;
+      if (filters.hour != null && c.hour !== Number(filters.hour)) return false;
+      if (filters.zone && c.zone !== filters.zone) return false;
       const range = ranges[filters.time];
-      if (range && (c.hour < range[0] || c.hour >= range[1])) continue;
+      return !range || (c.hour >= range[0] && c.hour < range[1]);
+    });
+  }
+  function aggregate(data, filters = {}) {
+    const p = data.planning;
+    if (!p) return [];
+    const groups = new Map();
+    for (const c of filteredCells(data, filters)) {
       if (!groups.has(c.zone)) groups.set(c.zone, { name: c.zone, seconds: 0, pickups: 0, drops: 0, shifts: new Set(), waits: [] });
       const z = groups.get(c.zone);
       z.seconds += c.seconds; z.pickups += c.pickups; z.drops += c.drops;
@@ -97,24 +104,32 @@
       const enough = hours >= p.min_hours && g.shifts.size >= p.min_shifts && g.pickups >= p.min_pickups;
       return { name: g.name, label: meta.label || g.name, pickups: g.pickups, drops: g.drops,
         hours, shifts: g.shifts.size, enough, rate: enough ? g.pickups / hours : null,
-        wait: median(g.waits), flow: meta.flow, as_drop: meta.as_drop };
+        wait: median(g.waits), waitCount: g.waits.length, flow: meta.flow, as_drop: meta.as_drop };
     }).sort((a, b) => Number(b.enough) - Number(a.enough) || (b.rate || 0) - (a.rate || 0) || b.pickups - a.pickups || a.name.localeCompare(b.name));
   }
-  function hourly(data) {
+  function hourly(data, filters = {}) {
     const p = data.planning;
     if (!p) return [];
     const rows = Array.from({length: 24}, (_, hour) => ({hour, seconds: 0, pickups: 0, shifts: new Set()}));
-    for (const c of p.cells) {
+    for (const c of filteredCells(data, filters)) {
       const r = rows[c.hour];
       r.seconds += c.seconds; r.pickups += c.pickups; r.shifts.add(c.shift);
     }
     return rows.map(r => {
       const hours = r.seconds / 3600, shifts = r.shifts.size;
       const enough = hours >= p.min_hours && shifts >= p.min_shifts && r.pickups >= p.min_pickups;
-      return {hour: r.hour, hours, pickups: r.pickups, shifts, rate: enough ? r.pickups / hours : null};
+      return {hour: r.hour, hours, pickups: r.pickups, shifts, enough, rate: enough ? r.pickups / hours : null};
     });
   }
-  const api = { DEFAULTS, estimate, settlement, aggregate, hourly, median };
+  function sensitivity(input, delays = [0, 5, 10, 15]) {
+    return delays.map(delay => {
+      const extra = numeric(delay, '额外延误');
+      const r = estimate({ ...input, buffer: extra });
+      return { delay: extra, minutes: r.pessimisticMinutes, rate: r.slowRate,
+        quest: r.slowQuest, needed: r.neededSlow, meetsTarget: r.slowRate >= r.target };
+    });
+  }
+  const api = { DEFAULTS, estimate, sensitivity, settlement, aggregate, hourly, median };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.DeliveryModel = api;
 })(typeof window !== 'undefined' ? window : this);

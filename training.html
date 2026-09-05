@@ -11,11 +11,12 @@
 <meta property="og:title" content="训练 · Training Load">
 <meta property="og:description" content="训练负荷与状态 —— 7 天滚动负荷、Fitness/Form、训练效率、强度象限与爬升配速。">
 <meta name="twitter:card" content="summary">
-<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon.svg?v=69ad9d413362" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,700&family=JetBrains+Mono:wght@300;400;500&family=Noto+Serif+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/styles.css?v=d1652980118b">
+<link rel="stylesheet" href="assets/site-ui.css?v=4959f520de7e">
 </head>
 <body data-page="training">
 
@@ -41,9 +42,9 @@
     <button class="range-preset" data-preset="all">全部</button>
   </div>
   <div class="range-filter-inputs">
-    <input type="date" id="rangeFrom">
+    <input type="date" id="rangeFrom" aria-label="开始日期">
     <span class="range-filter-sep">→</span>
-    <input type="date" id="rangeTo">
+    <input type="date" id="rangeTo" aria-label="结束日期">
   </div>
   <div class="range-filter-summary" id="rangeFilterSummary">全部数据</div>
 </div>
@@ -58,7 +59,7 @@
     <div class="load-legend">
       <span><span class="swatch" style="background: var(--amber);"></span>7 天累计距离 (km)</span>
       <span><span class="swatch" style="background: var(--cyan); border-radius: 50%;"></span>7 天骑行天数</span>
-      <span style="margin-left: auto;">配送期 04-25 → 05-19 为最后一波尖峰</span>
+      <span style="margin-left: auto;">按连续 7 个日历日累计；使用顶部日期筛选细看</span>
     </div>
   </div>
 </section>
@@ -66,16 +67,16 @@
 
 <section class="analysis-section">
   <div class="section-title">训练负荷与状态<em>·</em>Fitness &amp; Form</div>
-  <div class="section-sub">基于 Banister 模型 · 日负荷 = 活动 kcal/10 · CTL τ=42 天 (体能) · ATL τ=7 天 (疲劳) · TSB = CTL − ATL (状态)</div>
+  <div class="section-sub">日负荷以活动 kcal/10 近似 · 42 日与 7 日指数平滑，保留筛选前历史用于计算 · 差值描述近期负荷变化，不能直接判断体能或疲劳</div>
 
   <div class="ff-kpis" id="ffKpis"></div>
 
   <div class="chart-card">
     <svg class="ff-chart" id="ffChart" viewBox="0 0 900 320" preserveAspectRatio="none" style="width:100%;height:auto;display:block;"></svg>
     <div class="ff-legend">
-      <span><span class="swatch" style="background: linear-gradient(180deg, rgba(232,183,109,0.55), rgba(232,183,109,0.04));"></span>CTL · 长期体能 (42d)</span>
-      <span><span class="swatch" style="background: var(--cyan); border-radius: 50%; width: 10px; height: 10px;"></span>ATL · 短期疲劳 (7d)</span>
-      <span><span class="swatch" style="background: linear-gradient(90deg, #88b66a, var(--rose));"></span>TSB · 状态曲线 (副轴)</span>
+      <span><span class="swatch" style="background: linear-gradient(180deg, rgba(232,183,109,0.55), rgba(232,183,109,0.04));"></span>长期负荷 (42d)</span>
+      <span><span class="swatch" style="background: var(--cyan); border-radius: 50%; width: 10px; height: 10px;"></span>短期负荷 (7d)</span>
+      <span><span class="swatch" style="background: linear-gradient(90deg, #88b66a, var(--rose));"></span>长期 − 短期 (副轴)</span>
       <span style="margin-left: auto;" id="ffFoot">—</span>
     </div>
   </div>
@@ -84,7 +85,7 @@
 
 <section class="analysis-section">
   <div class="section-title">训练效率<em>·</em>Training Efficiency</div>
-  <div class="section-sub">心率 ÷ 速度 = 单位速度的心率代价 · 越低代表心肺越省力</div>
+  <div class="section-sub">以心率和速度比较每公里心跳数 · 结果也受路线、坡度、停车和天气影响</div>
   <div class="chart-card">
     <svg class="effi-chart" id="effiChart" viewBox="0 0 900 280" preserveAspectRatio="none"></svg>
     <div class="effi-legend">
@@ -139,8 +140,8 @@
 
 
 <section class="analysis-section">
-  <div class="section-title">送外卖期 · 日活动叠加<em>·</em>Daily Stack</div>
-  <div class="section-sub">骑行距离 + 身体信号 / 4 月 25 日 → 5 月 24 日</div>
+  <div class="section-title">骑行与日常活动<em>·</em>Daily Stack</div>
+  <div class="section-sub">骑行距离与当天身体记录对照 · 日期跟随筛选，缺测处留空</div>
 
   <div class="chart-card">
     <div class="overlay-tabs" id="overlayTabs">
@@ -170,9 +171,11 @@
 
 <div class="tooltip" id="tooltip"></div>
 
-<script src="assets/routes.js"></script>
-<script src="assets/health-data.js"></script>
-<script src="assets/recovery.js"></script>
-<script src="assets/app.js"></script>
+<script src="assets/routes.js?v=eb19ea933c0e"></script>
+<script src="assets/health-data.js?v=a6cb8464c15a"></script>
+<script src="assets/chart-model.js?v=a23f28d1bc84"></script>
+<script src="assets/recovery.js?v=2b35cf9c8f19"></script>
+<script src="assets/app.js?v=40b227072a13"></script>
+<script src="assets/site-ui.js?v=01dd1afd6670"></script>
 </body>
 </html>

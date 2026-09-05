@@ -82,6 +82,16 @@ function renderDerivedStats() {
   });
 }
 
+function clearChart(ids, message = '当前筛选没有匹配记录') {
+  ids.forEach((id, index) => {
+    const host = document.getElementById(id);
+    if (!host) return;
+    host.innerHTML = index ? '—' : host.tagName.toLowerCase() === 'svg'
+      ? `<text x="50%" y="50%" text-anchor="middle" fill="#908d85" font-size="13">${message}</text>`
+      : `<div class="empty-range">${message}</div>`;
+  });
+}
+
 // ============ 工具函数 ============
 function formatDuration(sec) {
   const h = Math.floor(sec / 3600);
@@ -158,7 +168,7 @@ function renderRoutes(city) {
 
   // 按距离从短到长画,这样长的(更重要)在上面
   const sorted = [...filtered].sort((a, b) => a.distance_km - b.distance_km);
-  
+
   const bounds = [];
   sorted.forEach((route, idx) => {
     if (route.track.length < 2) return;
@@ -169,7 +179,7 @@ function renderRoutes(city) {
       lineCap: 'round',
       lineJoin: 'round'
     }).addTo(map);
-    
+
     polyline.on('click', () => selectRoute(route));
     polyline.on('mouseover', function() {
       if (selectedRouteName !== route.name) {
@@ -181,7 +191,7 @@ function renderRoutes(city) {
         this.setStyle({ weight: 2, opacity: 0.55, color: '#e8b76d' });
       }
     });
-    
+
     routePolylines.push({polyline, route});
     route.track.forEach(p => bounds.push(p));
   });
@@ -253,7 +263,7 @@ function selectRoute(route) {
 function selectRouteByName(name) {
   const route = window.ROUTES_DATA.find(r => r.name === name);
   if (!route) return;
-  
+
   // 如果不在当前城市,切换
   if (currentCity !== route.city && currentCity !== "all") {
     currentCity = route.city;
@@ -391,7 +401,7 @@ function renderCityMap() {
 function renderHourClock() {
   const svg = document.getElementById('hourClock');
   const cx = 170, cy = 170, R = 130;
-  
+
   // ROUTES_DATA is already narrowed to the active city and date range by
   // withRange, so this reads whatever the filter bar currently says. It used
   // to hardcode Sydney, which quietly ignored two years of Chinese tracks.
@@ -403,7 +413,7 @@ function renderHourClock() {
   const maxCount = Math.max(...hourCounts);
 
   let html = '';
-  
+
   // 同心圆背景
   for (let i = 1; i <= 3; i++) {
     html += `<circle cx="${cx}" cy="${cy}" r="${R*i/3}" fill="none" stroke="#2a2c35" stroke-width="0.5"/>`;
@@ -428,7 +438,7 @@ function renderHourClock() {
     const r = 15 + (count / maxCount) * (R - 15);
     const angle1 = ((h - 0.4) / 24) * Math.PI * 2 - Math.PI / 2;
     const angle2 = ((h + 0.4) / 24) * Math.PI * 2 - Math.PI / 2;
-    
+
     const x1 = cx + Math.cos(angle1) * 15;
     const y1 = cy + Math.sin(angle1) * 15;
     const x2 = cx + Math.cos(angle1) * r;
@@ -437,7 +447,7 @@ function renderHourClock() {
     const y3 = cy + Math.sin(angle2) * r;
     const x4 = cx + Math.cos(angle2) * 15;
     const y4 = cy + Math.sin(angle2) * 15;
-    
+
     const intensity = count / maxCount;
     const color = h >= 16 && h <= 19 ? '#ffd897' : '#e8b76d';
     html += `<path d="M ${x1} ${y1} L ${x2} ${y2} A ${r} ${r} 0 0 1 ${x3} ${y3} L ${x4} ${y4} A 15 15 0 0 0 ${x1} ${y1} Z"
@@ -468,7 +478,7 @@ function renderWeekday() {
   const sydneyRoutes = window.ROUTES_DATA;
   const counts = new Array(7).fill(0);
   sydneyRoutes.forEach(r => counts[r.weekday] += 1);
-  const maxCount = Math.max(...counts);
+  const maxCount = Math.max(...counts, 1);
 
   const html = weekdayNames.map((name, i) => `
     <div class="weekday-row">
@@ -484,48 +494,15 @@ function renderWeekday() {
 
 // ============ 每日柱状图 ============
 function renderDailyChart() {
-  // Range-aware: when active range is set, use that window over H.daily;
-  // otherwise fall back to the original 2026-04-25→2026-05-19 Sydney window.
-  const r = window.getActiveRange && window.getActiveRange();
-  const HD = window.HEALTH_DATA;
-  let startDate, endDate, dailyFromHealth = null;
-  if (r && r.from && r.to) {
-    startDate = new Date(r.from);
-    endDate = new Date(r.to);
-    if (HD && HD.daily) {
-      dailyFromHealth = {};
-      HD.daily.forEach(d => { dailyFromHealth[d.date] = (d.distance_km || 0); });
-    }
-  } else {
-    startDate = new Date("2026-04-25");
-    endDate = new Date("2026-05-19");
-  }
-
-  // Build per-day km map. Prefer ROUTES_DATA (Sydney GPS) for the default
-  // window, otherwise fall back to H.daily aggregates.
-  const daily = {};
-  if (dailyFromHealth) {
-    Object.assign(daily, dailyFromHealth);
-  } else {
-    window.ROUTES_DATA.filter(rt => rt.city === "Sydney").forEach(rt => {
-      const d = rt.start_date;
-      if (d >= startDate.toISOString().slice(0,10) && d <= endDate.toISOString().slice(0,10)) {
-        daily[d] = (daily[d] || 0) + rt.distance_km;
-      }
-    });
-  }
-
-  // 生成完整日期序列
-  const days = [];
-  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-    const ds = d.toISOString().slice(0, 10);
-    days.push({ date: ds, km: daily[ds] || 0, dayObj: new Date(d) });
-  }
-  if (!days.length) {
-    document.getElementById('dailyChart').innerHTML = '';
-    return;
-  }
-
+  const rows = window.HEALTH_DATA?.daily || [];
+  const host = document.getElementById('dailyChart');
+  const range = window.getActiveRange?.();
+  const from = range?.from?.toISOString().slice(0, 10) || rows[0]?.date;
+  const to = range?.to?.toISOString().slice(0, 10) || rows.at(-1)?.date;
+  const lookup = new Map(rows.map(d => [d.date, d]));
+  const days = window.ChartModel.calendar(from, to).map(date => ({ date,
+    km: lookup.get(date)?.distance_km || 0, dayObj: new Date(date + 'T00:00:00Z') }));
+  if (!rows.length || !days.length) { host.innerHTML = '<text x="50%" y="50%" text-anchor="middle" fill="#908d85">当前筛选没有记录</text>'; return; }
   const W = 800, H = 200;
   const padL = 30, padR = 10, padT = 20, padB = 30;
   const chartW = W - padL - padR;
@@ -534,13 +511,13 @@ function renderDailyChart() {
   const maxKm = Math.max(...days.map(d => d.km), 50);
 
   let html = '';
-  
+
   // 网格线
-  [0, 25, 50, 75].forEach(v => {
+  [0, maxKm / 4, maxKm / 2, maxKm * 3 / 4, maxKm].forEach(v => {
     if (v > maxKm) return;
     const y = padT + chartH - (v / maxKm) * chartH;
     html += `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#2a2c35" stroke-width="0.5" stroke-dasharray="2 4"/>`;
-    html += `<text x="${padL-6}" y="${y+3}" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${v}</text>`;
+    html += `<text x="${padL-6}" y="${y+3}" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${v.toFixed(0)}</text>`;
   });
 
   // 柱
@@ -551,13 +528,13 @@ function renderDailyChart() {
       html += `<line x1="${x}" y1="${padT + chartH}" x2="${x}" y2="${padT + chartH - 4}" stroke="#3a3d48" stroke-width="1"/>`;
     } else {
       const h = (d.km / maxKm) * chartH;
-      const x = padL + i * barW + 1;
+      const x = padL + i * barW + Math.min(1, barW * .1);
       const y = padT + chartH - h;
-      const isWeekend = d.dayObj.getDay() === 0 || d.dayObj.getDay() === 6;
-      html += `<rect x="${x}" y="${y}" width="${barW-2}" height="${h}" 
-        fill="${isWeekend ? '#ffd897' : '#e8b76d'}" fill-opacity="0.85"/>`;
+      const isWeekend = d.dayObj.getUTCDay() === 0 || d.dayObj.getUTCDay() === 6;
+      html += `<rect x="${x}" y="${y}" width="${Math.max(.4, barW - Math.min(2, barW * .2))}" height="${h}"
+        fill="${isWeekend ? '#ffd897' : '#e8b76d'}" fill-opacity="0.85"><title>${d.date} · ${d.km.toFixed(1)} km</title></rect>`;
       // 顶部数字(可选)
-      if (d.km > 40) {
+      if (days.length <= 45 && d.km > 40) {
         html += `<text x="${x + barW/2}" y="${y-4}" text-anchor="middle" font-family="JetBrains Mono" font-size="8" fill="#e8b76d">${d.km.toFixed(0)}</text>`;
       }
     }
@@ -565,9 +542,9 @@ function renderDailyChart() {
 
   // x 轴标签(每隔几天)
   days.forEach((d, i) => {
-    if (i % 4 === 0 || i === days.length - 1) {
+    if (i % Math.max(1, Math.ceil(days.length / 8)) === 0 || i === days.length - 1) {
       const x = padL + i * barW + barW/2;
-      const label = (d.dayObj.getMonth()+1) + '/' + d.dayObj.getDate();
+      const label = days.length > 180 ? d.date.slice(2, 7) : d.date.slice(5);
       html += `<text x="${x}" y="${H - 10}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${label}</text>`;
     }
   });
@@ -596,7 +573,8 @@ function renderMonthlyChart() {
   if (!window.HEALTH_DATA) return;
   const monthly = window.HEALTH_DATA.monthly;
   const cfg = MONTH_METRICS[currentMonthMetric];
-  const maxV = Math.max(...monthly.map(m => m[currentMonthMetric]));
+  const maxV = Math.max(...monthly.map(m => m[currentMonthMetric]), 1);
+  if (!monthly.length) { document.getElementById('monthlyChart').innerHTML = '<div class="empty-range">当前筛选没有骑行记录</div>'; return; }
   const fillClass = cfg.color === 'rides' ? 'rides' : '';
 
   const monthLabel = ym => {
@@ -626,7 +604,7 @@ function bindMonthlyTabs() {
       document.querySelectorAll('.monthly-tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       currentMonthMetric = tab.dataset.metric;
-      renderMonthlyChart();
+      window.withRange(renderMonthlyChart);
     });
   });
 }
@@ -707,7 +685,7 @@ function renderWeatherScatter() {
 
   // points
   data.forEach(d => {
-    const r = 3 + (d.distance_km / maxDist) * 9;
+    const r = 3 + (d.distance_km / Math.max(1, maxDist)) * 9;
     const cx = xScale(d.weather_temp_c);
     const cy = yScale(d.hr_avg);
     html += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#6cc4d9" fill-opacity="0.42" stroke="#6cc4d9" stroke-width="0.6"><title>${d.date} · ${d.weather_temp_c}℃ · HR ${d.hr_avg.toFixed(0)} · ${d.distance_km.toFixed(1)}km</title></circle>`;
@@ -724,16 +702,15 @@ function renderCalendar() {
   const dailyMap = {};
   window.HEALTH_DATA.daily.forEach(d => { dailyMap[d.date] = d; });
 
-  // Build span: first ride to last ride, aligned to week (Mon-Sun)
-  const first = new Date(window.HEALTH_DATA.summary.first_ride + 'T00:00:00');
-  const last = new Date(window.HEALTH_DATA.summary.last_ride + 'T00:00:00');
-  // Align to Monday
-  const start = new Date(first);
-  const dow = (start.getDay() + 6) % 7; // 0=Mon ... 6=Sun
-  start.setDate(start.getDate() - dow);
-  const end = new Date(last);
-  end.setDate(end.getDate() + (6 - ((end.getDay() + 6) % 7)));
-
+  const daily = window.HEALTH_DATA.daily;
+  const range = window.getActiveRange?.();
+  const from = range?.from?.toISOString().slice(0, 10) || daily[0]?.date;
+  const to = range?.to?.toISOString().slice(0, 10) || daily.at(-1)?.date;
+  const first = new Date(from + 'T00:00:00Z'), last = new Date(to + 'T00:00:00Z');
+  if (!daily.length || first > last) { document.getElementById('calGrid').innerHTML = '<div class="empty-range">当前筛选没有记录</div>'; document.getElementById('calMonths').innerHTML = ''; return; }
+  const start = new Date(first), end = new Date(last);
+  start.setUTCDate(start.getUTCDate() - (start.getUTCDay() + 6) % 7);
+  end.setUTCDate(end.getUTCDate() + (6 - (end.getUTCDay() + 6) % 7));
   // Buckets by max distance
   const maxKm = Math.max(...window.HEALTH_DATA.daily.map(d => d.distance_km), 1);
   const bucket = km => {
@@ -756,21 +733,21 @@ function renderCalendar() {
     const bk = bucket(data ? data.distance_km : 0);
     const cls = bk ? `cal-cell l${bk}` : 'cal-cell';
     const title = data
-      ? `${ds} · ${data.distance_km.toFixed(1)} km · ${data.rides} rides`
-      : `${ds} · rest`;
+      ? `${ds} · ${data.distance_km.toFixed(1)} km · ${data.rides} 次骑行`
+      : `${ds} · 无记录`;
     cells.push(`<div class="${cls}" title="${title}"></div>`);
 
     // Month label at start of each new month (first row only)
-    if ((cur.getDay() + 6) % 7 === 0) {
+    if ((cur.getUTCDay() + 6) % 7 === 0) {
       // start of new column (Mon)
-      if (cur.getMonth() !== lastMonth) {
-        monthLabels.push({ col, label: `${(cur.getMonth()+1).toString().padStart(2,'0')}` });
-        lastMonth = cur.getMonth();
+      if (cur.getUTCMonth() !== lastMonth) {
+        monthLabels.push({ col, label: `${cur.getUTCMonth() === 0 || !monthLabels.length ? cur.getUTCFullYear() + "/" : ""}${(cur.getUTCMonth()+1).toString().padStart(2,'0')}` });
+        lastMonth = cur.getUTCMonth();
       }
       col++;
     }
 
-    cur.setDate(cur.getDate() + 1);
+    cur.setUTCDate(cur.getUTCDate() + 1);
   }
 
   document.getElementById('calGrid').innerHTML = cells.join('');
@@ -792,7 +769,11 @@ function renderCalendar() {
 function renderVo2() {
   if (!window.HEALTH_DATA || !window.HEALTH_DATA.vo2max) return;
   const data = window.HEALTH_DATA.vo2max;
-  if (data.length < 2) return;
+  if (!data.length) {
+    document.getElementById('vo2Chart').innerHTML = '<text x="50%" y="50%" text-anchor="middle" fill="#908d85">当前筛选没有 VO₂max 估算</text>';
+    ['vo2First', 'vo2Last', 'vo2Trend', 'vo2Sub'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '—'; });
+    return;
+  }
   const W = 700, H = 240;
   const padL = 40, padR = 20, padT = 22, padB = 30;
   const chartW = W - padL - padR;
@@ -803,7 +784,7 @@ function renderVo2() {
   const xMin = Math.min(...xs), xMax = Math.max(...xs);
   const yMin = Math.floor(Math.min(...ys) - 2);
   const yMax = Math.ceil(Math.max(...ys) + 2);
-  const xs2 = x => padL + ((x - xMin) / (xMax - xMin)) * chartW;
+  const xs2 = x => padL + ((x - xMin) / Math.max(1, xMax - xMin)) * chartW;
   const ys2 = y => padT + chartH - ((y - yMin) / (yMax - yMin)) * chartH;
 
   let html = '';
@@ -872,6 +853,8 @@ function renderVo2() {
 function renderWeight() {
   if (!window.HEALTH_DATA || !window.HEALTH_DATA.weight) return;
   const w = window.HEALTH_DATA.weight;
+  const card = document.querySelector('.weight-card');
+  if (card) card.style.display = '';
   if (!w.length) {
     document.querySelector('.weight-card').style.display = 'none';
     return;
@@ -905,45 +888,22 @@ function renderBodyDeltas() {
   if (!window.HEALTH_DATA) return;
   const d = window.HEALTH_DATA.summary.body_deltas || {};
   const items = [
-    { key: 'resting_hr', label: '静息心率', unit: 'bpm', goodDirection: 'down' },
-    { key: 'hrv',        label: 'HRV (SDNN)', unit: 'ms', goodDirection: 'up' },
-    { key: 'sleep_h',    label: '夜均睡眠', unit: 'h', goodDirection: 'up' },
-    { key: 'resp_rate',  label: '睡眠呼吸', unit: '/min', goodDirection: 'down' },
-    { key: 'spo2',       label: '血氧', unit: '%', goodDirection: 'up', scale: 100 },
-    { key: 'steps',      label: '日均步数', unit: '步', goodDirection: 'up', formatter: v => Math.round(v).toLocaleString() },
+    { key: 'resting_hr', label: '静息心率', unit: 'bpm' },
+    { key: 'hrv', label: 'HRV (SDNN)', unit: 'ms' },
+    { key: 'sleep_h', label: '睡眠记录', unit: 'h' },
+    { key: 'resp_rate', label: '呼吸频率', unit: '/min' },
+    { key: 'spo2', label: '血氧', unit: '%', scale: 100 },
+    { key: 'steps', label: '日均步数', unit: '步' },
   ];
-  const html = items.map(it => {
+  document.getElementById('deltaGrid').innerHTML = items.map(it => {
     const stat = d[it.key];
-    if (!stat) {
-      return `<div class="delta-card">
-        <div class="delta-label">${it.label}</div>
-        <div class="delta-value" style="color: var(--text-faint);">—</div>
-        <div class="delta-meta">数据缺失</div>
-      </div>`;
-    }
+    if (!stat) return `<div class="delta-card"><div class="delta-label">${it.label}</div><div class="delta-value">—</div><div class="delta-meta">需至少 28 天范围，且首尾 14 天都有记录</div></div>`;
     const scale = it.scale || 1;
-    const fmt = it.formatter || (v => (v * scale).toFixed(it.unit === 'h' ? 1 : (Math.abs(v) < 10 ? 1 : 0)));
-    const recentFmt = fmt(stat.recent);
-    const baseFmt = fmt(stat.baseline);
-    const deltaAbs = stat.delta * scale;
-    const isUp = stat.delta > 0.001;
-    const isDown = stat.delta < -0.001;
-    const arrow = isUp ? '▲' : isDown ? '▼' : '◆';
-    const good = (it.goodDirection === 'up' && isUp) || (it.goodDirection === 'down' && isDown);
-    const arrowCls = !isUp && !isDown ? 'flat' : (good ? 'down' : 'up');
-    const barColor = good ? '' : 'rose';
-    const barPct = Math.min(100, Math.abs(deltaAbs) / Math.max(Math.abs(baseFmt - 0) || 1, 1) * 200);
-    return `<div class="delta-card">
-      <div class="delta-label">${it.label}</div>
-      <div class="delta-value">${recentFmt}<small>${it.unit}</small></div>
-      <div class="delta-meta">
-        基线 ${baseFmt}${it.unit} ·
-        <span class="delta-arrow ${arrowCls}">${arrow} ${Math.abs(deltaAbs).toFixed(Math.abs(deltaAbs) < 10 ? 2 : 0)}${it.unit}</span>
-      </div>
-      <div class="delta-bar"><div class="delta-bar-inner ${barColor}" style="width: ${barPct.toFixed(1)}%;"></div></div>
-    </div>`;
+    const fmt = value => it.key === 'steps' ? Math.round(value).toLocaleString() : (value * scale).toFixed(1);
+    return `<div class="delta-card"><div class="delta-label">${it.label}</div><div class="delta-value">${fmt(stat.recent)}<small>${it.unit}</small></div>
+      <div class="delta-meta">起始 14 天 ${fmt(stat.baseline)} · 最近 14 天 ${stat.delta >= 0 ? '+' : '−'}${fmt(Math.abs(stat.delta))} ${it.unit}<br>
+      各 ${stat.baseline_n} / ${stat.recent_n} 天记录${it.key === 'sleep_h' ? ' · 排除 ≥14h' : ''}</div></div>`;
   }).join('');
-  document.getElementById('deltaGrid').innerHTML = html;
 }
 
 // ============ 配速分布 ============
@@ -968,59 +928,22 @@ function renderSpeedDist() {
 function renderTradePanel() {
   const el = document.getElementById('tradePanel');
   if (!el || !window.HEALTH_DATA) return;
-  const s = window.HEALTH_DATA.summary;
-
-  const weightDelta = (s.weight_latest_kg || 0) - (s.weight_first_kg || 0); // -8
-  const vo2Delta = (s.vo2max_latest || 0) - (s.vo2max_first || 0);          // -7.6
-  const buckets = s.speed_buckets || {};
-  const slowCount = (buckets['<10'] || 0) + (buckets['10-15'] || 0);
-  const slowShare = s.ride_count ? (slowCount / s.ride_count * 100) : 0;
-
-  const tiles = [
-    {
-      label: 'Body Mass',
-      sign: weightDelta < 0 ? '▼' : '▲',
-      value: Math.abs(weightDelta).toFixed(1),
-      unit: 'kg',
-      cls: weightDelta < 0 ? 'up' : 'down',          // weight down = positive outcome
-      foot: `${s.weight_first_kg} → ${s.weight_latest_kg} kg`,
-    },
-    {
-      label: 'VO₂max',
-      sign: vo2Delta < 0 ? '▼' : '▲',
-      value: Math.abs(vo2Delta).toFixed(1),
-      unit: '',
-      cls: vo2Delta < 0 ? 'down' : 'up',             // VO2max down = negative
-      foot: `${s.vo2max_first.toFixed(1)} → ${s.vo2max_latest.toFixed(1)} ml/kg/min`,
-    },
-    {
-      label: 'Pace < 15 km/h',
-      sign: '◆',
-      value: Math.round(slowShare),
-      unit: '%',
-      cls: 'flat',
-      foot: `${slowCount} / ${s.ride_count} 次 · 停-走式骑行`,
-    },
-  ];
-
-  el.innerHTML = `
-    <div class="trade-story">
-      <div class="trade-eyebrow">Trade-off · 一年的代价与回报</div>
-      <div class="trade-headline">
-        瘦了 <em>8 公斤</em>，VO₂max 却 <em>掉了 7.6</em>。
-      </div>
-      <div class="trade-body">
-        2026 年 4 月起的送外卖周期把骑行变成了高量、低强度的代步动作 —— 心肺没有被推到训练区间，却被长时间的低速 + 站立踩踏不断消耗。Apple Watch 把这个故事写成了三条曲线。
-      </div>
-    </div>
-    ${tiles.map(t => `
-      <div class="trade-tile ${t.cls}">
-        <div class="t-label">${t.label}</div>
-        <div class="t-value"><span class="t-sign">${t.sign}</span>${t.value}<small>${t.unit}</small></div>
-        <div class="t-foot">${t.foot}</div>
-      </div>
-    `).join('')}
-  `;
+  const H = window.HEALTH_DATA, s = H.summary;
+  const change = (rows, key, label, unit, digits) => {
+    const valid = rows.filter(r => window.ChartModel.finite(r[key]));
+    if (valid.length < 2) return { label, value: '—', unit, foot: `当前筛选 ${valid.length} 次记录 · 至少需 2 次` };
+    const first = valid[0], last = valid.at(-1), delta = last[key] - first[key];
+    return { label, value: `${delta > 0 ? '+' : ''}${delta.toFixed(digits)}`, unit,
+      foot: `${first.date} → ${last.date} · ${first[key].toFixed(digits)} → ${last[key].toFixed(digits)}` };
+  };
+  const slow = (s.speed_buckets['<10'] || 0) + (s.speed_buckets['10-15'] || 0);
+  const measured = Object.values(s.speed_buckets).reduce((sum, n) => sum + n, 0);
+  const tiles = [change(H.weight, 'kg', '体重记录变化', 'kg', 1), change(H.vo2max, 'value', 'VO₂max 估算变化', '', 1),
+    { label: '平均速度 < 15 km/h', value: measured ? (slow / measured * 100).toFixed(0) : '—', unit: '%', foot: `${slow} / ${measured} 次有均速记录的骑行` }];
+  el.innerHTML = `<div class="trade-story"><div class="trade-eyebrow">当前筛选 · 骑行与身体记录</div>
+    <div class="trade-headline">观察变化，<em>保留上下文。</em></div>
+    <div class="trade-body">体重与 VO₂max 比较筛选内首尾记录。速度包含停车时间；这些记录可帮助回顾日常变化，不能单独确定配送对身体的影响。</div></div>
+    ${tiles.map(t => `<div class="trade-tile flat"><div class="t-label">${t.label}</div><div class="t-value">${t.value}<small>${t.unit}</small></div><div class="t-foot">${t.foot}</div></div>`).join('')}`;
 }
 
 // ============ 爬升 × 配速 散点 ============
@@ -1029,7 +952,7 @@ function renderClimbChart() {
   if (!svg || !window.HEALTH_DATA) return;
   const workouts = (window.HEALTH_DATA.workouts || [])
     .filter(w => w.distance_km > 0.5 && w.avg_speed_kmh != null && w.elev_gain_m != null);
-  if (!workouts.length) return;
+  if (!workouts.length) { clearChart(['climbChart', 'climbFoot']); return; }
 
   const W = 900, H = 320;
   const padL = 64, padR = 24, padT = 28, padB = 50;
@@ -1142,13 +1065,10 @@ function renderOverlayChart() {
   const meta = OVERLAY_META[overlayMetric];
   document.getElementById('overlayLegendLabel').textContent = meta.label;
 
-  // Build day list 2026-04-25 → 2026-05-24
-  const start = new Date('2026-04-25T00:00:00');
-  const end = new Date('2026-05-24T00:00:00');
-  const days = [];
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    days.push(d.toISOString().slice(0, 10));
-  }
+  const daily = window.HEALTH_DATA.daily || [];
+  const range = window.getActiveRange?.();
+  const days = window.ChartModel.calendar(range?.from?.toISOString().slice(0, 10) || daily[0]?.date,
+    range?.to?.toISOString().slice(0, 10) || daily.at(-1)?.date);
   const byDate = {};
   window.HEALTH_DATA.daily.forEach(r => { byDate[r.date] = r; });
 
@@ -1197,9 +1117,9 @@ function renderOverlayChart() {
     const km = (r && r.distance_km) || 0;
     if (km > 0) {
       const h = (km / maxKm) * chartH;
-      const x = padL + i * barW + 1;
+      const x = padL + i * barW + Math.min(1, barW * .1);
       const y = padT + chartH - h;
-      html += `<rect x="${x}" y="${y}" width="${barW-2}" height="${h}" fill="#e8b76d" fill-opacity="0.7"><title>${ds} · ${km.toFixed(1)} km</title></rect>`;
+      html += `<rect x="${x}" y="${y}" width="${Math.max(.4, barW - Math.min(2, barW * .2))}" height="${h}" fill="#e8b76d" fill-opacity="0.7"><title>${ds} · ${km.toFixed(1)} km</title></rect>`;
     }
   });
 
@@ -1225,9 +1145,9 @@ function renderOverlayChart() {
 
   // x labels (every 4 days)
   days.forEach((ds, i) => {
-    if (i % 4 === 0 || i === days.length - 1) {
+    if (i % Math.max(1, Math.ceil(days.length / 8)) === 0 || i === days.length - 1) {
       const x = padL + i * barW + barW / 2;
-      const label = ds.slice(5);
+      const label = days.length > 180 ? ds.slice(2, 7) : ds.slice(5);
       html += `<text x="${x}" y="${H - 14}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${label}</text>`;
     }
   });
@@ -1241,38 +1161,22 @@ function bindOverlayTabs() {
       document.querySelectorAll('.overlay-tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       overlayMetric = tab.dataset.overlay;
-      renderOverlayChart();
+      window.withRange(renderOverlayChart);
+      window.ChartModel.enhance(document.getElementById('overlayChart'));
     });
   });
 }
 
 // ============ 动态注解 ============
 function renderAnnotation() {
-  if (!window.HEALTH_DATA) return;
-  const s = window.HEALTH_DATA.summary;
-  const d = s.body_deltas || {};
-  const wt = (s.weight_latest_kg && s.weight_first_kg)
-    ? (s.weight_latest_kg - s.weight_first_kg) : null;
-  const vo2 = (s.vo2max_latest && s.vo2max_first)
-    ? (s.vo2max_latest - s.vo2max_first) : null;
-
-  const parts = [];
-  parts.push(`平均速度只有 10 km/h —— 这不是训练,是工作。`);
-  if (wt != null && wt < -1) {
-    parts.push(`但 ${Math.abs(wt).toFixed(0)} 公斤体重悄悄消失了 (${s.weight_first_kg} → ${s.weight_latest_kg} kg),`);
-  }
-  if (vo2 != null && vo2 < -1) {
-    parts.push(`VO₂max 反而从 ${s.vo2max_first} 滑到 ${s.vo2max_latest} mL/min·kg —— 长时间低强度有氧+睡眠不足,身体在「省着用」。`);
-  } else if (vo2 != null && vo2 > 1) {
-    parts.push(`VO₂max 从 ${s.vo2max_first} 抬升到 ${s.vo2max_latest} mL/min·kg —— 持续有氧的红利,慢慢发酵。`);
-  }
-  if (d.steps && d.steps.delta > 2000) {
-    parts.push(`日均步数从 ${Math.round(d.steps.baseline).toLocaleString()} 跳到 ${Math.round(d.steps.recent).toLocaleString()},`);
-  }
-  if (d.sleep_h && d.sleep_h.delta > 0.3) {
-    parts.push(`身体也在用更长的睡眠 (${d.sleep_h.recent.toFixed(1)}h) 自己回血。`);
-  }
-  document.getElementById('annotationQuote').textContent = parts.join('');
+  const H = window.HEALTH_DATA, host = document.getElementById('annotationQuote');
+  if (!H || !host) return;
+  const s = H.summary;
+  if (!s.ride_count) { host.textContent = '当前筛选没有骑行记录。'; return; }
+  const speed = s.total_duration_h > 0 ? s.total_distance_km / s.total_duration_h : null;
+  host.textContent = `当前筛选记录 ${s.ride_count} 次骑行、${s.total_distance_km.toFixed(1)} km、${s.total_duration_h.toFixed(1)} 小时。`
+    + (speed === null ? '' : `总距离除以记录时长为 ${speed.toFixed(1)} km/h，包含停车与等待。`)
+    + '结合路线、时长与海拔比较，能更完整地回顾每次出行。';
 }
 
 // ============ 中文数字 ============
@@ -1358,7 +1262,7 @@ function renderHero() {
 // ============ Personal Records ============
 function renderPersonalRecords() {
   const w = (window.HEALTH_DATA && window.HEALTH_DATA.workouts) || [];
-  if (!w.length) return;
+  if (!w.length) { clearChart(['prGrid']); return; }
 
   const pickMax = (arr, key) => arr.filter(r => r[key] != null)
                                     .reduce((best, r) => (!best || r[key] > best[key]) ? r : best, null);
@@ -1382,12 +1286,8 @@ function renderPersonalRecords() {
 
   // Best week (7-day rolling) from daily
   const daily = (window.HEALTH_DATA && window.HEALTH_DATA.daily) || [];
-  let bestWeek = { km: 0, end: '' };
-  for (let i = 6; i < daily.length; i++) {
-    let sum = 0;
-    for (let j = i - 6; j <= i; j++) sum += (daily[j].distance_km || 0);
-    if (sum > bestWeek.km) bestWeek = { km: sum, end: daily[i].date };
-  }
+  const peak = window.ChartModel.calendarLoad(daily).reduce((best, p) => p.km > best.km ? p : best, { km: 0, date: '' });
+  const bestWeek = { km: peak.km, end: peak.date };
 
   const fmtDate = d => d ? d.slice(5) : '—';
 
@@ -1449,21 +1349,8 @@ function renderPersonalRecords() {
 // ============ 7-Day Rolling Load ============
 function renderLoadChart() {
   const daily = (window.HEALTH_DATA && window.HEALTH_DATA.daily) || [];
-  if (!daily.length) return;
-
-  // Compute 7-day rolling distance + ride-day count
-  const points = [];
-  for (let i = 6; i < daily.length; i++) {
-    let kmSum = 0;
-    let rideDays = 0;
-    for (let j = i - 6; j <= i; j++) {
-      const km = daily[j].distance_km || 0;
-      kmSum += km;
-      if (km > 0.01) rideDays += 1;
-    }
-    points.push({ date: daily[i].date, km: kmSum, days: rideDays });
-  }
-
+  if (!daily.length) { document.getElementById('loadChart').innerHTML = '<text x="50%" y="50%" text-anchor="middle" fill="#908d85">当前筛选没有骑行记录</text>'; return; }
+  const points = window.ChartModel.calendarLoad(daily);
   const W = 900, H = 260;
   const padL = 48, padR = 48, padT = 18, padB = 32;
   const chartW = W - padL - padR;
@@ -1472,7 +1359,7 @@ function renderLoadChart() {
   const maxKm = Math.max(...points.map(p => p.km), 30);
   const maxDays = 7;
 
-  const x = i => padL + (i / (points.length - 1)) * chartW;
+  const x = i => padL + (i / Math.max(1, points.length - 1)) * chartW;
   const yKm = v => padT + chartH - (v / maxKm) * chartH;
   const yDays = v => padT + chartH - (v / maxDays) * chartH;
 
@@ -1510,25 +1397,11 @@ function renderLoadChart() {
   });
   html += `<path d="${line}" fill="none" stroke="#6cc4d9" stroke-width="1.2" stroke-opacity="0.85"/>`;
 
-  // Highlight delivery period span (2026-04-25 → 2026-05-19)
-  const deliveryStart = points.findIndex(p => p.date >= '2026-04-25');
-  const deliveryEnd = points.findIndex(p => p.date >= '2026-05-19');
-  if (deliveryStart > 0 && deliveryEnd > 0) {
-    const dx1 = x(deliveryStart), dx2 = x(deliveryEnd);
-    html += `<rect x="${dx1}" y="${padT}" width="${Math.max(2, dx2-dx1)}" height="${chartH}" fill="#e8b76d" fill-opacity="0.06" stroke="#a87f3e" stroke-opacity="0.4" stroke-width="0.5" stroke-dasharray="3 3"/>`;
-    html += `<text x="${(dx1+dx2)/2}" y="${padT+10}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#a87f3e" letter-spacing="0.12em">DELIVERY 4/25 → 5/19</text>`;
-  }
-
-  // x labels — sample by month
-  const monthSeen = new Set();
+  const step = Math.max(1, Math.ceil(points.length / 8));
   points.forEach((p, i) => {
-    const ym = p.date.slice(0, 7);
-    if (!monthSeen.has(ym) && (i === 0 || i % 30 === 0 || i === points.length - 1)) {
-      monthSeen.add(ym);
-      html += `<text x="${x(i)}" y="${H - 12}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${ym}</text>`;
-    }
+    if (i % step === 0) html += `<text x="${x(i)}" y="${H - 12}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#908d85">${points.length > 180 ? p.date.slice(2, 7) : p.date.slice(5)}</text>`;
+    html += `<circle cx="${x(i)}" cy="${yKm(p.km)}" r="3" fill="transparent"><title>${p.date} · 7 天累计 ${p.km.toFixed(1)} km · ${p.days} 个骑行日 · ${p.observed} 天有记录</title></circle>`;
   });
-
   document.getElementById('loadChart').innerHTML = html;
 }
 
@@ -1537,7 +1410,7 @@ let _ridesSort = { key: 'date', dir: 'desc' };
 
 function renderRidesTable() {
   const w = (window.HEALTH_DATA && window.HEALTH_DATA.workouts) || [];
-  if (!w.length) return;
+  if (!w.length) { document.getElementById('ridesTbody').innerHTML = '<tr><td colspan="9" class="empty-range">当前筛选没有骑行记录</td></tr>'; return; }
 
   const sorted = [...w].sort((a, b) => {
     const k = _ridesSort.key;
@@ -1599,11 +1472,14 @@ function renderRidesTable() {
   document.querySelectorAll('#ridesTable thead th').forEach(th => {
     th.classList.toggle('sorted', th.dataset.sort === _ridesSort.key);
     th.classList.toggle('asc', _ridesSort.dir === 'asc');
+    th.setAttribute('aria-sort', th.dataset.sort === _ridesSort.key ? (_ridesSort.dir === 'asc' ? 'ascending' : 'descending') : 'none');
   });
 }
 
 function bindRidesTable() {
-  document.querySelectorAll('#ridesTable thead th').forEach(th => {
+  document.querySelectorAll('#ridesTable thead th[data-sort]').forEach(th => {
+    th.tabIndex = 0;
+    th.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); th.click(); } });
     th.addEventListener('click', () => {
       const key = th.dataset.sort;
       if (_ridesSort.key === key) {
@@ -1612,7 +1488,7 @@ function bindRidesTable() {
         _ridesSort.key = key;
         _ridesSort.dir = (key === 'date') ? 'desc' : 'desc';
       }
-      renderRidesTable();
+      window.withRange(renderRidesTable);
     });
   });
   document.getElementById('ridesTbody').addEventListener('click', (e) => {
@@ -1917,6 +1793,7 @@ function renderEfficiencyChart() {
     }))
     .sort((a, b) => a.ts - b.ts);
   if (rides.length < 3) {
+    const foot = document.getElementById('effiFoot'); if (foot) foot.textContent = '—';
     document.getElementById('effiChart').innerHTML =
       `<text x="450" y="140" text-anchor="middle" fill="#5d5b55" font-family="JetBrains Mono" font-size="11">骑行样本不足</text>`;
     return;
@@ -1992,8 +1869,8 @@ function renderEfficiencyChart() {
   const delta = endMean - startMean;
   const pct = startMean ? Math.abs(delta / startMean) * 100 : 0;
   const direction = delta < 0
-    ? `<span class="effi-tag">心率代价降低</span> — 同样的距离，心脏更省力了`
-    : `心率代价上升 — 同样的距离心脏跳得更多`;
+    ? `<span class="effi-tag">心率代价降低</span> · 同时受速度、停车和路况影响`
+    : `每公里心跳数上升 · 同时受速度、停车和路况影响`;
   document.getElementById('effiFoot').innerHTML =
     `共 <strong>${rides.length}</strong> 次有效骑行 · 起始平均 <strong>${Math.round(startMean)}</strong> beats/km · 最近 <strong>${Math.round(endMean)}</strong> beats/km · ${direction} (${delta >= 0 ? '+' : ''}${delta.toFixed(0)}, ${pct.toFixed(1)}%)`;
 }
@@ -2041,7 +1918,7 @@ function renderCityAtlas() {
 // ============ Cumulative Journey ============
 function renderJourney() {
   const ws = (window.HEALTH_DATA && window.HEALTH_DATA.workouts) || [];
-  if (!ws.length) return;
+  if (!ws.length) { clearChart(['journeyChart', 'journeyContextBody']); return; }
   const sorted = [...ws].sort((a, b) => (a.start_iso || a.date).localeCompare(b.start_iso || b.date));
   let cum = 0;
   const series = sorted.map(w => {
@@ -2054,7 +1931,7 @@ function renderJourney() {
   if (!svg) return;
   const W = 900, H = 320, P = { l: 60, r: 30, t: 30, b: 40 };
   const xMin = series[0].dateMs;
-  const xMax = Math.max(series[series.length - 1].dateMs, new Date().getTime());
+  const xMax = Math.max(xMin + 86400000, series[series.length - 1].dateMs);
   const yMax = Math.max(1000, Math.ceil(final / 100) * 100);
   const xs = ms => P.l + (ms - xMin) / (xMax - xMin) * (W - P.l - P.r);
   const ys = v => H - P.b - v / yMax * (H - P.t - P.b);
@@ -2153,7 +2030,7 @@ function renderJourney() {
 function renderEffortQuadrant() {
   const ws = (window.HEALTH_DATA && window.HEALTH_DATA.workouts) || [];
   const data = ws.filter(w => w.hr_avg != null && w.avg_speed_kmh != null && w.distance_km > 0);
-  if (!data.length) return;
+  if (!data.length) { clearChart(['effortChart', 'effortLegend']); return; }
   const svg = document.getElementById('effortChart');
   if (!svg) return;
   const W = 900, H = 420, P = { l: 60, r: 30, t: 36, b: 50 };
@@ -2218,20 +2095,22 @@ function renderEffortQuadrant() {
     else q.costly++;
   });
   document.getElementById('effortLegend').innerHTML =
-    `<div class="eq-tag eff"><strong>高效巡航</strong><span class="eq-count">${q.eff} 次</span><br>低心率、高速度 — 心肺最舒服的状态，配送早期常出现。</div>` +
-    `<div class="eq-tag hard"><strong>硬拉训练</strong><span class="eq-count">${q.hard} 次</span><br>高心率、高速度 — 真正发力的几次冲刺与长距离骑行。</div>` +
-    `<div class="eq-tag easy"><strong>慢速散步</strong><span class="eq-count">${q.easy} 次</span><br>低心率、低速度 — 短程或起步，几乎没出力。</div>` +
-    `<div class="eq-tag costly"><strong>心率代价大</strong><span class="eq-count">${q.costly} 次</span><br>心率高但速度低 — 爬坡、疲劳或大热天的提示。</div>`;
+    `<div class="eq-tag eff"><strong>高效巡航</strong><span class="eq-count">${q.eff} 次</span><br>心率低于当前中位数、速度高于当前中位数。</div>` +
+    `<div class="eq-tag hard"><strong>硬拉训练</strong><span class="eq-count">${q.hard} 次</span><br>心率与速度均高于当前中位数。</div>` +
+    `<div class="eq-tag easy"><strong>慢速散步</strong><span class="eq-count">${q.easy} 次</span><br>心率与速度均低于或等于当前中位数。</div>` +
+    `<div class="eq-tag costly"><strong>心率代价大</strong><span class="eq-count">${q.costly} 次</span><br>心率高于当前中位数、速度低于或等于当前中位数。</div>`;
 }
 
 // ============ Fitness & Form (CTL / ATL / TSB) ============
 function renderFitnessForm() {
   const H = window.HEALTH_DATA;
-  if (!H || !H.workouts || !H.workouts.length) return;
+  if (!H || !H.workouts) { clearChart(['ffChart', 'ffKpis', 'ffFoot']); return; }
 
   // Aggregate active_kcal per date from workouts.
   const loadByDate = {};
-  H.workouts.forEach(w => {
+  const source = window.filterWorkoutsByCity(window._origHealthWorkouts || H.workouts);
+  if (!source.length) { clearChart(['ffChart', 'ffKpis', 'ffFoot']); return; }
+  source.forEach(w => {
     if (!w.date) return;
     loadByDate[w.date] = (loadByDate[w.date] || 0) + (w.active_kcal || 0);
   });
@@ -2263,7 +2142,14 @@ function renderFitnessForm() {
     cur.setUTCDate(cur.getUTCDate() + 1);
   }
 
-  if (series.length < 2) return;
+  const historySeries = [...series];
+  const range = window.getActiveRange?.();
+  if (range) {
+    const from = range.from.toISOString().slice(0, 10), to = range.to.toISOString().slice(0, 10);
+    const visible = series.filter(p => p.date >= from && p.date <= to);
+    series.splice(0, series.length, ...visible);
+  }
+  if (!series.length) { clearChart(['ffChart', 'ffKpis', 'ffFoot']); return; }
 
   // ---- Chart geometry ----
   const W = 900, Hh = 320;
@@ -2278,7 +2164,7 @@ function renderFitnessForm() {
   // TSB scale lives on right axis; symmetric around 0.
   const tsbAbs = Math.max(8, ...series.map(p => Math.abs(p.tsb)));
 
-  const x = i => padL + (i / (series.length - 1)) * chartW;
+  const x = i => padL + (i / Math.max(1, series.length - 1)) * chartW;
   const y = v => padT + chartH - (v / yMax) * chartH;
   const yT = v => padT + chartH/2 - (v / tsbAbs) * (chartH/2);
 
@@ -2309,25 +2195,16 @@ function renderFitnessForm() {
     svg += `<text x="${padL-6}" y="${yy+3}" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${v.toFixed(0)}</text>`;
   }
   // axis labels
-  svg += `<text x="${padL-32}" y="${padT+chartH/2}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#908d85" transform="rotate(-90 ${padL-32} ${padT+chartH/2})">CTL / ATL · 负荷单位</text>`;
+  svg += `<text x="${padL-32}" y="${padT+chartH/2}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#908d85" transform="rotate(-90 ${padL-32} ${padT+chartH/2})">CTL / ATL · 代理单位</text>`;
 
   // TSB right axis ticks
   [-tsbAbs, -tsbAbs/2, 0, tsbAbs/2, tsbAbs].forEach(v => {
     const yy = yT(v);
     svg += `<text x="${W-padR+6}" y="${yy+3}" text-anchor="start" font-family="JetBrains Mono" font-size="9" fill="${v >= 0 ? '#88b66a' : '#d97a8a'}">${v > 0 ? '+'+v.toFixed(0) : v.toFixed(0)}</text>`;
   });
-  svg += `<text x="${W-padR+38}" y="${padT+chartH/2}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#908d85" transform="rotate(90 ${W-padR+38} ${padT+chartH/2})">TSB · 状态</text>`;
+  svg += `<text x="${W-padR+38}" y="${padT+chartH/2}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#908d85" transform="rotate(90 ${W-padR+38} ${padT+chartH/2})">长期 − 短期</text>`;
   // zero line for TSB
   svg += `<line x1="${padL}" y1="${yT(0)}" x2="${W-padR}" y2="${yT(0)}" stroke="#3a3d48" stroke-width="0.6"/>`;
-
-  // Delivery period highlight (2026-04-25 → 2026-05-19)
-  const dStart = series.findIndex(p => p.date >= '2026-04-25');
-  const dEnd = series.findIndex(p => p.date >= '2026-05-19');
-  if (dStart >= 0 && dEnd >= 0 && dEnd > dStart) {
-    const dx1 = x(dStart), dx2 = x(dEnd);
-    svg += `<rect x="${dx1}" y="${padT}" width="${dx2-dx1}" height="${chartH}" fill="#e8b76d" fill-opacity="0.05" stroke="#a87f3e" stroke-opacity="0.35" stroke-width="0.5" stroke-dasharray="3 3"/>`;
-    svg += `<text x="${(dx1+dx2)/2}" y="${padT+11}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#a87f3e" letter-spacing="0.12em">DELIVERY · 4/25 → 5/19</text>`;
-  }
 
   // TSB shaded area split by sign (band centered at right-axis zero)
   let posArea = '';
@@ -2401,36 +2278,33 @@ function renderFitnessForm() {
 
   // ---- KPI cards ----
   const lastP = series[series.length - 1];
-  const stateOf = tsb => {
-    if (tsb >= 15)   return { cls: 'detrain', label: '过度休息 · 体能下降' };
-    if (tsb >= 5)    return { cls: 'fresh',   label: '充分恢复 · 状态新鲜' };
-    if (tsb >= -10)  return { cls: 'optimal', label: '巡航区间 · 适合发力' };
-    if (tsb >= -30)  return { cls: 'heavy',   label: '负荷较重 · 仍可坚持' };
-    return                  { cls: 'heavy',   label: '深度疲劳 · 注意恢复' };
-  };
+  const stateOf = tsb => tsb >= 0
+    ? { cls: 'fresh', label: '短期负荷低于或等于长期均值' }
+    : { cls: 'heavy', label: '短期负荷高于长期均值' };
   const st = stateOf(lastP.tsb);
   const tsbCls = lastP.tsb >= 0 ? '' : 'neg';
   const tsbSign = lastP.tsb >= 0 ? '+' : '';
 
   // 7-day delta
-  const past = series[Math.max(0, series.length - 8)];
+  const pastDate = new Date(new Date(lastP.date).getTime() - 7 * 86400000).toISOString().slice(0, 10);
+  const past = historySeries.find(p => p.date === pastDate) || lastP;
   const dCtl = lastP.ctl - past.ctl;
   const dAtl = lastP.atl - past.atl;
   const arrow = v => v > 0.05 ? '↗' : v < -0.05 ? '↘' : '→';
 
   const kpisHtml = `
     <div class="ff-kpi">
-      <div class="ff-kpi-label"><span class="ff-kpi-dot ctl"></span>体能 · CTL</div>
-      <div class="ff-kpi-value">${lastP.ctl.toFixed(1)}<small>负荷单位</small></div>
+      <div class="ff-kpi-label"><span class="ff-kpi-dot ctl"></span>长期负荷 · 42 日</div>
+      <div class="ff-kpi-value">${lastP.ctl.toFixed(1)}<small>代理单位</small></div>
       <div class="ff-kpi-foot">7 天 ${arrow(dCtl)} ${(dCtl>=0?'+':'')}${dCtl.toFixed(1)} · 峰值 <strong>${peakCtl.ctl.toFixed(1)}</strong></div>
     </div>
     <div class="ff-kpi">
-      <div class="ff-kpi-label"><span class="ff-kpi-dot atl"></span>疲劳 · ATL</div>
-      <div class="ff-kpi-value">${lastP.atl.toFixed(1)}<small>负荷单位</small></div>
-      <div class="ff-kpi-foot">7 天 ${arrow(dAtl)} ${(dAtl>=0?'+':'')}${dAtl.toFixed(1)} · 含 ${Object.keys(loadByDate).length} 天有效骑行</div>
+      <div class="ff-kpi-label"><span class="ff-kpi-dot atl"></span>短期负荷 · 7 日</div>
+      <div class="ff-kpi-value">${lastP.atl.toFixed(1)}<small>代理单位</small></div>
+      <div class="ff-kpi-foot">7 天 ${arrow(dAtl)} ${(dAtl>=0?'+':'')}${dAtl.toFixed(1)} · 含 ${Object.keys(loadByDate).length} 天历史骑行用于计算</div>
     </div>
     <div class="ff-kpi">
-      <div class="ff-kpi-label"><span class="ff-kpi-dot tsb ${tsbCls}"></span>状态 · TSB</div>
+      <div class="ff-kpi-label"><span class="ff-kpi-dot tsb ${tsbCls}"></span>长期 − 短期</div>
       <div class="ff-kpi-value" style="color: ${lastP.tsb >= 0 ? '#88b66a' : 'var(--rose)'}">${tsbSign}${lastP.tsb.toFixed(1)}</div>
       <div class="ff-kpi-foot"><span class="ff-state-pill ${st.cls}">${st.label}</span></div>
     </div>
@@ -2440,7 +2314,7 @@ function renderFitnessForm() {
   // Footnote
   const totalLoad = series.reduce((a, p) => a + p.load, 0);
   document.getElementById('ffFoot').textContent =
-    `累计 ${totalLoad.toFixed(0)} 负荷单位 · ${series.length} 天窗口 · 截止 ${lastP.date}`;
+    `活动 kcal ÷ 10 的平滑代理值，起点设为 0 · 当前窗口累计 ${totalLoad.toFixed(0)} 单位 · 截止 ${lastP.date} · 不等同疲劳或训练处方`;
 }
 
 // ============ 心率范围 / HR Range Bars ============
@@ -2659,7 +2533,7 @@ function renderEnergyComposition() {
   // stats panel
   const totalKcal = rides.reduce((s, r) => s + (r.active_kcal || 0), 0);
   const longest = rides.reduce((a, r) => (r.active_kj || 0) > (a.active_kj || 0) ? r : a, rides[0]);
-  const avgKcalPerKm = validEffs.reduce((a,b)=>a+b,0) / validEffs.length;
+  const avgKcalPerKm = validEffs.length ? validEffs.reduce((a,b)=>a+b,0) / validEffs.length : null;
   const totalDistance = rides.reduce((s, r) => s + r.distance_km, 0);
   // 1 banana ≈ 105 kcal, 1 big mac ≈ 540 kcal
   const bigMacs = totalKcal / 540;
@@ -2677,7 +2551,7 @@ function renderEnergyComposition() {
     </div>
     <div class="energy-stat">
       <div class="energy-stat-label">Avg Cost / km</div>
-      <div class="energy-stat-value">${avgKcalPerKm.toFixed(1)}<small>kcal/km</small></div>
+      <div class="energy-stat-value">${avgKcalPerKm == null ? '—' : avgKcalPerKm.toFixed(1)}<small>kcal/km</small></div>
       <div class="energy-stat-sub">主动卡路里 / 距离</div>
     </div>
     <div class="energy-stat">
@@ -2794,180 +2668,33 @@ function renderClimateProfile() {
 
 // ============ 日常脉搏 / Daily Steps + Flights ============
 function renderDailyLife() {
-  const H = window.HEALTH_DATA;
-  if (!H || !H.daily) return;
-  const days = H.daily.filter(d => typeof d.steps === 'number' || typeof d.flights === 'number');
-  if (!days.length) return;
-
-  const W = 900, Ht = 280;
-  const padL = 56, padR = 56, padT = 24, padB = 50;
-  const chartW = W - padL - padR;
-  const chartH = Ht - padT - padB;
-
-  const stepsRow = { y0: padT, y1: padT + chartH * 0.55 };
-  const flightsRow = { y0: padT + chartH * 0.62, y1: padT + chartH };
-
-  const ts = d => new Date(d.date).getTime();
-  const tMin = ts(days[0]);
-  const tMax = ts(days[days.length - 1]);
-  const X = t => padL + ((t - tMin) / (tMax - tMin || 1)) * chartW;
-
-  const stepsMax = Math.max(...days.map(d => d.steps || 0));
-  const flightsMax = Math.max(...days.map(d => d.flights || 0));
-  const Ys = v => stepsRow.y1 - (v / stepsMax) * (stepsRow.y1 - stepsRow.y0);
-  const Yf = v => flightsRow.y1 - (v / flightsMax) * (flightsRow.y1 - flightsRow.y0);
-
-  let html = '';
-
-  // delivery period shading
-  const dpStart = new Date('2026-04-25').getTime();
-  const dpEnd = new Date('2026-05-19').getTime();
-  if (dpEnd > tMin && dpStart < tMax) {
-    const x1 = X(Math.max(dpStart, tMin));
-    const x2 = X(Math.min(dpEnd, tMax));
-    html += `<rect x="${x1}" y="${padT}" width="${x2-x1}" height="${chartH}" fill="rgba(232,183,109,0.06)" stroke="rgba(232,183,109,0.2)" stroke-width="0.5" stroke-dasharray="3 3"/>`;
-    html += `<text x="${(x1+x2)/2}" y="${padT+11}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="rgba(232,183,109,0.7)">送外卖期</text>`;
-  }
-
-  // row labels
-  html += `<text x="${padL-8}" y="${stepsRow.y0+4}" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${(stepsMax/1000).toFixed(0)}k</text>`;
-  html += `<text x="${padL-8}" y="${stepsRow.y1+4}" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">0</text>`;
-  html += `<text x="14" y="${(stepsRow.y0+stepsRow.y1)/2}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#e8b76d" transform="rotate(-90 14 ${(stepsRow.y0+stepsRow.y1)/2})">Steps</text>`;
-  html += `<text x="${padL-8}" y="${flightsRow.y0+4}" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${Math.round(flightsMax)}</text>`;
-  html += `<text x="${padL-8}" y="${flightsRow.y1+4}" text-anchor="end" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">0</text>`;
-  html += `<text x="14" y="${(flightsRow.y0+flightsRow.y1)/2}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#6cc4d9" transform="rotate(-90 14 ${(flightsRow.y0+flightsRow.y1)/2})">Flights</text>`;
-
-  // steps: rolling 7-day mean line (area + line) + raw light dots
-  const valid = days.map(d => ({ t: ts(d), steps: d.steps || 0, flights: d.flights || 0 }));
-  const win = 7;
-  const rollSteps = valid.map((d, i) => {
-    const s = valid.slice(Math.max(0, i - win + 1), i + 1);
-    const vs = s.filter(x => x.steps > 0);
-    if (!vs.length) return null;
-    return vs.reduce((a, b) => a + b.steps, 0) / vs.length;
+  const CM = window.ChartModel;
+  const points = (window.HEALTH_DATA?.daily || []).filter(d => CM.finite(d.steps) || CM.finite(d.flights))
+    .map(d => ({ ...d, t: CM.timestamp(d.date) }));
+  if (!points.length) { clearChart(['dailyLifeChart', 'dailyLifeStats']); return; }
+  const W = 900, H = 280, left = 56, right = 32, top = 24, bottom = 38;
+  const from = points[0].t, to = Math.max(from + CM.DAY, points.at(-1).t);
+  const X = t => left + (t - from) / (to - from) * (W - left - right);
+  let svg = '', stats = '';
+  [{ key: 'steps', label: '步数', color: '#e8b76d', unit: '步' },
+   { key: 'flights', label: '爬楼', color: '#6cc4d9', unit: '层' }].forEach((metric, index) => {
+    const valid = points.filter(p => CM.finite(p[metric.key])).map(p => ({ ...p, v: p[metric.key] }));
+    const y0 = top + index * 110, y1 = y0 + 82;
+    const max = Math.max(1, ...valid.map(p => p.v));
+    const Y = value => y1 - value / max * (y1 - y0);
+    svg += `<text x="${left - 10}" y="${y0 + 6}" text-anchor="end" fill="${metric.color}" font-size="10">${metric.label}</text>`;
+    svg += `<text x="${left - 10}" y="${y0 + 22}" text-anchor="end" fill="#908d85" font-size="9">${Math.round(max).toLocaleString()}</text>`;
+    svg += `<line x1="${left}" x2="${W - right}" y1="${y1}" y2="${y1}" stroke="#2a2c35"/>`;
+    valid.forEach(p => { svg += `<circle cx="${X(p.t)}" cy="${Y(p.v)}" r="2" fill="${metric.color}" opacity=".4"><title>${p.date} · ${metric.label} ${p.v.toLocaleString()} ${metric.unit}</title></circle>`; });
+    svg += `<path d="${CM.linePath(valid, CM.rollingMean(valid), X, Y)}" fill="none" stroke="${metric.color}" stroke-width="1.5"/>`;
+    const mean = valid.length ? valid.reduce((sum, p) => sum + p.v, 0) / valid.length : null;
+    const peak = valid.reduce((best, p) => !best || p.v > best.v ? p : best, null);
+    stats += `<div class="dl-stat"><div class="dl-stat-label">${metric.label} · 所选记录平均</div><div class="dl-stat-row"><span class="dl-stat-now">${mean == null ? '—' : Math.round(mean).toLocaleString()} ${metric.unit}</span></div><span class="dl-stat-delta">${valid.length} 天有测量 · 包含有效零值</span></div>`;
+    stats += `<div class="dl-stat"><div class="dl-stat-label">${metric.label} · 单日最高</div><div class="dl-stat-row"><span class="dl-stat-now">${peak ? peak.v.toLocaleString() : '—'} ${metric.unit}</span></div><span class="dl-stat-delta">${peak?.date || '无测量'}</span></div>`;
   });
-
-  // raw step dots (faint)
-  valid.forEach(d => {
-    if (d.steps > 0) {
-      html += `<circle cx="${X(d.t)}" cy="${Ys(d.steps)}" r="0.7" fill="rgba(232,183,109,0.28)"/>`;
-    }
-  });
-  // smoothed area
-  let areaPath = '';
-  let firstX = null;
-  valid.forEach((d, i) => {
-    if (rollSteps[i] === null) return;
-    const x = X(d.t), y = Ys(rollSteps[i]);
-    if (firstX === null) { areaPath += `M ${x.toFixed(2)} ${stepsRow.y1} L ${x.toFixed(2)} ${y.toFixed(2)}`; firstX = x; }
-    else { areaPath += ` L ${x.toFixed(2)} ${y.toFixed(2)}`; }
-  });
-  // close
-  let lastX = padL + chartW;
-  for (let i = valid.length - 1; i >= 0; i--) { if (rollSteps[i] !== null) { lastX = X(valid[i].t); break; } }
-  areaPath += ` L ${lastX.toFixed(2)} ${stepsRow.y1} Z`;
-  html += `<path d="${areaPath}" fill="rgba(232,183,109,0.14)"/>`;
-
-  // smoothed line
-  let linePath = '';
-  let started = false;
-  valid.forEach((d, i) => {
-    if (rollSteps[i] === null) return;
-    const x = X(d.t), y = Ys(rollSteps[i]);
-    linePath += `${started ? 'L' : 'M'} ${x.toFixed(2)} ${y.toFixed(2)} `;
-    started = true;
-  });
-  html += `<path d="${linePath}" fill="none" stroke="#e8b76d" stroke-width="1.4" stroke-opacity="0.95"/>`;
-
-  // flights bars
-  valid.forEach(d => {
-    if (d.flights > 0) {
-      const xx = X(d.t);
-      const yy = Yf(d.flights);
-      html += `<line x1="${xx}" y1="${flightsRow.y1}" x2="${xx}" y2="${yy}" stroke="rgba(108,196,217,0.55)" stroke-width="0.8" stroke-linecap="round"/>`;
-    }
-  });
-
-  // baseline
-  html += `<line x1="${padL}" y1="${stepsRow.y1}" x2="${W-padR}" y2="${stepsRow.y1}" stroke="#2a2c35" stroke-width="0.5"/>`;
-  html += `<line x1="${padL}" y1="${flightsRow.y1}" x2="${W-padR}" y2="${flightsRow.y1}" stroke="#2a2c35" stroke-width="0.5"/>`;
-
-  // month ticks
-  const months = new Set();
-  valid.forEach(d => {
-    const ds = new Date(d.t);
-    const k = ds.getFullYear() + '-' + String(ds.getMonth()+1).padStart(2,'0');
-    if (!months.has(k)) {
-      months.add(k);
-      const xx = X(d.t);
-      html += `<line x1="${xx}" y1="${padT+chartH}" x2="${xx}" y2="${padT+chartH+4}" stroke="#3a3d48" stroke-width="0.5"/>`;
-      // only label every 2nd month
-      if (months.size % 2 === 1) {
-        html += `<text x="${xx}" y="${padT+chartH+18}" text-anchor="middle" font-family="JetBrains Mono" font-size="9" fill="#5d5b55">${k.slice(2)}</text>`;
-      }
-    }
-  });
-
-  document.getElementById('dailyLifeChart').innerHTML = html;
-
-  // stats: baseline (Oct 2024 - Mar 2026) vs delivery period
-  const deliveryStart = new Date('2026-04-25').getTime();
-  const deliveryEnd = new Date('2026-05-19').getTime();
-  const baselineEnd = deliveryStart;
-
-  const baseline = valid.filter(d => d.t < baselineEnd && (d.steps > 0 || d.flights > 0));
-  const delivery = valid.filter(d => d.t >= deliveryStart && d.t <= deliveryEnd);
-
-  const mean = (arr, k) => {
-    const v = arr.filter(x => x[k] > 0);
-    return v.length ? v.reduce((a, b) => a + b[k], 0) / v.length : 0;
-  };
-  const baseSteps = mean(baseline, 'steps');
-  const baseFlights = mean(baseline, 'flights');
-  const delSteps = mean(delivery, 'steps');
-  const delFlights = mean(delivery, 'flights');
-
-  const peakSteps = valid.reduce((a, d) => d.steps > a.steps ? d : a, valid[0]);
-  const peakFlights = valid.reduce((a, d) => d.flights > a.flights ? d : a, valid[0]);
-
-  const deltaClass = (cur, base) => cur >= base ? 'up' : 'down';
-  const deltaSign = (cur, base) => cur >= base ? '+' : '';
-  const pct = (cur, base) => base ? ((cur - base) / base * 100).toFixed(0) : '—';
-
-  document.getElementById('dailyLifeStats').innerHTML = `
-    <div class="dl-stat">
-      <div class="dl-stat-label">Avg Steps · Baseline</div>
-      <div class="dl-stat-row">
-        <span class="dl-stat-base">${Math.round(baseSteps).toLocaleString()}</span>
-        <span class="dl-stat-arrow">→</span>
-        <span class="dl-stat-now">${Math.round(delSteps).toLocaleString()}</span>
-      </div>
-      <span class="dl-stat-delta ${deltaClass(delSteps, baseSteps)}">${deltaSign(delSteps, baseSteps)}${pct(delSteps, baseSteps)}% · 配送期</span>
-    </div>
-    <div class="dl-stat">
-      <div class="dl-stat-label">Avg Flights · Baseline</div>
-      <div class="dl-stat-row">
-        <span class="dl-stat-base">${baseFlights.toFixed(1)}</span>
-        <span class="dl-stat-arrow">→</span>
-        <span class="dl-stat-now">${delFlights.toFixed(1)}</span>
-      </div>
-      <span class="dl-stat-delta ${deltaClass(delFlights, baseFlights)}">${deltaSign(delFlights, baseFlights)}${pct(delFlights, baseFlights)}% · 配送期</span>
-    </div>
-    <div class="dl-stat">
-      <div class="dl-stat-label">Peak Day · Steps</div>
-      <div class="dl-stat-row">
-        <span class="dl-stat-now">${Math.round(peakSteps.steps).toLocaleString()}</span>
-      </div>
-      <span class="dl-stat-delta">${new Date(peakSteps.t).toISOString().slice(0,10)}</span>
-    </div>
-    <div class="dl-stat">
-      <div class="dl-stat-label">Peak Day · Flights</div>
-      <div class="dl-stat-row">
-        <span class="dl-stat-now">${Math.round(peakFlights.flights)} 层</span>
-      </div>
-      <span class="dl-stat-delta">${new Date(peakFlights.t).toISOString().slice(0,10)}</span>
-    </div>
-  `;
+  CM.monthTicks(from, to).forEach(tick => { svg += `<text x="${X(tick.t)}" y="${H - 10}" text-anchor="middle" fill="#908d85" font-size="10">${tick.label}</text>`; });
+  document.getElementById('dailyLifeChart').innerHTML = svg;
+  document.getElementById('dailyLifeStats').innerHTML = stats;
 }
 
 // ============ 爬升画像 / Elevation Profile Gallery ============
@@ -3358,11 +3085,9 @@ function buildSideNav() {
         const raw = localStorage.getItem('cyclingActiveRange');
         if (raw) {
           const p = JSON.parse(raw);
-          window.activeRange = {
-            from: new Date(p.from),
-            to: new Date(p.to),
-            label: p.label || '自定义',
-          };
+          const from = new Date(p.from), to = new Date(p.to);
+          window.activeRange = Number.isFinite(from.getTime()) && Number.isFinite(to.getTime()) && from <= to
+            ? { from, to, label: p.label || '自定义' } : null;
         } else {
           window.activeRange = null;
         }
@@ -3463,7 +3188,7 @@ function buildSideNav() {
     if (!user) return { from: city.from, to: city.to, label: loadCity() };
     const from = user.from > city.from ? user.from : city.from;
     const to = user.to < city.to ? user.to : city.to;
-    return { from, to: to < from ? from : to, label: `${user.label} · ${loadCity()}` };
+    return { from, to, label: `${user.label} · ${loadCity()}` };
   };
 
   window.filterDailyByRange = function (arr) { return byRange(arr, d => d.date); };
@@ -3513,21 +3238,32 @@ function buildSideNav() {
 
     const keep = {
       daily: H.daily, workouts: H.workouts, vo2max: H.vo2max,
-      weight: H.weight, monthly: H.monthly, routes: window.ROUTES_DATA,
+      weight: H.weight, monthly: H.monthly, summary: H.summary, routes: window.ROUTES_DATA,
     };
     H.daily = byRange(byStays(window._origHealthDaily, d => d.date), d => d.date);
     H.workouts = window.filterWorkoutsByRange(
       window.filterWorkoutsByCity(window._origHealthWorkouts));
     H.vo2max = byRange(byStays(window._origHealthVo2, x => x.date), x => x.date);
     H.weight = byRange(byStays(window._origHealthWeight, x => x.date), x => x.date);
-    H.monthly = monthsIn(window._origHealthMonthly);
+    // Rebuild selected totals from selected workouts, including partial months.
+    const selected = window.ChartModel.aggregateWorkouts(H.workouts, keep.summary);
+    H.monthly = selected.monthly;
+    H.summary = selected.summary;
+    // Body metrics keep their stay/date filters; cycling totals use exact city tags.
+    const daily = new Map(H.daily.map(d => [d.date, { ...d,
+      distance_km: selected.byDay.get(d.date)?.distance_km || 0,
+      rides: selected.byDay.get(d.date)?.rides || 0,
+      duration_min: selected.byDay.get(d.date)?.duration_min || 0 }]));
+    selected.byDay.forEach((d, date) => { if (!daily.has(date)) daily.set(date, d); });
+    H.daily = [...daily.values()].sort((a, b) => a.date.localeCompare(b.date));
+    Object.assign(H.summary, window.ChartModel.bodySummary(H.daily, H.vo2max, H.weight));
     window.ROUTES_DATA = byRange(
       window.filterRoutesByCity(window._origRoutes), r => r.start_date);
 
     try { fn(); }
     finally {
       H.daily = keep.daily; H.workouts = keep.workouts; H.vo2max = keep.vo2max;
-      H.weight = keep.weight; H.monthly = keep.monthly;
+      H.weight = keep.weight; H.monthly = keep.monthly; H.summary = keep.summary;
       window.ROUTES_DATA = keep.routes;
     }
   };
@@ -3558,6 +3294,8 @@ function isRanged(fn) {
       typeof renderDailyChart === 'function' ? renderDailyChart : null,
       typeof renderCalendar === 'function' ? renderCalendar : null,
       typeof renderLoadChart === 'function' ? renderLoadChart : null,
+      typeof renderOverlayChart === 'function' ? renderOverlayChart : null,
+      typeof renderRideExplorer === 'function' ? renderRideExplorer : null,
       typeof renderJourney === 'function' ? renderJourney : null,
       typeof renderFitnessForm === 'function' ? renderFitnessForm : null,
       typeof renderDailyLife === 'function' ? renderDailyLife : null,
@@ -3589,6 +3327,9 @@ function isRanged(fn) {
       typeof renderPersonalRecords === 'function' ? renderPersonalRecords : null,
       typeof renderRidesTable === 'function' ? renderRidesTable : null,
       typeof renderMonthlyStats === 'function' ? renderMonthlyStats : null,
+      typeof renderTradePanel === 'function' ? renderTradePanel : null,
+      typeof renderBodyDeltas === 'function' ? renderBodyDeltas : null,
+      typeof renderAnnotation === 'function' ? renderAnnotation : null,
       typeof renderVo2 === 'function' ? renderVo2 : null,
       typeof renderWeight === 'function' ? renderWeight : null,
       typeof renderCityMap === 'function' ? renderCityMap : null,
@@ -3681,7 +3422,7 @@ function bindRangeFilter() {
     if (p === 'all') return null;
     if (p === 'sydney') return { from: new Date('2026-04-25'), to: last };
     const days = p === '30d' ? 30 : p === '90d' ? 90 : 365;
-    const from = new Date(last); from.setDate(from.getDate() - days + 1);
+    const from = new Date(last); from.setUTCDate(from.getUTCDate() - days + 1);
     return { from: from < first ? first : from, to: last };
   }
 
@@ -3708,6 +3449,7 @@ function bindRangeFilter() {
       summary.innerHTML = `<strong>全部数据</strong> · ${minDate} → ${maxDate}`;
       return;
     }
+    if (r.from > r.to) { summary.innerHTML = '<strong>日期与城市范围没有交集</strong> · 0 次骑行'; return; }
     const days = Math.round((r.to - r.from) / 86400000) + 1;
     const f = r.from.toISOString().slice(0, 10);
     const t = r.to.toISOString().slice(0, 10);
@@ -3725,7 +3467,8 @@ function bindRangeFilter() {
     if (!fromInp.value || !toInp.value) return;
     const f = new Date(fromInp.value);
     const t = new Date(toInp.value);
-    if (f > t) return;
+    fromInp.setCustomValidity(f > t ? '开始日期不能晚于结束日期' : '');
+    if (!fromInp.reportValidity() || !toInp.reportValidity()) return;
     [...host.querySelectorAll('.range-preset')].forEach(b => b.classList.remove('range-preset--active'));
     window.setActiveRange(f, t, '自定义');
   }
@@ -3883,6 +3626,13 @@ window.addEventListener('DOMContentLoaded', () => {
   safe(buildTopNav);
   safe(renderDerivedStats);
   safe(renderFooter);
+  let chartFrame;
+  const enhanceCharts = () => document.querySelectorAll('svg[id]').forEach(svg => window.ChartModel.enhance(svg));
+  enhanceCharts();
+  new MutationObserver(records => {
+    if (!records.some(record => record.target instanceof Element && record.target.closest('svg'))) return;
+    cancelAnimationFrame(chartFrame); chartFrame = requestAnimationFrame(enhanceCharts);
+  }).observe(document.querySelector('main') || document.body, { subtree: true, childList: true });
 });
 
 function renderFooter() {
@@ -4186,7 +3936,7 @@ function renderAscentDescent() {
   if (!host) return;
   const rides = H.workouts.filter(w => (w.elev_gain_m || 0) >= 30 || (w.elev_loss_m || 0) >= 30);
   if (!rides.length) {
-    host.innerHTML = '<div class="empty-range">这个时间段没有有海拔变化的骑行</div>';
+    clearChart(['ascentDescentChart'], '这个时间段没有海拔变化记录');
     if (summary) summary.textContent = '—';
     return;
   }

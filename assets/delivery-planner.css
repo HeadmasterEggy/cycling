@@ -1,5 +1,5 @@
 /* Decision controls: shared by the narrative page and the console. */
-.planner { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif; color: #e8e6df; font-size: 14px; line-height: 1.55; min-width: 0; }
+.planner { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif; color: #e8e6df; font-size: 14px; line-height: 1.55; min-width: 0; color-scheme: dark; }
 .planner *, .planner *::before, .planner *::after { box-sizing: border-box; }
 .planner [hidden] { display: none !important; }
 .planner button, .planner input, .planner select { font: inherit; }
@@ -101,3 +101,90 @@ body[data-page="delivery"] .main > .analysis-section:first-child { margin-top: 0
   body[data-page="delivery"] .delivery-tools > .chart-card { padding: 18px; }
 }
 .plan-rate { flex-wrap: wrap; }
+
+/* Compare explicit scenarios without crowding the primary decision. */
+.plan-offer-actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin:12px 0; }
+.plan-action { min-height:40px; border:1px solid #4b7473; border-radius:8px; background:#20383a; color:#d1e9e4; padding:8px 12px; cursor:pointer; font-size:12px !important; }
+.planner button:disabled { opacity:.42; cursor:not-allowed; }
+.plan-save-status { flex:1; min-width:120px; color:#a1b2ae; font-size:11px; }
+.plan-insights, .plan-saved { border:1px solid #354442; border-radius:9px; padding:12px; margin:12px 0; background:#172021; }
+.plan-insights summary, .plan-saved summary, .plan-hour-details summary { min-height:28px; cursor:pointer; color:#d3ded7; font-size:12px; }
+.plan-insights summary span, .plan-hour-details summary span { color:#9cacaa; display:block; font-size:10px; margin:4px 0 0 15px; }
+.plan-time-bar { display:flex; height:12px; overflow:hidden; border-radius:4px; gap:2px; margin:18px 0 12px; }
+.time-approach { background:#63b4c0; }
+.time-wait { background:#d4a45f; }
+.time-ride { background:#8bc6a1; }
+.time-handoff { background:#b6a1ce; }
+.time-recovery { background:#8298a4; }
+.plan-time-legend { display:grid; grid-template-columns:1fr 1fr; gap:7px 12px; }
+.plan-time-legend > span { display:flex; align-items:center; gap:5px; font-size:10px; color:#abbdb8; }
+.plan-time-legend i { width:7px; height:7px; flex-shrink:0; border-radius:2px; }
+.plan-time-legend b { font:10px var(--mono,monospace); margin-left:auto; white-space:nowrap; color:#d3dfd7; }
+.plan-time-legend > span:last-child { grid-column:1/-1; }
+.plan-delay-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+.plan-delay { display:flex; flex-direction:column; align-items:flex-start; gap:4px; border:1px solid #48514d; border-radius:6px; padding:9px; background:#1b2221; color:#e4c1a5; cursor:pointer; }
+.plan-delay.meets { color:#a9d7bb; }
+.plan-delay[aria-pressed="true"] { border-color:#8ecfc7; box-shadow:inset 0 0 0 1px #8ecfc7; }
+.plan-delay > span { color:#bfcbc1; font-size:11px; }
+.plan-delay > b { font:17px var(--mono,monospace); }
+.plan-delay small { font-size:10px; margin-left:3px; }
+.plan-delay em { color:#aab8b1; font-size:9px; font-style:normal; }
+.plan-saved-count { color:#91c6bf; margin-left:8px; }
+.plan-saved-list { display:grid; gap:10px; margin-top:10px; }
+.plan-saved-card { border-top:1px solid #374542; padding-top:10px; }
+.plan-saved-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.plan-saved-heading strong { color:#d6e5db; font-size:12px; font-weight:500; }
+.plan-saved-heading > button { min-width:36px; min-height:36px; border:0; border-radius:6px; background:transparent; color:#aabbb3; cursor:pointer; font-size:21px; }
+.plan-saved-heading > button:hover { background:#334841; }
+.plan-saved-card > p { color:#9badab; font-size:11px; margin:0 0 10px; }
+.plan-saved-card dl { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:0 0 12px; }
+.plan-saved-card dt { color:#a6b8af; font-size:10px; }
+.plan-saved-card dd { margin:4px 0 0; font:13px var(--mono,monospace); color:#d6dcd1; }
+.plan-saved-card dd small { display:block; margin-top:6px; color:#9cacaa; font:10px -apple-system,sans-serif; }
+
+.plan-zone-toolbar { display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); gap:10px; margin:12px 0; }
+.plan-zone-toolbar label { color:#adbab7; font-size:11px; }
+.plan-zone-toolbar input { display:block; width:100%; min-width:0; height:44px; border:1px solid #393c40; border-radius:7px; color:#e0e5dd; background:#141a1d; padding:0 10px; margin-top:6px; }
+.plan-zone-toolbar select { font-size:12px; }
+.plan-zone-selection { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:14px 0 8px; }
+.plan-zone-selection > span { font-size:11px; color:#c0cdc4; margin-right:4px; }
+.plan-zone-selection small { font-size:10px; color:#a0afaa; }
+.plan-zone-selection button { display:flex; align-items:center; gap:6px; min-height:34px; max-width:100%; border:1px solid #50625b; border-radius:6px; background:#213830; color:#c3e1d1; padding:5px 8px; cursor:pointer; font-size:10px; }
+.plan-zone-selection button b { color:#a7cbb7; font-size:17px; font-weight:400; }
+.plan-zone-row { display:flex; align-items:center; border-bottom:1px solid #2b3336; gap:2px; }
+.plan-zone-row .plan-zone { min-width:0; border:0; gap:7px; padding:13px 4px; }
+.plan-zone-row .plan-zone-index { font-size:9px; }
+.plan-zone-row .plan-zone-main strong { font-size:14px; overflow-wrap:anywhere; }
+.plan-zone-row .plan-zone-main small { font-size:11px; }
+.plan-zone-row .plan-zone-rate { font-size:19px; flex-shrink:0; }
+.plan-zone-row .plan-zone-rate small { font-size:10px; }
+.plan-compare-toggle { flex:0 0 34px; height:40px; border:1px solid #40564e; border-radius:7px; background:transparent; color:#9bcebf; font-size:20px !important; cursor:pointer; }
+.plan-compare-toggle[aria-pressed="true"] { background:#284c3e; border-color:#73ac92; }
+.plan-zone-status { font-size:10px; color:#99aaa3; margin:10px 0; }
+.plan-zone-comparison { background:#152022; border:1px solid #3c514d; border-radius:8px; padding:10px; margin:12px 0; }
+.plan-compare-table { width:100%; border-collapse:collapse; white-space:nowrap; font-size:12px; }
+.plan-compare-table caption { padding:4px 0 12px; color:#9bb8aa; text-align:left; font-size:10px; }
+.plan-compare-table th, .plan-compare-table td { padding:9px 8px; border-bottom:1px solid #33403c; text-align:right; font-weight:400; }
+.plan-compare-table th { color:#a8bfb2; }
+.plan-compare-table thead th { max-width:145px; white-space:normal; }
+.plan-compare-table th:first-child { text-align:left; }
+.plan-compare-table td { color:#d9e2d7; font-family:var(--mono,monospace); }
+.plan-compare-table td small { display:block; font:9px -apple-system,sans-serif; color:#a3b4ac; margin-top:4px; }
+.plan-compare-table td.plan-compare-rate { color:#ecd0a4; font-size:20px; }
+.plan-hour-details { margin-top:14px; }
+.plan-hour-scroll { overflow-x:auto; padding-bottom:6px; scrollbar-width:thin; }
+.plan-hour-grid { display:grid; grid-template-columns:100px repeat(var(--plan-hours),36px); gap:4px; width:max-content; }
+.plan-hour-zone { display:flex; align-items:center; color:#c0cfc4; font-size:10px; overflow-wrap:anywhere; }
+.plan-hour-tick { color:#96a99f; font:10px var(--mono,monospace); text-align:center; padding:4px 0; }
+.plan-hour-cell { height:36px; padding:0; border:1px solid #466653; border-radius:4px; background:rgba(112,190,148,var(--plan-intensity)); color:#f4f4de; cursor:pointer; font:10px var(--mono,monospace) !important; }
+.plan-hour-cell.thin { color:#bac3b2; border-color:#4c5a50; background:repeating-linear-gradient(135deg,#5e725433 0,#5e725433 2px,#18251d 2px,#18251d 6px); }
+.plan-hour-cell.empty { color:#667a6b; background:#152019; border-color:#2e3d32; }
+.plan-hour-info { color:#a7c1b0; font-size:10px; min-height:44px; margin:10px 0 0; line-height:1.7; }
+@media(max-width:700px) {
+  .plan-offer-actions .plan-action { min-height:44px; }
+  .plan-compare-toggle { flex-basis:40px; height:44px; }
+  .plan-zone-toolbar input { font-size:16px; }
+  .plan-zone-row .plan-zone-main strong { font-size:14px; }
+  .plan-zone-row .plan-zone-main small { font-size:11px; }
+  .plan-zone-row .plan-zone-rate { font-size:20px; }
+}

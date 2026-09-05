@@ -24,36 +24,9 @@
   const ts = d => new Date(d).getTime();
   const fmtDate = t => new Date(t).toISOString().slice(0, 10);
 
-  // 7-day rolling mean over a sparse series of {t, v}.
-  function rollingMean(points, windowDays) {
-    const out = [];
-    const ms = windowDays * 86400000;
-    for (let i = 0; i < points.length; i++) {
-      const cutoff = points[i].t - ms;
-      let sum = 0, n = 0;
-      for (let j = i; j >= 0 && points[j].t >= cutoff; j--) {
-        sum += points[j].v;
-        n++;
-      }
-      out.push(n ? sum / n : null);
-    }
-    return out;
-  }
-
-  // Month tick generator — emits {t, label} for each month boundary in range.
-  function monthTicks(tMin, tMax) {
-    const out = [];
-    const d = new Date(tMin);
-    d.setDate(1); d.setHours(0, 0, 0, 0);
-    while (d.getTime() <= tMax) {
-      if (d.getTime() >= tMin) {
-        out.push({ t: d.getTime(), label: `${String(d.getFullYear()).slice(2)}-${String(d.getMonth() + 1).padStart(2, '0')}` });
-      }
-      d.setMonth(d.getMonth() + 1);
-    }
-    return out;
-  }
-
+  const rollingMean = window.ChartModel.rollingMean;
+  const monthTicks = window.ChartModel.monthTicks;
+  const linePath = window.ChartModel.linePath;
   // Module-scope active brush so window listeners are registered ONCE rather
   // than per render. Each render swaps the active config; the global listeners
   // route move/end events to whichever brush is currently dragging.
@@ -100,7 +73,8 @@
     function pageToSvgX(clientX) {
       const r = svg.getBoundingClientRect();
       const vb = svg.viewBox.baseVal;
-      return ((clientX - r.left) / r.width) * vb.width;
+      const left = +hot.getAttribute('x'), right = left + +hot.getAttribute('width');
+      return Math.max(left, Math.min(right, ((clientX - r.left) / r.width) * vb.width));
     }
     function eventToX(e) {
       const cx = e.touches && e.touches[0] ? e.touches[0].clientX
@@ -113,7 +87,7 @@
     }
     function startDrag(e) {
       const x = eventToX(e);
-      if (x == null) return;
+      if (x == null || (e.button != null && e.button !== 0)) return;
       _activeBrush = {
         dragging: true, startX: x, lastX: x,
         brushRect, X_to_T, onSelect, eventToX,
@@ -138,7 +112,7 @@
   }
 
   // ----- HRV Recovery ----------------------------------------------------
-  // Daily HRV with 7-day rolling mean. Healthy band 40-60ms shaded. Ride
+  // Daily HRV with calendar 7-day mean and personal middle 50% shaded. Ride
   // days marked with a vertical orange tick at the top. Brushable.
   window.renderHrvRecovery = function () {
     const H = window.HEALTH_DATA;
@@ -173,11 +147,13 @@
 
     let svg = '';
 
-    // healthy band 40-60ms (typical adult HRV)
-    const bandLo = Math.max(40, vMin), bandHi = Math.min(60, vMax);
+    // Descriptive distribution for the selected data, not a health threshold.
+    const ordered = [...vAll].sort((a, b) => a - b);
+    const bandLo = ordered[Math.floor((ordered.length - 1) * .25)];
+    const bandHi = ordered[Math.floor((ordered.length - 1) * .75)];
     if (bandHi > bandLo) {
       svg += `<rect x="${padL}" y="${Y(bandHi)}" width="${cw}" height="${Y(bandLo)-Y(bandHi)}" fill="${COL.cyanFaint}"/>`;
-      svg += `<text x="${padL+6}" y="${Y(bandHi)+12}" font-family="JetBrains Mono" font-size="9" fill="${COL.cyanDim}">健康区间 40–60ms</text>`;
+      svg += `<text x="${padL+6}" y="${Y(bandHi)+12}" font-family="JetBrains Mono" font-size="9" fill="${COL.cyanDim}">当前记录中间 50% · ${bandLo.toFixed(0)}–${bandHi.toFixed(0)} ms</text>`;
     }
 
     // y-axis grid + labels
@@ -208,15 +184,11 @@
 
     // raw daily dots
     points.forEach(p => {
-      svg += `<circle cx="${X(p.t)}" cy="${Y(p.v)}" r="1.3" fill="rgba(108,196,217,0.45)"/>`;
+      svg += `<circle cx="${X(p.t)}" cy="${Y(p.v)}" r="1.3" fill="rgba(108,196,217,0.45)"><title>${p.date} · HRV ${p.v.toFixed(1)} ms</title></circle>`;
     });
 
     // 7-day rolling line
-    let line = '';
-    points.forEach((p, i) => {
-      if (roll[i] == null) return;
-      line += `${i === 0 ? 'M' : 'L'} ${X(p.t).toFixed(2)} ${Y(roll[i]).toFixed(2)} `;
-    });
+    const line = linePath(points, roll, X, Y);
     svg += `<path d="${line}" fill="none" stroke="${COL.cyan}" stroke-width="1.6" opacity="0.95"/>`;
 
     // brush + crosshair layer
@@ -230,8 +202,8 @@
     // global stats
     const all = points.map(p => p.v);
     const mean = all.reduce((a, b) => a + b, 0) / all.length;
-    const low = all.filter(v => v < 40).length;
-    const high = all.filter(v => v > 60).length;
+    const low = all.filter(v => v < bandLo).length;
+    const high = all.filter(v => v > bandHi).length;
     const rec = roll[roll.length - 1];
     if (statsBox) {
       statsBox.innerHTML = `
@@ -239,8 +211,8 @@
         <div class="recovery-stat"><div class="rs-label">Mean · 平均</div><div class="rs-value">${mean.toFixed(1)}<small>ms</small></div></div>
         <div class="recovery-stat"><div class="rs-label">7-day · 最近</div><div class="rs-value">${rec != null ? rec.toFixed(1) : '—'}<small>ms</small></div></div>
         <div class="recovery-stat"><div class="rs-label">Range · 区间</div><div class="rs-value">${Math.min(...all).toFixed(0)}–${Math.max(...all).toFixed(0)}<small>ms</small></div></div>
-        <div class="recovery-stat"><div class="rs-label">Below 40 · 偏低</div><div class="rs-value">${low}<small>天</small></div></div>
-        <div class="recovery-stat"><div class="rs-label">Above 60 · 偏高</div><div class="rs-value">${high}<small>天</small></div></div>
+        <div class="recovery-stat"><div class="rs-label">低于个人四分位</div><div class="rs-value">${low}<small>天</small></div></div>
+        <div class="recovery-stat"><div class="rs-label">高于个人四分位</div><div class="rs-value">${high}<small>天</small></div></div>
       `;
     }
     if (brushSummary) brushSummary.innerHTML = '拖动选区查看子区间统计 · drag to brush a window';
@@ -288,7 +260,8 @@
         return;
       }
       const s = windowStats(points, sel.fromT, sel.toT);
-      if (!s || !brushSummary) return;
+      if (!brushSummary) return;
+      if (!s) { brushSummary.textContent = '选区没有测量记录'; return; }
       const span = Math.round((s.toT - s.fromT) / 86400000) + 1;
       brushSummary.innerHTML = `
         <span class="hrv-brush-label">选区 · brushed</span>
@@ -301,8 +274,7 @@
   };
 
   // ----- Resting HR Trend ------------------------------------------------
-  // Daily RHR with 7-day rolling. Reference shows "before deliveries" vs
-  // "delivery period" mean — captures training effect on autonomic tone.
+  // Daily RHR with a calendar 7-day mean and disjoint first/recent windows.
   window.renderRestingHrTrend = function () {
     const H = window.HEALTH_DATA;
     const host = document.getElementById('rhrChart');
@@ -348,21 +320,12 @@
 
     // raw dots
     points.forEach(p => {
-      svg += `<circle cx="${X(p.t)}" cy="${Y(p.v)}" r="1.2" fill="rgba(217,122,138,0.35)"/>`;
+      svg += `<circle cx="${X(p.t)}" cy="${Y(p.v)}" r="1.2" fill="rgba(217,122,138,0.35)"><title>${p.date} · 静息心率 ${p.v.toFixed(1)} bpm</title></circle>`;
     });
 
     // rolling area + line
     const roll = rollingMean(points, 7);
-    let line = '', area = '';
-    points.forEach((p, i) => {
-      if (roll[i] == null) return;
-      const x = X(p.t), y = Y(roll[i]);
-      line += `${line ? 'L' : 'M'} ${x.toFixed(2)} ${y.toFixed(2)} `;
-      if (!area) area += `M ${x.toFixed(2)} ${padT+ch} L ${x.toFixed(2)} ${y.toFixed(2)} `;
-      else area += `L ${x.toFixed(2)} ${y.toFixed(2)} `;
-    });
-    if (area) area += `L ${X(points[points.length-1].t).toFixed(2)} ${padT+ch} Z`;
-    svg += `<path d="${area}" fill="${COL.roseFaint}"/>`;
+    const line = linePath(points, roll, X, Y);
     svg += `<path d="${line}" fill="none" stroke="${COL.rose}" stroke-width="1.6" opacity="0.95"/>`;
 
     host.innerHTML = svg;
@@ -370,9 +333,10 @@
     if (stats) {
       const all = points.map(p => p.v);
       const mean = all.reduce((a, b) => a + b, 0) / all.length;
-      const recent = points.slice(-14);
+      const comparison = window.ChartModel.periodComparison(points, 14);
+      const recent = comparison.recent;
       const recentMean = recent.length ? recent.reduce((a, b) => a + b.v, 0) / recent.length : 0;
-      const first14 = points.slice(0, 14);
+      const first14 = comparison.first;
       const firstMean = first14.length ? first14.reduce((a, b) => a + b.v, 0) / first14.length : 0;
       const delta = recentMean - firstMean;
       const dir = delta < 0 ? '↓' : '↑';
@@ -380,9 +344,9 @@
       stats.innerHTML = `
         <div class="recovery-stat"><div class="rs-label">Days · 天数</div><div class="rs-value">${points.length}</div></div>
         <div class="recovery-stat"><div class="rs-label">Mean · 平均</div><div class="rs-value">${mean.toFixed(1)}<small>bpm</small></div></div>
-        <div class="recovery-stat"><div class="rs-label">First 14d · 初期</div><div class="rs-value">${firstMean.toFixed(1)}<small>bpm</small></div></div>
-        <div class="recovery-stat"><div class="rs-label">Last 14d · 近期</div><div class="rs-value">${recentMean.toFixed(1)}<small>bpm</small></div></div>
-        <div class="recovery-stat"><div class="rs-label">Δ · 变化</div><div class="rs-value" style="color:${dirCol}">${dir}${Math.abs(delta).toFixed(1)}<small>bpm</small></div></div>
+        <div class="recovery-stat"><div class="rs-label">First 14d · 初期</div><div class="rs-value">${firstMean.toFixed(1)}<small>bpm · ${first14.length} 天</small></div></div>
+        <div class="recovery-stat"><div class="rs-label">Last 14d · 近期</div><div class="rs-value">${recentMean.toFixed(1)}<small>bpm · ${recent.length} 天</small></div></div>
+        <div class="recovery-stat"><div class="rs-label">Δ · 变化</div><div class="rs-value" style="color:${dirCol}">${comparison.comparable ? dir + Math.abs(delta).toFixed(1) : '—'}<small>${comparison.comparable ? 'bpm' : '需不重叠的 14 天窗口'}</small></div></div>
         <div class="recovery-stat"><div class="rs-label">Range · 区间</div><div class="rs-value">${Math.min(...all)}–${Math.max(...all)}<small>bpm</small></div></div>
       `;
     }
@@ -432,14 +396,10 @@
       svg += `<line x1="${padL}" y1="${respRow.y1}" x2="${W-padR}" y2="${respRow.y1}" stroke="${COL.border}" stroke-width="0.5"/>`;
 
       respPts.forEach(p => {
-        svg += `<circle cx="${X(p.t)}" cy="${Y(p.v)}" r="1.1" fill="rgba(232,183,109,0.32)"/>`;
+        svg += `<circle cx="${X(p.t)}" cy="${Y(p.v)}" r="1.1" fill="rgba(232,183,109,0.32)"><title>${p.date} · 呼吸 ${p.v.toFixed(1)} /min</title></circle>`;
       });
       const roll = rollingMean(respPts, 7);
-      let line = '';
-      respPts.forEach((p, i) => {
-        if (roll[i] == null) return;
-        line += `${line ? 'L' : 'M'} ${X(p.t).toFixed(2)} ${Y(roll[i]).toFixed(2)} `;
-      });
+      const line = linePath(respPts, roll, X, Y);
       svg += `<path d="${line}" fill="none" stroke="${COL.amber}" stroke-width="1.4" opacity="0.95"/>`;
     }
 
@@ -456,7 +416,7 @@
 
       spo2Pts.forEach(p => {
         const col = p.v < 95 ? COL.rose : COL.cyan;
-        svg += `<circle cx="${X(p.t)}" cy="${Y(p.v)}" r="1.6" fill="${col}" opacity="0.7"/>`;
+        svg += `<circle cx="${X(p.t)}" cy="${Y(p.v)}" r="1.6" fill="${col}" opacity="0.7"><title>${p.date} · SpO₂ ${p.v.toFixed(1)}%</title></circle>`;
       });
     }
 
@@ -477,9 +437,9 @@
       const spo2Low = spo2Pts.filter(p => p.v < 95).length;
       stats.innerHTML = `
         <div class="recovery-stat"><div class="rs-label">Resp days · 呼吸天</div><div class="rs-value">${respPts.length}</div></div>
-        <div class="recovery-stat"><div class="rs-label">Resp mean · 平均</div><div class="rs-value">${respMean.toFixed(1)}<small>/min</small></div></div>
+        <div class="recovery-stat"><div class="rs-label">Resp mean · 平均</div><div class="rs-value">${respPts.length ? respMean.toFixed(1) : '—'}<small>/min</small></div></div>
         <div class="recovery-stat"><div class="rs-label">SpO₂ days · 血氧天</div><div class="rs-value">${spo2Pts.length}</div></div>
-        <div class="recovery-stat"><div class="rs-label">SpO₂ mean · 平均</div><div class="rs-value">${spo2Mean.toFixed(1)}<small>%</small></div></div>
+        <div class="recovery-stat"><div class="rs-label">SpO₂ mean · 平均</div><div class="rs-value">${spo2Pts.length ? spo2Mean.toFixed(1) : '—'}<small>%</small></div></div>
         <div class="recovery-stat"><div class="rs-label">SpO₂ &lt; 95% · 偏低</div><div class="rs-value">${spo2Low}<small>天</small></div></div>
       `;
     }
@@ -554,16 +514,12 @@
     points.forEach(p => {
       const x = X(p.t), yTop = Y(p.v);
       const col = p.v >= 7 && p.v <= 9 ? COL.cyan : (p.v < 6 ? COL.rose : COL.amber);
-      svg += `<line x1="${x}" y1="${padT+ch}" x2="${x}" y2="${yTop}" stroke="${col}" stroke-width="0.9" opacity="0.45"/>`;
+      svg += `<line x1="${x}" y1="${padT+ch}" x2="${x}" y2="${yTop}" stroke="${col}" stroke-width="0.9" opacity="0.45"><title>${p.date} · 睡眠记录 ${p.v.toFixed(1)} h</title></line>`;
     });
 
     // 7-day rolling line
     const roll = rollingMean(points, 7);
-    let line = '';
-    points.forEach((p, i) => {
-      if (roll[i] == null) return;
-      line += `${line ? 'L' : 'M'} ${X(p.t).toFixed(2)} ${Y(roll[i]).toFixed(2)} `;
-    });
+    const line = linePath(points, roll, X, Y);
     svg += `<path d="${line}" fill="none" stroke="${COL.amber}" stroke-width="1.6" opacity="0.95"/>`;
 
     // brush + crosshair
@@ -615,13 +571,13 @@
       stats.innerHTML = `
         <div class="recovery-stat"><div class="rs-label">Days · 天数</div><div class="rs-value">${points.length}</div></div>
         <div class="recovery-stat"><div class="rs-label">Mean · 平均</div><div class="rs-value">${mean.toFixed(1)}<small>h</small></div></div>
-        <div class="recovery-stat"><div class="rs-label">In 7–9h · 健康</div><div class="rs-value">${inRange}<small>天 · ${(inRange/points.length*100).toFixed(0)}%</small></div></div>
+        <div class="recovery-stat"><div class="rs-label">记录在 7–9h</div><div class="rs-value">${inRange}<small>天 · ${(inRange/points.length*100).toFixed(0)}%</small></div></div>
         <div class="recovery-stat"><div class="rs-label">Below 6h · 偏少</div><div class="rs-value">${under6}<small>天</small></div></div>
-        <div class="recovery-stat"><div class="rs-label">Ride days · 骑行</div><div class="rs-value">${rideMean.toFixed(1)}<small>h · ${rideDayPts.length} 天</small></div></div>
-        <div class="recovery-stat"><div class="rs-label">Off days · 非骑行</div><div class="rs-value">${offMean.toFixed(1)}<small>h · ${offDayPts.length} 天</small></div></div>
+        <div class="recovery-stat"><div class="rs-label">Ride days · 骑行</div><div class="rs-value">${rideDayPts.length ? rideMean.toFixed(1) : '—'}<small>h · ${rideDayPts.length} 天</small></div></div>
+        <div class="recovery-stat"><div class="rs-label">Off days · 非骑行</div><div class="rs-value">${offDayPts.length ? offMean.toFixed(1) : '—'}<small>h · ${offDayPts.length} 天</small></div></div>
       `;
     }
-    if (brushSummary) brushSummary.innerHTML = '拖动选区查看子区间睡眠 · drag to brush a window';
+    if (brushSummary) brushSummary.innerHTML = `拖动选区查看睡眠 · 排除 ${H.daily.filter(d => d.sleep_h >= 14).length} 天 ≥14h 记录（可能重叠）`;
 
     // crosshair + brush wiring
     const hot = host.querySelector('#sleepHot');
@@ -659,11 +615,12 @@
 
     attachBrush(host, hot, brushRect, Xinv, sel => {
       if (!sel) {
-        if (brushSummary) brushSummary.innerHTML = '拖动选区查看子区间睡眠 · drag to brush a window';
+        if (brushSummary) brushSummary.innerHTML = `拖动选区查看睡眠 · 排除 ${H.daily.filter(d => d.sleep_h >= 14).length} 天 ≥14h 记录（可能重叠）`;
         return;
       }
       const s = windowStats(points, sel.fromT, sel.toT);
-      if (!s || !brushSummary) return;
+      if (!brushSummary) return;
+      if (!s) { brushSummary.textContent = '选区没有测量记录'; return; }
       const span = Math.round((s.toT - s.fromT) / 86400000) + 1;
       brushSummary.innerHTML = `
         <span class="hrv-brush-label">选区 · brushed</span>
@@ -690,7 +647,7 @@
 
     // pair walking_hr with resting_hr on the same day
     const points = H.daily
-      .filter(d => d.walking_hr && d.resting_hr && d.walking_hr > d.resting_hr)
+      .filter(d => d.walking_hr > 0 && d.resting_hr > 0)
       .map(d => ({
         t: ts(d.date),
         walk: d.walking_hr,
@@ -748,17 +705,14 @@
     // shaded reserve band: between walking_hr and resting_hr (per day vertical strokes)
     points.forEach(p => {
       const x = X(p.t);
-      svg += `<line x1="${x}" y1="${Y(p.walk)}" x2="${x}" y2="${Y(p.rest)}" stroke="rgba(168,156,107,0.35)" stroke-width="1.1"/>`;
+      svg += `<line x1="${x}" y1="${Y(p.walk)}" x2="${x}" y2="${Y(p.rest)}" stroke="rgba(168,156,107,0.35)" stroke-width="1.1"><title>${p.date} · 步行 ${p.walk} · 静息 ${p.rest} · 差值 ${p.v} bpm</title></line>`;
     });
 
     // rolling walking-HR line (cyan) and resting-HR line (rose)
     const wRoll = rollingMean(points.map(p => ({t: p.t, v: p.walk})), 7);
     const rRoll = rollingMean(points.map(p => ({t: p.t, v: p.rest})), 7);
-    let wLine = '', rLine = '';
-    points.forEach((p, i) => {
-      if (wRoll[i] != null) wLine += `${wLine ? 'L' : 'M'} ${X(p.t).toFixed(2)} ${Y(wRoll[i]).toFixed(2)} `;
-      if (rRoll[i] != null) rLine += `${rLine ? 'L' : 'M'} ${X(p.t).toFixed(2)} ${Y(rRoll[i]).toFixed(2)} `;
-    });
+    const wLine = linePath(points, wRoll, X, Y);
+    const rLine = linePath(points, rRoll, X, Y);
     svg += `<path d="${wLine}" fill="none" stroke="${COL.cyan}" stroke-width="1.5" opacity="0.95"/>`;
     svg += `<path d="${rLine}" fill="none" stroke="${COL.rose}" stroke-width="1.5" opacity="0.95"/>`;
 
@@ -778,8 +732,9 @@
       const meanR = reserves.reduce((a, b) => a + b, 0) / reserves.length;
       const meanW = walks.reduce((a, b) => a + b, 0) / walks.length;
       const meanRest = rests.reduce((a, b) => a + b, 0) / rests.length;
-      const first14 = points.slice(0, 14);
-      const last14  = points.slice(-14);
+      const comparison = window.ChartModel.periodComparison(points, 14);
+      const first14 = comparison.first;
+      const last14 = comparison.recent;
       const firstMean = first14.reduce((a, b) => a + b.v, 0) / first14.length;
       const lastMean  = last14.reduce((a, b) => a + b.v, 0) / last14.length;
       const delta = lastMean - firstMean;
@@ -787,14 +742,14 @@
       const dirCol = delta < 0 ? 'var(--cyan)' : 'var(--rose)';
       statsBox.innerHTML = `
         <div class="recovery-stat"><div class="rs-label">Days · 天数</div><div class="rs-value">${points.length}</div></div>
-        <div class="recovery-stat"><div class="rs-label">Reserve mean · 平均储备</div><div class="rs-value">${meanR.toFixed(1)}<small>bpm</small></div></div>
+        <div class="recovery-stat"><div class="rs-label">Walking − resting · 差值均值</div><div class="rs-value">${meanR.toFixed(1)}<small>bpm</small></div></div>
         <div class="recovery-stat"><div class="rs-label">Walking HR · 步行</div><div class="rs-value">${meanW.toFixed(1)}<small>bpm</small></div></div>
         <div class="recovery-stat"><div class="rs-label">Resting HR · 静息</div><div class="rs-value">${meanRest.toFixed(1)}<small>bpm</small></div></div>
-        <div class="recovery-stat"><div class="rs-label">First 14d · 初期</div><div class="rs-value">${firstMean.toFixed(1)}<small>bpm</small></div></div>
-        <div class="recovery-stat"><div class="rs-label">Last 14d · 近期</div><div class="rs-value" style="color:${dirCol}">${dir}${Math.abs(delta).toFixed(1)}<small> vs 初期</small></div></div>
+        <div class="recovery-stat"><div class="rs-label">First 14d · 初期</div><div class="rs-value">${firstMean.toFixed(1)}<small>bpm · ${first14.length} 天</small></div></div>
+        <div class="recovery-stat"><div class="rs-label">Last 14d · 近期</div><div class="rs-value" style="color:${dirCol}">${comparison.comparable ? dir + Math.abs(delta).toFixed(1) : '—'}<small>${comparison.comparable ? ' vs 初期' : '窗口不足 28 天'}</small></div></div>
       `;
     }
-    if (brushSummary) brushSummary.innerHTML = '拖动选区查看子区间心率储备 · drag to brush a window';
+    if (brushSummary) brushSummary.innerHTML = '拖动选区查看子区间心率差值 · drag to brush a window';
 
     // hover crosshair (shows walk / rest / reserve at nearest date)
     const hot = host.querySelector('#wrHot');
@@ -823,7 +778,7 @@
       ctext.setAttribute('x', tx);
       ctext.setAttribute('y', padT + 14);
       ctext.setAttribute('text-anchor', anchor);
-      ctext.textContent = `${nearest.date} · 步 ${nearest.walk}, 静 ${nearest.rest}, 储 ${nearest.v}`;
+      ctext.textContent = `${nearest.date} · 步 ${nearest.walk}, 静 ${nearest.rest}, 差 ${nearest.v}`;
       ctext.style.display = '';
     });
     hot.addEventListener('mouseleave', () => {
@@ -833,11 +788,12 @@
 
     attachBrush(host, hot, brushRect, Xinv, sel => {
       if (!sel) {
-        if (brushSummary) brushSummary.innerHTML = '拖动选区查看子区间心率储备 · drag to brush a window';
+        if (brushSummary) brushSummary.innerHTML = '拖动选区查看子区间心率差值 · drag to brush a window';
         return;
       }
       const sub = points.filter(p => p.t >= sel.fromT && p.t <= sel.toT);
-      if (!sub.length || !brushSummary) return;
+      if (!brushSummary) return;
+      if (!sub.length) { brushSummary.textContent = '选区没有配对测量记录'; return; }
       const reserves = sub.map(p => p.v);
       const walks = sub.map(p => p.walk);
       const rests = sub.map(p => p.rest);
@@ -849,7 +805,7 @@
         <span class="hrv-brush-label">选区</span>
         <strong>${fmtDate(sel.fromT)} → ${fmtDate(sel.toT)}</strong>
         · ${span} 天 · ${sub.length} 测量 ·
-        储备 <strong style="color:${meanR < 30 ? 'var(--cyan)' : 'var(--amber)'}">${meanR.toFixed(1)}</strong> bpm ·
+        差值 <strong style="color:${meanR < 30 ? 'var(--cyan)' : 'var(--amber)'}">${meanR.toFixed(1)}</strong> bpm ·
         步行 <span style="color:var(--cyan)">${meanW.toFixed(1)}</span> ·
         静息 <span style="color:var(--rose)">${meanRest.toFixed(1)}</span>
       `;
@@ -911,15 +867,11 @@
 
       // dots
       tr.pts.forEach(p => {
-        svg += `<circle cx="${X(p.t)}" cy="${Y(p.v)}" r="1" fill="${tr.col}" opacity="0.32"/>`;
+        svg += `<circle cx="${X(p.t)}" cy="${Y(p.v)}" r="1" fill="${tr.col}" opacity="0.32"><title>${p.date} · ${tr.label} ${p.v.toFixed(1)}</title></circle>`;
       });
       // rolling line
       const roll = rollingMean(tr.pts, 7);
-      let line = '';
-      tr.pts.forEach((p, i) => {
-        if (roll[i] == null) return;
-        line += `${line ? 'L' : 'M'} ${X(p.t).toFixed(2)} ${Y(roll[i]).toFixed(2)} `;
-      });
+      const line = linePath(tr.pts, roll, X, Y);
       svg += `<path d="${line}" fill="none" stroke="${tr.col}" stroke-width="1.3" opacity="0.95"/>`;
     });
 
@@ -951,18 +903,10 @@
     hot.addEventListener('mousemove', e => {
       const x = pageToVbX(e.clientX);
       const t = Xinv(x);
-      // find nearest for each track
-      const lookups = tracks.map(tr => {
-        let nearest = null, best = Infinity;
-        for (const p of tr.pts) {
-          const d = Math.abs(p.t - t);
-          if (d < best) { best = d; nearest = p; }
-        }
-        return { tr, p: nearest };
-      });
-      const dateStr = lookups[0].p ? lookups[0].p.date : fmtDate(t);
-      cline.setAttribute('x1', X(t));
-      cline.setAttribute('x2', X(t));
+      const dateStr = fmtDate(Math.round(t / 86400000) * 86400000);
+      const lookups = window.ChartModel.readingsAt(tracks, dateStr);
+      cline.setAttribute('x1', X(ts(dateStr)));
+      cline.setAttribute('x2', X(ts(dateStr)));
       cline.style.display = '';
       if (readout) {
         const parts = lookups.map(({ tr, p }) =>
@@ -973,13 +917,13 @@
     });
     hot.addEventListener('mouseleave', () => {
       cline.style.display = 'none';
-      if (readout) readout.textContent = '悬停同步读取四项 · hover to read all four';
+      if (readout) readout.textContent = '同日读取各项 · 缺测显示 — · 拖动框选区间';
     });
 
     // brush across all 4 tracks — selecting a window shows per-track stats.
     attachBrush(host, hot, brushRect, Xinv, sel => {
       if (!sel) {
-        if (readout) readout.textContent = '悬停同步读取四项 · hover to read all four';
+        if (readout) readout.textContent = '同日读取各项 · 缺测显示 — · 拖动框选区间';
         return;
       }
       const span = Math.round((sel.toT - sel.fromT) / 86400000) + 1;

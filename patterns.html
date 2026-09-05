@@ -11,11 +11,12 @@
 <meta property="og:title" content="节律 · Patterns">
 <meta property="og:description" content="出发时刻、星期与月份的节律画像 —— 时段时钟、月度全景、出发热力图与活动日历。">
 <meta name="twitter:card" content="summary">
-<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon.svg?v=69ad9d413362" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,700&family=JetBrains+Mono:wght@300;400;500&family=Noto+Serif+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/styles.css">
+<link rel="stylesheet" href="assets/styles.css?v=d1652980118b">
+<link rel="stylesheet" href="assets/site-ui.css?v=4959f520de7e">
 </head>
 <body data-page="patterns">
 
@@ -24,7 +25,7 @@
 <section class="hero">
   <div class="hero-meta"><span id="heroMetaText">节律 · Patterns</span><span class="hero-fresh" id="heroFresh"></span></div>
   <h1 id="heroH1">何时出门<br><em>节律与日历</em></h1>
-  <p class="hero-sub" id="heroSub">出发的时刻、星期、月份。把全部 411 天活动摊开,看身体在一周中怎么呼吸,在一年中怎么变形。</p>
+  <p class="hero-sub" id="heroSub">从一天里的出发时刻，到每周与每月的骑行节奏。选择城市和日期，比较频率、里程与连续骑行的变化。</p>
 </section>
 
 
@@ -41,9 +42,9 @@
     <button class="range-preset" data-preset="all">全部</button>
   </div>
   <div class="range-filter-inputs">
-    <input type="date" id="rangeFrom">
+    <input type="date" id="rangeFrom" aria-label="开始日期">
     <span class="range-filter-sep">→</span>
-    <input type="date" id="rangeTo">
+    <input type="date" id="rangeTo" aria-label="结束日期">
   </div>
   <div class="range-filter-summary" id="rangeFilterSummary">全部数据</div>
 </div>
@@ -58,10 +59,10 @@
 
     <div class="chart-card">
       <div class="chart-title">出发时段分布</div>
-      <div class="chart-sub">Hour of departure (Sydney 34 rides)</div>
+      <div class="chart-sub">个人出发记录 · 跟随城市与日期筛选</div>
       <svg class="hour-clock" id="hourClock" viewBox="0 0 340 340"></svg>
       <div style="font-family: var(--mono); font-size: 11px; color: var(--text-faint); text-align: center; margin-top: 16px;">
-        峰值出发时段 <span style="color: var(--amber);">16:00-18:00</span>(晚餐配送档)
+        按每条 GPS 轨迹的当地出发小时统计
       </div>
     </div>
 
@@ -70,7 +71,7 @@
       <div class="chart-sub">Day of week distribution</div>
       <div class="weekday-rows" id="weekdayChart"></div>
       <div style="font-family: var(--mono); font-size: 11px; color: var(--text-faint); margin-top: 24px;">
-        几乎每天都出现 — 周二、周三略多
+        显示当前筛选下各星期的出发次数
       </div>
     </div>
 
@@ -78,11 +79,11 @@
 
   <div class="chart-card" style="margin-top: 24px;">
     <div class="chart-title">每日骑行距离</div>
-    <div class="chart-sub">送外卖期(2026-04-25 → 2026-05-19)</div>
+    <div class="chart-sub">按当前筛选汇总每日骑行距离</div>
     <svg class="daily-chart" id="dailyChart" viewBox="0 0 800 200" preserveAspectRatio="none"></svg>
     <div style="font-family: var(--mono); font-size: 11px; color: var(--text-faint); margin-top: 16px; display: flex; justify-content: space-between;">
-      <span>4/25 开始</span>
-      <span>5/19 最后一天</span>
+      <span>日期范围跟随顶部筛选</span>
+      <span>只统计有记录的骑行</span>
     </div>
   </div>
 
@@ -92,7 +93,7 @@
 
 <section class="analysis-section">
   <div class="section-title">月度全景<em>·</em>Monthly Volume</div>
-  <div class="section-sub">从 2024-10 第一条记录,到 2026-05 高峰期 / Apple Health workouts</div>
+  <div class="section-sub">按所选骑行重新汇总月份；不完整月份仅含筛选日期内的记录</div>
 
   <div class="chart-card">
     <div class="monthly-tabs" id="monthlyTabs">
@@ -132,7 +133,7 @@
 
 <section class="analysis-section">
   <div class="section-title">出发热力图<em>·</em>Departure Heatmap</div>
-  <div class="section-sub">星期 × 出发小时 · 颜色越亮越频繁 · 揭示送外卖班次的双峰节律</div>
+  <div class="section-sub">星期 × 出发小时 · 颜色越亮越频繁 · 描述个人出发记录，不能据此判断平台需求</div>
   <div class="chart-card">
     <div class="heatmap-wrap">
       <div class="heatmap" id="hourHeatmap"></div>
@@ -181,9 +182,11 @@
 
 <div class="tooltip" id="tooltip"></div>
 
-<script src="assets/routes.js"></script>
-<script src="assets/health-data.js"></script>
-<script src="assets/recovery.js"></script>
-<script src="assets/app.js"></script>
+<script src="assets/routes.js?v=eb19ea933c0e"></script>
+<script src="assets/health-data.js?v=a6cb8464c15a"></script>
+<script src="assets/chart-model.js?v=a23f28d1bc84"></script>
+<script src="assets/recovery.js?v=2b35cf9c8f19"></script>
+<script src="assets/app.js?v=40b227072a13"></script>
+<script src="assets/site-ui.js?v=01dd1afd6670"></script>
 </body>
 </html>

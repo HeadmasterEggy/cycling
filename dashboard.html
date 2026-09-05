@@ -11,16 +11,18 @@
 <meta property="og:title" content="配送作战台 · Delivery Console">
 <meta property="og:description" content="悉尼配送决策：选择试跑区域，估算整轮收益，核对 Quest 与三周最低收入。">
 <meta name="twitter:card" content="summary">
-<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon.svg?v=69ad9d413362" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=JetBrains+Mono:wght@300;400;500&family=Noto+Serif+SC:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
   crossorigin=""/>
-<link rel="stylesheet" href="assets/styles.css">
-<link rel="stylesheet" href="assets/delivery-planner.css">
-<link rel="stylesheet" href="assets/dashboard.css">
+<link rel="stylesheet" href="assets/styles.css?v=d1652980118b">
+<link rel="stylesheet" href="assets/delivery-planner.css?v=e4de6257c96c">
+<link rel="stylesheet" href="assets/delivery-charts.css?v=aa5b91abf5d1">
+<link rel="stylesheet" href="assets/site-ui.css?v=4959f520de7e">
+<link rel="stylesheet" href="assets/dashboard.css?v=8e31ea3fd6db">
 </head>
 <body data-page="dashboard">
 <div class="dash">
@@ -33,6 +35,7 @@
   <main class="dash-main">
     <section class="dash-panel p-offer" id="offer"><div class="dash-head"><span class="dash-step">02</span><h2>这单值不值</h2><em>OFFER CHECK</em></div><div class="dash-body" id="dashOffer"></div></section>
     <section class="dash-panel p-zones" id="zones"><div class="dash-head"><span class="dash-step">01</span><h2>去哪试跑</h2><em>FIND YOUR AREA</em></div><div class="dash-body" id="dashZones"></div></section>
+  <div class="dash-middle">
   <section class="dash-panel p-map" id="map">
     <div class="dash-head">
       <h2>取餐与落点</h2><em>ALL RECORDED SHIFTS</em>
@@ -51,7 +54,7 @@
       <span class="dash-mapbar-label">底色</span>
       <div class="dlv-metric-chips" id="dlvMetricChips"></div>
     </div>
-    <p class="dash-map-scope">全期轨迹 · 下方时段仅筛地图点位，与区域候选筛选独立</p>
+    <p class="dash-map-scope" id="dlvMetricNote">区域取餐频率跟随候选区域筛选；点位和骑行指标为全期记录。小时滑条只筛点位与取送事件。</p>
     <div class="dash-mapwrap">
       <div id="dlvMap"></div>
       <div class="dlv-focus-bar dash-focus" id="dlvFocusBar" hidden></div>
@@ -76,15 +79,17 @@
 
 
     <section class="dash-panel p-drop"><div class="dash-head"><span class="dash-step">03</span><h2>送完之后</h2><em>THE NEXT PICKUP</em></div><div class="dash-body" id="dashDrop"></div></section>
+  </div>
     <section class="dash-panel p-settlement"><div class="dash-head"><h2>三周最低收入核对</h2><em>UBER</em></div><div class="dash-body" id="dashSettlement"></div></section>
     <section class="dash-panel p-ledger" id="ledger"><div class="dash-head"><h2>历史收入，分开看</h2><em>VERIFIED LEDGER</em></div><div class="dash-body" id="dashLedger"></div></section>
   </main>
   <footer class="dash-footer"><span>GPS 推断 · Uber 账本 · 手动情景估算</span><a href="delivery.html">查看路段、骑行效率与识别方法 ↗</a></footer>
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="assets/delivery-data.js"></script>
-<script src="assets/delivery-model.js"></script>
-<script src="assets/delivery-planner.js"></script>
-<script src="assets/delivery.js"></script>
-<script src="assets/dashboard.js"></script>
+<script src="assets/delivery-data.js?v=884f049e48d6"></script>
+<script src="assets/delivery-model.js?v=75091960f1d2"></script>
+<script src="assets/delivery-planner.js?v=cd884d97cdf9"></script>
+<script src="assets/delivery.js?v=8ca2563dda31"></script>
+<script src="assets/dashboard.js?v=c2302b0c6096"></script>
+<script src="assets/site-ui.js?v=01dd1afd6670"></script>
 </body></html>

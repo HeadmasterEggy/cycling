@@ -93,3 +93,42 @@ test('city hourly bars count one shift across zones and keep quiet hours', () =>
   assert.equal(hours[19].pickups,0);
   assert.equal(hours[19].rate,null);
 });
+test('delay comparisons start from the planned cycle, not from an already applied buffer', () => {
+  const rows = M.sensitivity({fare:15.5,buffer:20,cost:.5},[0,5,10]);
+  assert.deepEqual(rows.map(r=>r.minutes),[25,30,35]);
+  assert.deepEqual(rows.map(r=>r.meetsTarget),[true,true,false]);
+  near(rows[0].rate,36);
+  near(rows[1].rate,30);
+  near(rows[2].needed,18);
+  assert.throws(()=>M.sensitivity({},[-1]));
+});
+test('delay comparison reprices a Quest deadline, including lost skipping opportunity', () => {
+  const rows = M.sensitivity({fare:20,questMode:'milestone',reward:40,
+    remaining:1,eligible:1,deadline:22,pWithout:50,recovery:30},[0,2,3]);
+  assert.deepEqual(rows.map(r=>r.quest),[20,20,-20]);
+  assert.deepEqual(rows.map(r=>r.minutes),[50,52,53]);
+  near(rows[2].rate,-.5*60/53);
+  assert.ok(rows[2].needed > rows[1].needed+40);
+});
+test('zone hourly comparison uses exactly the same date and meal exposure as its summary', () => {
+  const data = fixture();
+  const filters = {period:'recent',day:'weekend',time:'dinner',zone:'A'};
+  const summary = M.aggregate(data,filters)[0];
+  const hours = M.hourly(data,filters);
+  near(hours.reduce((sum,h)=>sum+h.hours,0),summary.hours);
+  assert.equal(hours.reduce((sum,h)=>sum+h.pickups,0),summary.pickups);
+  assert.equal(summary.waitCount,4);
+  assert.equal(hours[18].rate,4);
+  assert.equal(hours[19].rate,null); // quiet exposure is retained, not shown as eligible
+  assert.equal(hours[12].hours,0); // lunch and older dates cannot leak into dinner
+  assert.equal(M.hourly(data,{...filters,zone:'B'})[18].rate,null);
+  assert.equal(M.aggregate(data,{...filters,hour:'18'})[0].rate,4);
+});
+test('the recent record window ends at its displayed anchor and empty filters stay empty', () => {
+  const data = fixture();
+  data.planning.cells.push({...data.planning.cells[0],date:'2026-08-31',pickups:999});
+  assert.equal(M.aggregate(data,{period:'recent',zone:'A'})[0].pickups,11);
+  assert.deepEqual(M.aggregate(data,{zone:'unknown'}),[]);
+  assert.ok(M.hourly(data,{zone:'unknown'}).every(h=>h.rate===null && h.hours===0));
+  assert.deepEqual(M.hourly({zones:[]}),[]);
+});
