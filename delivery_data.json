@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-10-13T13:08:02+00:00",
+  "generated_at": "2026-10-13T13:26:15+00:00",
   "city": "Sydney",
   "tz": "Australia/Sydney",
   "stop_speed_ms": 0.7,
@@ -28013,34 +28013,34 @@
  "validation": {
   "source": "Uber driver activity export (rider's own account)",
   "first": "2026-04-23",
-  "last": "2026-08-30",
-  "orders": 198,
-  "in_window": 158,
-  "coverage_pct": 80,
-  "recall_drop": 65,
-  "recall_pickup": 55,
+  "last": "2026-10-11",
+  "orders": 380,
+  "in_window": 313,
+  "coverage_pct": 82,
+  "recall_drop": 64,
+  "recall_pickup": 52,
   "zone_pct": 78,
-  "venue_pct": 100,
-  "align_median_s": -18,
+  "venue_pct": 99,
+  "align_median_s": -14,
   "align_iqr": [
-   -102,
-   51
+   -91,
+   64
   ],
   "misses": {
-   "light": 33,
-   "pickup": 21,
-   "no_dwell": 2
+   "light": 74,
+   "pickup": 34,
+   "no_dwell": 4
   },
   "match_window_s": 420,
-  "matched_drops": 99,
-  "total_drops": 282,
-  "platform_share_pct": 35,
-  "median_fare": 7.5,
-  "median_km": 3.27,
-  "median_min": 17.9
+  "matched_drops": 193,
+  "total_drops": 457,
+  "platform_share_pct": 42,
+  "median_fare": 9.07,
+  "median_km": 3.49,
+  "median_min": 20.1
  },
  "offers": {
-  "n": 198,
+  "n": 380,
   "floor": {
    "rate": 31.3,
    "from": "2026-08-17",
@@ -28054,7 +28054,7 @@
   },
   "basis": "Uber 活动记录；仅作历史账本，不代表在线时薪或下一单奖励",
   "acceptance_time_available": false,
-  "median_fare": 7.5,
+  "median_fare": 9.07,
   "weeks": [
    {
     "week": "2026-04-20",
@@ -28119,9 +28119,49 @@
     "quest": 715.0,
     "other": 27.0,
     "quest_per_record": 13.24
+   },
+   {
+    "week": "2026-08-31",
+    "records": 47,
+    "fare": 489.58,
+    "quest": 256.0,
+    "other": 48.0,
+    "quest_per_record": 5.45
+   },
+   {
+    "week": "2026-09-07",
+    "records": 8,
+    "fare": 91.58,
+    "quest": 20.0,
+    "other": 60.0,
+    "quest_per_record": 2.5
+   },
+   {
+    "week": "2026-09-14",
+    "records": 32,
+    "fare": 343.84,
+    "quest": 38.0,
+    "other": 214.0,
+    "quest_per_record": 1.19
+   },
+   {
+    "week": "2026-09-21",
+    "records": 58,
+    "fare": 771.59,
+    "quest": 127.0,
+    "other": 693.0,
+    "quest_per_record": 2.19
+   },
+   {
+    "week": "2026-10-05",
+    "records": 38,
+    "fare": 339.09,
+    "quest": 374.0,
+    "other": 66.0,
+    "quest_per_record": 9.84
    }
   ],
-  "duplicates_removed": 73,
+  "duplicates_removed": 101,
   "large_adjustments": [
    {
     "on": "2026-05-04",
