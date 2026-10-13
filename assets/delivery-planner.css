@@ -188,3 +188,64 @@ body[data-page="delivery"] .main > .analysis-section:first-child { margin-top: 0
   .plan-zone-row .plan-zone-main small { font-size:11px; }
   .plan-zone-row .plan-zone-rate { font-size:20px; }
 }
+
+/* Opportunity-cost comparison and history calibration inside the offer check. */
+.plan-history { background:#162022; border:1px solid #34484a; border-radius:9px; padding:12px 14px; margin:14px 0; }
+.plan-history .plan-select { margin:0; }
+.plan-history .plan-fields { margin:10px 0; align-items:end; }
+.plan-history-status { float:right; color:#91c7cd; font-size:12px; }
+.plan-history-card { border:1px solid #3d5b57; border-radius:9px; padding:12px 14px; background:#14201f; margin:10px 0; }
+.plan-history-card > span { display:block; color:#b4c5be; font-size:11px; }
+.plan-history-card > b { font:24px var(--mono,monospace); font-weight:500; color:#a9dfc2; }
+.plan-history-card small { display:block; font-size:11px; color:#a6b8b2; line-height:1.7; }
+.plan-history-card b small { display:inline; font-size:12px; }
+.plan-history-idle { font-size:12px; color:#bccdc6; line-height:1.8; }
+.plan-history-idle p { margin:8px 0; }
+.plan-edge { margin-top:14px; padding:12px 14px; border-radius:9px; border:1px solid #4a5a58; background:#ffffff0a; }
+.plan-edge.up { border-color:#42776a; background:#2f6b5a1f; }
+.plan-edge.down { border-color:#7a5148; background:#7a51481f; }
+.plan-edge > span { display:block; color:#cfd6cc; font-size:11px; letter-spacing:.04em; }
+.plan-edge > strong { font:22px var(--mono,monospace); font-weight:500; }
+.plan-edge.up > strong { color:#9cdbbc; }
+.plan-edge.down > strong { color:#f0b8ab; }
+.plan-edge strong small { font-size:11px; }
+.plan-edge p { margin:6px 0 0; font-size:12px; color:#bcc8c0; line-height:1.7; }
+.plan-edge p b { font-family:var(--mono,monospace); color:#f2d4a9; font-weight:500; }
+.plan-edge.muted { opacity:.85; }
+
+/* Best time × place. */
+.slot-headline { border:1px solid #645439; background:linear-gradient(135deg,#272119,#191d1d); border-radius:12px; padding:16px 18px; margin:12px 0 4px; }
+.slot-headline > span { display:block; font-size:11px; color:#c8c6bb; letter-spacing:.06em; }
+.slot-headline > strong { display:block; font-size:16px; font-weight:500; margin-top:6px; }
+.slot-headline > b { font:34px var(--mono,monospace); font-weight:500; color:#f1d4a7; letter-spacing:-.03em; }
+.slot-headline b small { font-size:12px; color:#b6b7af; }
+.slot-headline > small { display:block; color:#aeb0a6; font-size:11px; margin-top:4px; }
+.slot-h { margin:22px 0 8px; font-size:13px; font-weight:600; color:#d9dad2; }
+.slot-table-scroll { overflow-x:auto; }
+.slot-table { border-collapse:separate; border-spacing:6px; width:100%; min-width:380px; }
+.slot-table th { text-align:left; color:#a9b5b2; font-weight:400; font-size:12px; vertical-align:top; padding:6px 4px; }
+.slot-table th small { display:block; color:#7f8e8b; font-size:10px; margin-top:2px; }
+.slot-table thead th { font-size:11px; }
+.slot-table td { vertical-align:top; padding:0; width:50%; }
+.slot-pick { display:block; width:100%; text-align:left; border:1px solid #41594f; border-radius:9px; background:#17251f; color:#e3e8df; padding:10px 12px; cursor:pointer; min-height:44px; }
+.slot-pick:hover { background:#1d3228; }
+.slot-pick strong { display:block; font-size:13px; font-weight:500; }
+.slot-pick b { font:17px var(--mono,monospace); font-weight:500; color:#a9dfc2; }
+.slot-pick b small, .slot-pick > small { font-size:10px; color:#9eb0a8; }
+.slot-pick > small { display:block; margin-top:2px; }
+.slot-pick.thin { border-style:dashed; border-color:#5f6a5c; }
+.slot-pick.thin b { color:#c4c9b3; }
+.slot-next { display:block; color:#93a39d; font-size:10px; padding:4px 2px 0; }
+.slot-none { color:#7f8e8b; font-size:11px; padding:10px 4px !important; }
+.slot-rank { display:grid; }
+.slot-row { display:flex; align-items:center; gap:10px; width:100%; background:transparent; border:0; border-bottom:1px solid #2b3336; color:#dedfd8; padding:12px 4px; text-align:left; cursor:pointer; }
+.slot-row:hover { background:#283a3d; border-radius:7px; }
+.slot-row-main { flex:1; min-width:0; }
+.slot-row-main strong { display:block; font-size:14px; font-weight:500; }
+.slot-row-main small { display:block; color:#a1aaa7; font-size:10px; margin-top:4px; }
+.slot-row.thin .plan-zone-rate { color:#9ba7a6; }
+.slot-bar { display:block; position:relative; height:6px; margin-top:8px; border-radius:3px; background:#232d30; }
+.slot-bar i { position:absolute; top:0; bottom:0; border-radius:3px; background:#4b7f72; }
+.slot-bar em { position:absolute; top:-2px; bottom:-2px; width:2px; background:#f1d4a7; }
+.slot-value { margin:12px 0; }
+.slot-value .plan-offer-actions { margin:0; align-self:end; }

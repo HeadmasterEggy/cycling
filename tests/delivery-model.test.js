@@ -132,3 +132,48 @@ test('the recent record window ends at its displayed anchor and empty filters st
   assert.ok(M.hourly(data,{zone:'unknown'}).every(h=>h.rate===null && h.hours===0));
   assert.deepEqual(M.hourly({zones:[]}),[]);
 });
+
+function history() {
+  // Zone A is only ever visited at the busy hour, zone B only at the quiet one.
+  const cells = [];
+  for (let s = 0; s < 6; s++) {
+    cells.push({shift:s,zone:'A',date:'2026-08-03',weekday:0,hour:18,seconds:3600,pickups:4,drops:0,wait_s:[]});
+    cells.push({shift:s,zone:'B',date:'2026-08-04',weekday:1,hour:15,seconds:3600,pickups:1,drops:0,wait_s:[]});
+    cells.push({shift:s,zone:'C',date:'2026-08-05',weekday:2,hour:18,seconds:3600,pickups:4,drops:0,wait_s:[]});
+  }
+  return {zones:[{name:'A',label:'A'},{name:'B',label:'B'},{name:'C',label:'C'}],
+    planning:{cells,min_hours:1,min_shifts:4,min_pickups:6,recent_days:28,recent_anchor:'2026-08-30'}};
+}
+test('opportunity cost is optional and compares against declining', () => {
+  const none = M.estimate({fare: 15.27});
+  assert.equal(none.baseline, null); assert.equal(none.edge, null);
+  const r = M.estimate({fare: 15.27, baseline: 40});
+  near(r.edge, r.rate - 40);
+  near(r.neededBaseline, 40 * 25 / 60 + 0.5);
+  assert.equal(M.estimate({fare: 8, baseline: ''}).baseline, null);
+});
+test('slot ranking is exposure-adjusted and shrinks thin evidence', () => {
+  const D = history();
+  const rows = M.slots(D, {period: 'all'}, {value: 10, cost: 0});
+  const a = rows.find(r => r.zone === 'A'), b = rows.find(r => r.zone === 'B');
+  assert.ok(a.rate > b.rate * 2, 'busy slot ranks above quiet slot');
+  assert.ok(a.rate < 4 && a.rate > 3, `shrunk toward the model, got ${a.rate}`);
+  assert.ok(a.dollarsLo < a.dollars && a.dollars < a.dollarsHi);
+  assert.equal(rows[0].dollars >= rows[rows.length - 1].dollars, true);
+  assert.deepEqual(M.slots(D, {period: 'all'}, {value: 10, cost: 0, minHours: 100}), []);
+});
+test('advise reports baseline and destination pacing, and flags unknown hours', () => {
+  const D = history();
+  const a = M.advise(D, {zone: 'A', dest: 'C', weekend: false, hour: 18, service: 20, value: 10, cost: 0});
+  assert.ok(a.known && a.baseline > 0 && a.cycleMin > 0);
+  assert.equal(a.idle, Math.max(0, a.cycleMin - 20));
+  assert.equal(M.advise(D, {weekend: false, hour: 3, service: 20, value: 10}).known, false);
+});
+test('suggested times use the rider\'s own pace and fall back to the city median', () => {
+  const D = {zones: [{name:'A',min_per_km:4,hours:3,pickup_wait_med:120},{name:'B',min_per_km:6,hours:3,pickup_wait_med:0}],
+    summary: {pickup_wait_med: 150, drop_wait_med: 90}};
+  const t = M.suggestTimes(D, {pickupZone:'A', destZone:'B', approachKm:1, rideKm:2});
+  assert.equal(t.approach, 4); assert.equal(t.ride, 12); assert.equal(t.wait, 2); assert.equal(t.handoff, 1.5);
+  assert.equal(M.suggestTimes(D, {approachKm:1, rideKm:1}).approach, 5);
+  assert.throws(() => M.suggestTimes(D, {approachKm:'', rideKm:1}));
+});

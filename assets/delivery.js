@@ -1535,6 +1535,7 @@ function renderOffers() {
   const D = dlvData();
   if (!D || !window.DeliveryPlanner) return;
   DeliveryPlanner.mountOffer(document.getElementById('dlvOfferCalc'), D);
+  DeliveryPlanner.mountSlots(document.getElementById('dlvSlots'), D);
   DeliveryPlanner.mountSettlement(document.getElementById('dlvSettlement'), D);
   DeliveryPlanner.mountLedger(document.getElementById('dlvOfferWeeks'), D);
   DeliveryPlanner.mountZones(document.getElementById('dlvZonePlanner'), D);

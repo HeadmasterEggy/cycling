@@ -66,6 +66,13 @@ class PlanningTests(unittest.TestCase):
             for c in offers['statement_checks']:
                 self.assertAlmostEqual(c['fare']+c['quest']+c['other']+c['tips'],c['total'])
 
+    def test_fare_by_daypart_uses_sydney_pickup_hour_and_keeps_only_aggregates(self):
+        at = lambda h: int(datetime(2026, 8, 25, h, 30, tzinfo=analysis.SYD_TZ).timestamp())
+        orders = [{'at': at(12), 'total': 6.0}, {'at': at(12), 'total': 8.0},
+                  {'at': at(18), 'total': 10.0}, {'at': at(9), 'total': 99.0}]
+        self.assertEqual(analysis.fare_by_daypart(orders),
+                         {'lunch': {'n': 2, 'mean': 7.0}, 'dinner': {'n': 1, 'mean': 10.0}})
+
     def test_pickup_frequency_does_not_reward_dropoffs_or_riding_score(self):
         rows = [{'hours':2,'shifts':4,'pickups':8,'orders':100,'flow':90},
                 {'hours':2,'shifts':4,'pickups':8,'orders':0,'flow':10},

@@ -26,6 +26,7 @@
     document.getElementById('dashMapNote').textContent = d.meta.shifts + ' 班次';
     DeliveryPlanner.mountOffer(document.getElementById('dashOffer'), d);
     DeliveryPlanner.mountZones(document.getElementById('dashZones'), d);
+    DeliveryPlanner.mountSlots(document.getElementById('dashSlots'), d);
     DeliveryPlanner.mountSettlement(document.getElementById('dashSettlement'), d);
     DeliveryPlanner.mountLedger(document.getElementById('dashLedger'), d);
     renderDrop(d, null);

@@ -53,8 +53,15 @@
     const slowRate = (values.fare + slowQuest - values.cost) * 60 / pessimisticMinutes;
     const needed = Math.max(0, values.target * minutes / 60 + values.cost - quest);
     const neededSlow = Math.max(0, values.target * pessimisticMinutes / 60 + values.cost - slowQuest);
+    // Opportunity cost: what the same minutes earn if this offer is declined.
+    // Optional, because it only exists when history can supply it.
+    const hasBaseline = v.baseline !== '' && v.baseline != null && Number.isFinite(Number(v.baseline)) && Number(v.baseline) >= 0;
+    const baseline = hasBaseline ? Number(v.baseline) : null;
+    const edge = hasBaseline ? rate - baseline : null;
+    const slowEdge = hasBaseline ? slowRate - baseline : null;
+    const neededBaseline = hasBaseline ? Math.max(0, baseline * minutes / 60 + values.cost - quest) : null;
     return { ...values, service, minutes, pessimisticMinutes, quest, slowQuest, questNote,
-      baseRate, rate, slowRate, needed, neededSlow,
+      baseRate, rate, slowRate, needed, neededSlow, baseline, edge, slowEdge, neededBaseline,
       verdict: Math.min(rate, slowRate) >= values.target ? 'strong' : rate >= values.target ? 'borderline' : 'weak' };
   }
   function settlement(input) {
@@ -121,6 +128,187 @@
       return {hour: r.hour, hours, pickups: r.pickups, shifts, enough, rate: enough ? r.pickups / hours : null};
     });
   }
+
+  // ---- historical expectations --------------------------------------------
+  // Pickups per recorded hour is a thin, noisy statistic: most zone-hours have
+  // a handful of events. Treating every zone × time cell on its own ranks luck.
+  // Instead, fit one multiplicative Poisson model
+  //     rate(zone, daytype, hour) = base × timeFactor × zoneFactor
+  // so a zone's quiet Tuesday is judged against how busy that hour usually is,
+  // and a Friday dinner is not credited to the zone just because it was visited then.
+  // Both factors are shrunk toward 1 with a gamma prior (iterative fitting).
+  const DAYPARTS = Object.freeze([
+    { key: 'lunch', label: '午餐', from: 11, to: 14 },
+    { key: 'afternoon', label: '下午', from: 14, to: 17 },
+    { key: 'dinner', label: '晚餐', from: 17, to: 20 },
+    { key: 'late', label: '夜宵', from: 20, to: 23 },
+  ]);
+  const daypartOf = hour => DAYPARTS.find(d => hour >= d.from && hour < d.to) || null;
+  const dayKey = weekend => (weekend ? 'we' : 'wd');
+  // Wilson–Hilferty approximation of a gamma quantile; z is a normal quantile.
+  function gammaQuantile(shape, rate, z) {
+    if (!(shape > 0) || !(rate > 0)) return 0;
+    const t = 1 / (9 * shape);
+    return Math.max(0, shape * Math.pow(1 - t + z * Math.sqrt(t), 3) / rate);
+  }
+  const Z80 = 1.2815515655446004;
+  function fitRates(data, filters = {}, opts = {}) {
+    if (!data.planning) return null;
+    const kTime = opts.kTime == null ? 4 : opts.kTime, kZone = opts.kZone == null ? 4 : opts.kZone;
+    const cells = filteredCells(data, { period: filters.period }).filter(c => c.seconds > 0);
+    let hours = 0, pickups = 0;
+    const byTime = new Map(), byZone = new Map();
+    const tag = c => ({ h: c.seconds / 3600, p: c.pickups, t: dayKey(c.weekday >= 5) + c.hour, z: c.zone, hour: c.hour, weekend: c.weekday >= 5 });
+    const rows = cells.map(tag);
+    for (const r of rows) {
+      hours += r.h; pickups += r.p;
+      const t = byTime.get(r.t) || { h: 0, p: 0 }; t.h += r.h; t.p += r.p; byTime.set(r.t, t);
+      const z = byZone.get(r.z) || { h: 0, p: 0 }; z.h += r.h; z.p += r.p; byZone.set(r.z, z);
+    }
+    if (!hours) return null;
+    const base = pickups / hours;
+    const f = new Map([...byTime.keys()].map(k => [k, 1])), g = new Map([...byZone.keys()].map(k => [k, 1]));
+    const expT = new Map(), expZ = new Map();
+    for (let i = 0; i < 12; i++) {
+      expZ.clear();
+      for (const r of rows) expZ.set(r.z, (expZ.get(r.z) || 0) + r.h * base * f.get(r.t));
+      for (const [k, v] of byZone) g.set(k, (v.p + kZone) / (expZ.get(k) + kZone));
+      expT.clear();
+      for (const r of rows) expT.set(r.t, (expT.get(r.t) || 0) + r.h * base * g.get(r.z));
+      for (const [k, v] of byTime) f.set(k, (v.p + kTime) / (expT.get(k) + kTime));
+    }
+    const zoneFactor = zone => (g.has(zone) ? g.get(zone) : 1);
+    return {
+      base, hours, pickups, kTime, kZone,
+      zoneFactor,
+      rate: (zone, weekend, hour) => base * (f.get(dayKey(weekend) + hour) || 1) * (zone ? zoneFactor(zone) : 1),
+      known: (weekend, hour) => (byTime.get(dayKey(weekend) + hour) || { h: 0 }).h,
+      timeStats: (weekend, hour) => {
+        const key = dayKey(weekend) + hour, t = byTime.get(key);
+        if (!t) return null;
+        const shape = kTime + t.p, rate = kTime + (expT.get(key) || 0);
+        return { hours: t.h, pickups: t.p, mean: base * shape / rate,
+          lo: base * gammaQuantile(shape, rate, -Z80), hi: base * gammaQuantile(shape, rate, Z80) };
+      },
+    };
+  }
+  // Mean income per order, from the ledger. Quest is optional because it is
+  // not a per-order promise; the page labels which assumption is in use.
+  function orderValue(data) {
+    const o = data.offers || {}, weeks = o.weeks || [];
+    const n = weeks.reduce((s, w) => s + (w.records || 0), 0);
+    const fare = n ? weeks.reduce((s, w) => s + w.fare, 0) / n : (o.median_fare != null ? o.median_fare : 7.5);
+    const checks = (o.statement_checks || []).map(c => ({ c, log: weeks.find(w => w.week === c.week) })).filter(x => x.log && x.log.records);
+    const cn = checks.reduce((s, x) => s + x.log.records, 0);
+    const withQuest = cn ? checks.reduce((s, x) => s + x.c.fare + x.c.quest, 0) / cn : null;
+    return { fare, withQuest, records: n, questRecords: cn };
+  }
+  // Mean order value for a daypart, shrunk toward the overall mean. Only
+  // present when analyze_delivery.py saw the private order log.
+  function valueByDaypart(data, perOrder) {
+    const dp = data.offers && data.offers.by_daypart;
+    if (!dp) return () => perOrder;
+    const rows = Object.values(dp), n = rows.reduce((s, r) => s + r.n, 0);
+    const overall = n ? rows.reduce((s, r) => s + r.n * r.mean, 0) / n : 0, k = 8;
+    return key => {
+      const r = dp[key];
+      if (!r || !overall) return perOrder;
+      return perOrder * ((r.n * r.mean + k * overall) / (r.n + k)) / overall;
+    };
+  }
+  function slots(data, filters = {}, opts = {}) {
+    const fit = fitRates(data, filters, opts);
+    if (!fit) return [];
+    const valueOf = typeof opts.value === 'function' ? opts.value : () => opts.value;
+    const cost = opts.cost || 0, kSlot = opts.kSlot == null ? 2 : opts.kSlot;
+    const minHours = opts.minHours == null ? 0.75 : opts.minHours, minShifts = opts.minShifts == null ? 3 : opts.minShifts;
+    const thinShifts = data.planning.min_shifts || 4, thinPickups = 4;
+    const groups = new Map();
+    for (const c of filteredCells(data, { period: filters.period })) {
+      const dp = daypartOf(c.hour);
+      if (!dp || c.seconds <= 0) continue;
+      const weekend = c.weekday >= 5, key = `${c.zone}|${dayKey(weekend)}|${dp.key}`;
+      if (!groups.has(key)) groups.set(key, { zone: c.zone, weekend, dp, h: 0, p: 0, prior: 0, shifts: new Set() });
+      const x = groups.get(key), h = c.seconds / 3600;
+      x.h += h; x.p += c.pickups; x.prior += h * fit.rate(c.zone, weekend, c.hour); x.shifts.add(c.shift);
+    }
+    const zoneMeta = new Map((data.zones || []).map(z => [z.name, z]));
+    const rows = [];
+    for (const x of groups.values()) {
+      if (x.h < minHours || x.shifts.size < minShifts) continue;
+      const shape = (x.prior / x.h) * kSlot + x.p, rate = kSlot + x.h;
+      const value = valueOf(x.dp.key) - cost;
+      const mean = shape / rate, lo = gammaQuantile(shape, rate, -Z80), hi = gammaQuantile(shape, rate, Z80);
+      rows.push({
+        zone: x.zone, label: (zoneMeta.get(x.zone) || {}).label || x.zone, weekend: x.weekend, daypart: x.dp.key, daypartLabel: x.dp.label,
+        window: `${x.dp.from}–${x.dp.to}`, hours: x.h, pickups: x.p, shifts: x.shifts.size,
+        observed: x.p / x.h, rate: mean, rateLo: lo, rateHi: hi,
+        value, dollars: mean * value, dollarsLo: lo * value, dollarsHi: hi * value,
+        thin: x.p < thinPickups || x.shifts.size < thinShifts,
+      });
+    }
+    return rows.sort((a, b) => b.dollars - a.dollars || b.hours - a.hours || a.label.localeCompare(b.label));
+  }
+  function timeCurve(data, filters = {}, opts = {}) {
+    const fit = fitRates(data, filters, opts);
+    if (!fit) return null;
+    const valueOf = typeof opts.value === 'function' ? opts.value : () => opts.value;
+    const cost = opts.cost || 0, minHours = opts.minHours == null ? 0.75 : opts.minHours;
+    const out = { base: fit.base, weekday: [], weekend: [] };
+    for (const weekend of [false, true]) {
+      for (let hour = 0; hour < 24; hour++) {
+        const s = fit.timeStats(weekend, hour);
+        if (!s || s.hours <= 0) continue;
+        const dp = daypartOf(hour), value = (dp ? valueOf(dp.key) : valueOf(null)) - cost;
+        out[weekend ? 'weekend' : 'weekday'].push({ hour, hours: s.hours, pickups: s.pickups, enough: s.hours >= minHours,
+          rate: s.mean, rateLo: s.lo, rateHi: s.hi, value, dollars: s.mean * value, dollarsLo: s.lo * value, dollarsHi: s.hi * value });
+      }
+    }
+    return out;
+  }
+  // Context for one offer: what declining would earn, and how long the next
+  // order is likely to take to arrive after this one ends.
+  function advise(data, input = {}) {
+    const fit = fitRates(data, { period: input.period || 'all' }, input);
+    if (!fit) return null;
+    const weekend = !!input.weekend, hour = Math.min(23, Math.max(0, Math.floor(Number(input.hour))));
+    const valueOf = typeof input.value === 'function' ? input.value : () => input.value;
+    const cost = input.cost || 0;
+    const stats = fit.timeStats(weekend, hour);
+    const dp = daypartOf(hour), net = valueOf(dp ? dp.key : null) - cost;
+    const g = input.zone ? fit.zoneFactor(input.zone) : 1;
+    const known = !!stats && stats.hours >= 0.5;
+    const service = Number(input.service) || 0;
+    const endHour = Math.min(23, Math.floor(hour + service / 60));
+    const endStats = fit.timeStats(weekend, endHour);
+    const endKnown = !!endStats && endStats.hours >= 0.5;
+    const destRate = input.dest && endKnown ? fit.rate(input.dest, weekend, endHour) : (endKnown ? fit.rate(null, weekend, endHour) : null);
+    return {
+      known, rate: known ? stats.mean * g : null, rateLo: known ? stats.lo * g : null, rateHi: known ? stats.hi * g : null,
+      baseline: known ? stats.mean * g * net : null, baselineLo: known ? stats.lo * g * net : null, baselineHi: known ? stats.hi * g * net : null,
+      hours: stats ? stats.hours : 0, net, endHour, endKnown, destRate,
+      cycleMin: destRate ? 60 / destRate : null,
+      idle: destRate ? Math.max(0, 60 / destRate - service) : null,
+    };
+  }
+  // Minutes for each leg from the rider's own measured pace instead of guesses.
+  function suggestTimes(data, input = {}) {
+    const zones = data.zones || [], byName = new Map(zones.map(z => [z.name, z]));
+    const paces = zones.filter(z => z.min_per_km > 0 && z.hours >= 1).map(z => z.min_per_km);
+    const fallback = median(paces) || 4.8;
+    const pace = name => { const z = byName.get(name); return z && z.min_per_km > 0 && z.hours >= 1 ? z.min_per_km : fallback; };
+    const zone = byName.get(input.pickupZone);
+    const waitS = zone && zone.pickup_wait_med > 0 ? zone.pickup_wait_med : (data.summary || {}).pickup_wait_med;
+    const handS = (data.summary || {}).drop_wait_med;
+    const km = (v, name) => numeric(v, name, 0, 100);
+    return {
+      approach: Math.round(km(input.approachKm, '去店距离') * pace(input.pickupZone) * 10) / 10,
+      ride: Math.round(km(input.rideKm, '送餐距离') * pace(input.destZone || input.pickupZone) * 10) / 10,
+      wait: waitS ? Math.round(waitS / 6) / 10 : null,
+      handoff: handS ? Math.round(handS / 6) / 10 : null,
+      pace: pace(input.pickupZone), destPace: pace(input.destZone || input.pickupZone), fallback,
+    };
+  }
   function sensitivity(input, delays = [0, 5, 10, 15]) {
     return delays.map(delay => {
       const extra = numeric(delay, '额外延误');
@@ -129,7 +317,8 @@
         quest: r.slowQuest, needed: r.neededSlow, meetsTarget: r.slowRate >= r.target };
     });
   }
-  const api = { DEFAULTS, estimate, sensitivity, settlement, aggregate, hourly, median };
+  const api = { DEFAULTS, DAYPARTS, estimate, sensitivity, settlement, aggregate, hourly, median,
+    fitRates, orderValue, valueByDaypart, slots, timeCurve, advise, suggestTimes, daypartOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.DeliveryModel = api;
 })(typeof window !== 'undefined' ? window : this);
