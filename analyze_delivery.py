@@ -835,6 +835,11 @@ def validate_against_uber(path, shifts, dwells, subs):
     lo = offsets[len(offsets) // 4] if offsets else 0
     hi = offsets[3 * len(offsets) // 4] if offsets else 0
     pct = lambda a, b: round(100 * a / b) if b else None
+    # Only drop-offs inside the log's own span can be matched; GPS kept after
+    # the export was taken would otherwise dilute the platform share.
+    log_lo = min(o["at"] for o in orders) - MATCH_WINDOW_S
+    log_hi = max(o["at"] + o["dur"] for o in orders) + MATCH_WINDOW_S
+    log_drops = [d for d in drops if log_lo <= d["t"].timestamp() <= log_hi]
     return {
         "source": "Uber driver activity export (rider's own account)",
         "first": datetime.fromtimestamp(min(o["at"] for o in orders),
@@ -855,8 +860,8 @@ def validate_against_uber(path, shifts, dwells, subs):
         # What share of the inferred drop-offs this one platform accounts for.
         # The remainder may include other platforms or false positives; precision is unknown.
         "matched_drops": len(matched_ids),
-        "total_drops": len(drops),
-        "platform_share_pct": pct(len(matched_ids), len(drops)),
+        "total_drops": len(log_drops),
+        "platform_share_pct": pct(len(matched_ids), len(log_drops)),
         "median_fare": round(st.median([o["total"] for o in orders]), 2),
         "median_km": round(st.median([o["dist"] for o in orders if o["dist"]]), 2),
         "median_min": round(st.median([o["dur"] for o in orders]) / 60, 1),
