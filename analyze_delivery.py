@@ -946,6 +946,26 @@ def read_earnings(path):
     return {"weeks": dict(weeks), "dupes": dupes, "one_offs": one_offs}
 
 
+DAYPARTS = (("lunch", 11, 14), ("afternoon", 14, 17), ("dinner", 17, 20), ("late", 20, 23))
+
+
+def fare_by_daypart(orders):
+    """Mean order total per meal period (Sydney time of the order, i.e. pickup).
+
+    Aggregates only: no addresses or venues leave the private log. The site
+    uses these to scale expected income per period; small buckets are
+    shrunk toward the overall mean there.
+    """
+    buckets = {key: [] for key, _, _ in DAYPARTS}
+    for o in orders:
+        hour = datetime.fromtimestamp(o["at"], timezone.utc).astimezone(SYD_TZ).hour
+        for key, lo, hi in DAYPARTS:
+            if lo <= hour < hi:
+                buckets[key].append(o["total"])
+                break
+    return {k: {"n": len(v), "mean": round(st.mean(v), 2)} for k, v in buckets.items() if v}
+
+
 def build_offers(path, shifts, subs):
     """Publish observed prices and ledger totals, without fabricated acceptance times.
 
@@ -969,6 +989,7 @@ def build_offers(path, shifts, subs):
         "basis": "Uber 活动记录；仅作历史账本，不代表在线时薪或下一单奖励",
         "acceptance_time_available": False,
         "median_fare": round(st.median(o["total"] for o in orders), 2),
+        "by_daypart": fare_by_daypart(orders),
         "weeks": weeks, "duplicates_removed": earn["dupes"],
         "large_adjustments": earn["one_offs"],
         "verified": QUEST_VERIFIED,

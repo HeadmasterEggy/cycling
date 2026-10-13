@@ -170,6 +170,7 @@ SECTIONS = {
     'dlv_zones':    find_section_by_title('区域排行'),
     'dlv_chain':    find_section_by_title('接单区还是送达区'),
     'dlv_offers':   find_section_by_title('这一单该不该接'),
+    'dlv_slots':    find_section_by_title('什么时候去哪最赚'),
     'dlv_map':      find_section_by_title('热点地图'),
     'dlv_roads':    find_section_by_title('路段好坏'),
     'dlv_hours':    find_section_by_title('时段规律'),
@@ -181,7 +182,7 @@ SECTIONS = {
 # of these sections do not get the tags at all.
 DELIVERY_SECTIONS = {'dlv_kpis', 'dlv_method', 'dlv_truth', 'dlv_zones',
                      'dlv_chain', 'dlv_map', 'dlv_roads', 'dlv_hours',
-                     'dlv_profile', 'dlv_offers'}
+                     'dlv_profile', 'dlv_offers', 'dlv_slots'}
 # Sections that draw a Leaflet map.
 MAP_SECTIONS = {'map', 'dlv_map'}
 
@@ -390,7 +391,7 @@ PAGES = [
             custom_meta='配送 · Delivery'),
         'intro': '',
         # Start with planning, then supporting observations and methodology.
-        'sections': ['dlv_offers', 'dlv_zones', 'dlv_map', 'dlv_chain', 'dlv_kpis',
+        'sections': ['dlv_offers', 'dlv_slots', 'dlv_zones', 'dlv_map', 'dlv_chain', 'dlv_kpis',
                      'dlv_hours', 'dlv_roads', 'dlv_profile', 'dlv_method', 'dlv_truth'],
         'has_filter': False,
         # Delivery analysis is Sydney-only by construction — a city picker
@@ -442,7 +443,7 @@ ALL_TITLES_ORDER = [
     'hrv', 'rhr', 'resp', 'sleep', 'walking_reserve', 'recovery_composite',
     'elev_gallery', 'ascent_descent',
     'ride_explorer', 'mets', 'departure', 'rides_table',
-    'dlv_map', 'dlv_kpis', 'dlv_zones', 'dlv_offers', 'dlv_chain', 'dlv_hours',
+    'dlv_map', 'dlv_kpis', 'dlv_zones', 'dlv_offers', 'dlv_slots', 'dlv_chain', 'dlv_hours',
     'dlv_roads', 'dlv_profile', 'dlv_method', 'dlv_truth',
 ]
 all_body = "\n\n".join(SECTIONS[s] for s in ALL_TITLES_ORDER)
