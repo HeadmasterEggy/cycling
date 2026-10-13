@@ -247,6 +247,18 @@ def classify_city(lat, lon):
     return "Unknown"
 
 
+def _ride_zone(city):
+    """tzinfo for a ride's city, or None when the city is unknown."""
+    tz_name = CITY_TZ.get(city)
+    if not tz_name:
+        return None
+    try:
+        from zoneinfo import ZoneInfo
+        return ZoneInfo(tz_name)
+    except Exception:
+        return timezone(timedelta(hours=8)) if tz_name == "Asia/Shanghai" else None
+
+
 def _local_wall_clock(dt_utc, city):
     """The wall-clock time at the ride's location, as a naive datetime.
 
@@ -624,7 +636,24 @@ def iter_cycling_workouts(xml_path: str):
                 elem.clear()
 
 
-def parse_body_metrics(xml_path: str):
+def zone_timeline(workouts):
+    """zone_at(dt) -> the tz of the latest ride with a known city at or before
+    dt (the first such ride's tz before that). Body records carry no location,
+    and the export stamps them with the phone's offset on export day, so this
+    is the best available guess at the wall clock they were lived in."""
+    import bisect
+    marks = sorted((datetime.fromisoformat(w["start_iso"]), _ride_zone(w["city"]))
+                   for w in workouts if _ride_zone(w["city"]) is not None)
+    if not marks:
+        return None
+    times = [t for t, _ in marks]
+    def zone_at(dt):
+        i = bisect.bisect_right(times, dt) - 1
+        return marks[max(i, 0)][1]
+    return zone_at
+
+
+def parse_body_metrics(xml_path: str, zone_at=None):
     """Single streaming pass over export.xml. Returns:
       daily:  { 'YYYY-MM-DD': { metric_name: aggregated_value, ... } }
       vo2max: [ {date, value} ] sorted ascending
@@ -634,6 +663,7 @@ def parse_body_metrics(xml_path: str):
     sleep_per_night = {}  # date -> minutes asleep (assigned to wake-up day's prior night)
     vo2max = []
     weight = []
+    local = (lambda dt: dt.astimezone(zone_at(dt))) if zone_at else (lambda dt: dt)
 
     for ev, elem in ET.iterparse(xml_path, events=("end",)):
         tag = elem.tag
@@ -652,7 +682,7 @@ def parse_body_metrics(xml_path: str):
                 if start is None:
                     elem.clear(); continue
                 try:
-                    dt = parse_dt(start)
+                    dt = local(parse_dt(start))
                 except Exception:
                     elem.clear(); continue
                 day = dt.strftime("%Y-%m-%d")
@@ -671,7 +701,7 @@ def parse_body_metrics(xml_path: str):
                             mins = (e - s).total_seconds() / 60.0
                             if mins > 0:
                                 # Attribute to the wake-up date (end date local).
-                                day = e.strftime("%Y-%m-%d")
+                                day = local(e).strftime("%Y-%m-%d")
                                 sleep_per_night[day] = sleep_per_night.get(day, 0) + mins
                         except Exception:
                             pass
@@ -880,9 +910,25 @@ def main(skip_routes=False, epsilon_m=RDP_EPSILON_M):
                     # Prefer GPX distance when much larger (Apple sometimes undercounts)
                     if gd["distance_km"] > wo["distance_km"] * 1.05:
                         wo["distance_km_gpx"] = gd["distance_km"]
+        # export.xml writes every timestamp with the phone's offset at export
+        # time (+1000 in winter, +1100 in summer), not the ride's own. Restate
+        # the clock fields in the zone where the ride happened, so a re-export
+        # in another season does not shift every ride by an hour.
+        tz = _ride_zone(wo["city"])
+        if tz is not None:
+            start_dt, end_dt = start_dt.astimezone(tz), end_dt.astimezone(tz)
+            wo.update({
+                "id": start_dt.strftime("%Y%m%dT%H%M%S"),
+                "date": start_dt.strftime("%Y-%m-%d"),
+                "start_iso": start_dt.isoformat(),
+                "end_iso": end_dt.isoformat(),
+                "hour": start_dt.hour,
+                "weekday": start_dt.weekday(),
+            })
+        wo["_start"] = start_dt
         workouts.append(wo)
 
-    workouts.sort(key=lambda x: x["start_iso"])
+    workouts.sort(key=lambda x: x.pop("_start"))
     print(f"  -> {len(workouts)} cycling workouts")
 
     # Aggregations
@@ -1001,7 +1047,8 @@ def main(skip_routes=False, epsilon_m=RDP_EPSILON_M):
     }
 
     print("Streaming body metrics (RHR / HRV / steps / sleep / VO2max) ...")
-    body_daily, vo2max_series, weight_series = parse_body_metrics(EXPORT_XML)
+    body_daily, vo2max_series, weight_series = parse_body_metrics(
+        EXPORT_XML, zone_timeline(workouts))
     print(f"  -> {len(body_daily)} days with body metrics, "
           f"{len(vo2max_series)} VO2max readings")
 
