@@ -160,3 +160,8 @@ body[data-page=dashboard] { margin: 0; background: #101719; color: #e8e6de; over
   .activity-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .activity-kpis b { font-size:16px; }
 }
+
+.activity-account { padding:14px; border:1px solid #816f50; border-radius:5px; background:#282921; overflow-wrap:anywhere; }
+.activity-account strong { color:#ecd09b; font-size:14px; }
+.activity-account span { display:block; margin-top:5px; color:#d0d7cd; font-size:12px; }
+.activity-account p { margin:7px 0 0; color:#b4bdb3; font-size:11px; line-height:1.65; }

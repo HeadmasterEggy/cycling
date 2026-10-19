@@ -255,6 +255,12 @@ Uber 活动记录按时间戳 + 时长与推断送达对齐，只计算录制窗
 不会将原始账单、账户信息或客户地址写进公开代码；新增的 `planning.cells` 仅有区域级汇总，
 不含精确坐标或地址。既有公开地图仍包含简化骑行轨迹与推断停留点。
 
+作战台的本机 Activity JSON 与上述原有账号账本独立。文件通过
+`account: {"id": "本机账号代号", "owner": "self 或 other", "label": "显示名称"}`
+标明归属；缺少或无法识别 `owner` 时显示“账号未确认”，不会默认归入我的账号。
+2026-10-19 扫描的 `data/uber_activity.json` 已标为 `other`，不参与原有账本、GPS 匹配或接单建议。
+本机导入每次只汇总所选文件，不跨文件、跨账号合并，也不会上传或持久保存。
+
 ```bash
 node --test tests/*.test.js
 python3 -m unittest discover -s tests -p 'test_*.py'

@@ -417,7 +417,7 @@
     if (!o) { host.innerHTML = '<p class="plan-empty">没有可用的 Uber 账本。</p>'; return; }
     host.classList.add('planner');
     const checks = o.statement_checks || [];
-    host.innerHTML = `<p class="plan-help">${o.n} 条 Uber 活动记录。已核对的周采用网页账单金额；其他周显示日志分类，小费未知。Quest 单独列出，不平摊到下一单。</p>
+    host.innerHTML = `<p class="plan-help"><strong>我的账号 · 原有账本</strong> — ${o.n} 条 Uber 活动记录。2026-10-19 扫描的其他账号数据未纳入本账本及配送分析。已核对的周采用网页账单金额；其他周显示日志分类，小费未知。Quest 单独列出，不平摊到下一单。</p>
       <div class="plan-table-scroll" tabindex="0" aria-label="每周收入，可横向滚动"><table class="plan-ledger"><caption>每周分类金额（A$）· 周一 04:00 起</caption><thead><tr><th>结算周</th><th>来源</th><th>运费</th><th>Quest</th><th>其他调整</th><th>小费</th><th>账单合计</th></tr></thead><tbody>${o.weeks.map(raw => {
         const checked = checks.find(c => c.week === raw.week), w = checked || raw;
         return `<tr><td>${esc(w.week)}</td><td>${checked ? '账单已核对' : '活动日志'}</td><td>${money(w.fare)}</td><td class="quest-cell">${money(w.quest)}</td><td>${money(w.other)}</td><td>${checked ? money(w.tips) : '—'}</td><td>${checked ? money(w.total) : '—'}</td></tr>`;
