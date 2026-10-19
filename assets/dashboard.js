@@ -2,6 +2,58 @@
 (function () {
   'use strict';
   const esc = s => dlvEsc(s);
+  const money = value => new Intl.NumberFormat('en-AU', { style:'currency', currency:'AUD' }).format(value);
+  function mountActivity() {
+    const host = document.getElementById('dashActivity');
+    if (!host) return;
+    host.innerHTML = `<div class="activity-head"><div><h3>Activity 周收入</h3><p>从 Uber Activity 手动选择 JSON；只在当前浏览器内读取，不上传、不保存。</p></div><label class="activity-load">选择本机文件<input type="file" accept="application/json,.json" aria-label="选择 Uber Activity JSON 文件"></label></div>
+      <div class="activity-feedback" role="status" aria-live="polite">选择 data/uber_activity.json 开始查看。此文件不会被网页公开构建读取。</div>
+      <div class="activity-results" hidden></div>`;
+    const input = host.querySelector('input[type=file]'), feedback = host.querySelector('.activity-feedback'), results = host.querySelector('.activity-results');
+    input.addEventListener('change', async () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      try {
+        const data = JSON.parse(await file.text());
+        if (data.source !== 'Uber Driver Activity' || !Array.isArray(data.weeks) || !data.weeks.length || data.weeks.length > 104) throw new Error('文件格式不符合 Uber Activity 周记录。');
+        const weeks = data.weeks.map(w => {
+          if (!Array.isArray(w.rows) || !Array.isArray(w.range) || w.range.length !== 2) throw new Error('周记录缺少日期范围或明细。');
+          const rows = w.rows;
+          // Uber sometimes shows a Quest summary and its trip-quest detail at the same timestamp and amount.
+          const summaries = new Set(rows.filter(r => r.event === 'Quest').map(r => `${r.date}|${r.time}|${r.earnings}`));
+          let duplicateQuestRows = 0;
+          const totals = { fare:0, quest:0, other:0, deliveries:0, entries:0 };
+          for (const row of rows) {
+            if (!row || typeof row.event !== 'string' || typeof row.earnings !== 'string') throw new Error('记录缺少事件或金额字段。');
+            const parsed = Number(row.earnings.replace(/[^\d.-]/g, ''));
+            if (!Number.isFinite(parsed)) continue;
+            if (/Trip Quest$/i.test(row.event) && summaries.has(`${row.date}|${row.time}|${row.earnings}`)) { duplicateQuestRows++; continue; }
+            totals.entries++;
+            if (/^DELIVERY$/i.test(row.event)) { totals.fare += parsed; totals.deliveries++; }
+            else if (/quest/i.test(row.event)) totals.quest += parsed;
+            else totals.other += parsed;
+          }
+          return { label:w.range.join(' — '), ...totals, duplicateQuestRows, total:totals.fare+totals.quest+totals.other };
+        });
+        renderActivity(results, weeks, data.retrieved_at || '');
+        results.hidden = false;
+        feedback.textContent = `已在本机载入 ${weeks.length} 周；排除了 ${weeks.reduce((n,w)=>n+w.duplicateQuestRows,0)} 条与 Quest 汇总重复的 Trip Quest 展示。`;
+      } catch (error) {
+        results.hidden = true;
+        feedback.textContent = error instanceof SyntaxError ? '无法读取 JSON，请选择有效的 Uber Activity 文件。' : (error.message || '无法读取这个文件。');
+      }
+    });
+  }
+  function renderActivity(host, weeks, retrievedAt) {
+    const max = Math.max(1, ...weeks.map(w=>w.total));
+    const totals = weeks.reduce((a,w)=>({fare:a.fare+w.fare,quest:a.quest+w.quest,other:a.other+w.other,total:a.total+w.total,deliveries:a.deliveries+w.deliveries}),{fare:0,quest:0,other:0,total:0,deliveries:0});
+    const bars = weeks.map(w=>`<div class="activity-week"><div class="activity-bar" role="img" aria-label="${esc(w.label)}：总计 ${money(w.total)}"><i class="fare" style="width:${Math.max(0,w.fare/max*100)}%"></i><i class="quest" style="width:${Math.max(0,w.quest/max*100)}%"></i><i class="other" style="width:${Math.max(0,w.other/max*100)}%"></i></div><div class="activity-week-meta"><span>${esc(w.label)}</span><b>${money(w.total)}</b></div></div>`).join('');
+    const rows = [...weeks].reverse().map(w=>`<tr><td>${esc(w.label)}</td><td>${w.deliveries}</td><td>${money(w.fare)}</td><td>${money(w.quest)}</td><td>${money(w.other)}</td><td><strong>${money(w.total)}</strong></td></tr>`).join('');
+    host.innerHTML = `<div class="activity-kpis"><div><span>载入期间合计</span><b>${money(totals.total)}</b></div><div><span>配送记录</span><b>${totals.deliveries}</b></div><div><span>配送平均金额</span><b>${money(totals.deliveries ? totals.fare/totals.deliveries : 0)}</b></div><div><span>Activity 周数</span><b>${weeks.length}</b></div></div>
+      <div class="activity-chart-title"><strong>每周入账构成</strong><span><i class="fare"></i>配送 <i class="quest"></i>Quest <i class="other"></i>其他</span></div><div class="activity-chart">${bars}</div>
+      <div class="activity-table-wrap" tabindex="0" aria-label="Uber Activity 周收入分类表"><table class="activity-table"><thead><tr><th>周区间</th><th>配送条数</th><th>配送</th><th>Quest</th><th>其他</th><th>Activity 合计</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th>合计</th><th>${totals.deliveries}</th><th>${money(totals.fare)}</th><th>${money(totals.quest)}</th><th>${money(totals.other)}</th><th>${money(totals.total)}</th></tr></tfoot></table></div>
+      <p class="activity-caveat">按 Activity 行项目汇总；Quest 汇总与同一时间、同金额的 Trip Quest 明细只计一次。它反映页面显示的入账记录，不等于净收入或有效时薪；缺少在线时长、里程、订单地点。数据记录日期：${esc(retrievedAt || '未提供')}。</p>`;
+  }
   function renderDrop(data, name) {
     const host = document.getElementById('dashDrop'), c = data.chain;
     const z = data.zones.find(z => z.name === name), ad = z && z.as_drop;
@@ -29,6 +81,7 @@
     DeliveryPlanner.mountSlots(document.getElementById('dashSlots'), d);
     DeliveryPlanner.mountSettlement(document.getElementById('dashSettlement'), d);
     DeliveryPlanner.mountLedger(document.getElementById('dashLedger'), d);
+    mountActivity();
     renderDrop(d, null);
     window.addEventListener('delivery-zone-focus', e => renderDrop(d, e.detail));
     try {
