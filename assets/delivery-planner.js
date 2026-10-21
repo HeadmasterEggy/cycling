@@ -42,7 +42,7 @@
         <label class="plan-select">送达区域参考<select name="destination"><option value="">选择落点，查看历史续接</option>${data.zones.slice().sort((a,b)=>a.label.localeCompare(b.label)).map(z => `<option value="${esc(z.name)}">${esc(z.label)}</option>`).join('')}</select></label>
         <div class="plan-destination plan-help">选择区域后显示历史参考，时间由你判断并填写。</div>
         <details class="plan-details plan-history" open><summary>用历史数据校准 <span class="plan-history-status">对比“不接这单”</span></summary>
-          <p class="plan-help">时薪只有和“不接会怎样”比才有意义。这里用你在该时段、该区域的历史取餐节奏，推算继续跑的预期时薪；也可按距离和你的实测速度估时间。</p>
+          <p class="plan-help">这里的“继续跑”只是历史情景：按该时段与区域的 GPS 取餐频率，乘以你填的单均金额。GPS 含其他平台、记录小时也不是平台在线小时，所以情景时薪不是实际基线；可按距离和你的实测速度估时间。</p>
           <div class="plan-fields">
             <label class="plan-select">现在所在／取餐区<select name="pickupZone">${zoneOptions(data, '不指定（全城平均）')}</select></label>
             <label class="plan-select">接单时段<select name="histHour">${hourOptions(Math.min(23, Math.max(9, sydney.hour)))}</select></label>
@@ -84,22 +84,22 @@
       host.querySelector('.plan-save-offer').disabled = !current || saved.length >= 3;
     }
     function edgeHtml(r) {
-      if (r.baseline == null) return '<div class="plan-edge muted"><span>对比继续跑</span><p>这个时段没有足够历史记录，暂无法给出“不接”的基线。</p></div>';
+      if (r.baseline == null) return '<div class="plan-edge muted"><span>历史情景对照</span><p>这个时段没有足够记录，暂无法计算历史情景参考。</p></div>';
       const beats = r.edge >= 0, hitsTarget = r.rate >= r.target;
-      const call = hitsTarget && beats ? '建议接' : hitsTarget ? '够目标，但不如继续跑' : beats ? '低于目标，但比干等强' : '建议跳过';
-      return `<div class="plan-edge ${beats ? 'up' : 'down'}"><span>对比继续跑 · ${call}</span><strong>${signed(r.edge)}<small>/h</small></strong>
-        <p>继续跑的历史预期 ${money(r.baseline)}/h。比它划算，报价至少 <b>${money(r.neededBaseline)}</b>；延误后差额 ${signed(r.slowEdge)}/h。</p></div>`;
+      const call = hitsTarget && beats ? '高于历史情景且达到目标' : hitsTarget ? '达到目标，低于历史情景' : beats ? '高于历史情景，低于目标' : '低于历史情景与目标';
+      return `<div class="plan-edge ${beats ? 'up' : 'down'}"><span>历史情景对照 · ${call}</span><strong>${signed(r.edge)}<small>/h</small></strong>
+        <p>历史情景参考 ${money(r.baseline)}/h。按此情景比较，报价至少 <b>${money(r.neededBaseline)}</b>；延误后差额 ${signed(r.slowEdge)}/h。此值不是实际在线时薪。</p></div>`;
     }
     function renderHistory(adv) {
       const out = host.querySelector('.plan-history-out'), status = host.querySelector('.plan-history-status');
       if (!adv || !adv.known) {
-        out.innerHTML = '<p class="plan-help">这个时段没有足够的历史记录，无法估算继续跑的时薪。</p>';
+        out.innerHTML = '<p class="plan-help">这个时段没有足够的 GPS 记录，无法估算历史情景参考。</p>';
         status.textContent = '该时段无历史';
         return;
       }
-      status.textContent = `继续跑约 ${money(adv.baseline)}/h`;
-      out.innerHTML = `<div class="plan-history-card"><span>不接这单，继续跑的预期时薪</span><b>${money(adv.baseline)}<small>/h</small></b>
-        <small>80% 区间 ${money(adv.baselineLo)}–${money(adv.baselineHi)} · 约 ${adv.rate.toFixed(1)} 单/记录小时 × 每单净 ${money(adv.net)} · 该时段 ${adv.hours.toFixed(1)} 记录小时</small></div>`
+      status.textContent = `历史情景约 ${money(adv.baseline)}/h`;
+      out.innerHTML = `<div class="plan-history-card"><span>按历史 GPS 节奏继续跑的情景值</span><b>${money(adv.baseline)}<small>/记录小时</small></b>
+        <small>80% 区间 ${money(adv.baselineLo)}–${money(adv.baselineHi)} · 约 ${adv.rate.toFixed(1)} 次推断取餐/GPS 记录小时 × 每单净 ${money(adv.net)} · ${adv.hours.toFixed(1)} 个时段记录小时；GPS 含其他平台，非实际在线收入</small></div>`
         + (adv.cycleMin ? `<div class="plan-history-idle"><p>送完约 ${String(adv.endHour).padStart(2, '0')}:00，${esc(host.querySelector('[name="destination"]').selectedOptions[0].value ? host.querySelector('[name="destination"]').selectedOptions[0].textContent : '全城')}历史上约每 <b>${adv.cycleMin.toFixed(0)}</b> 分钟出一单（整轮）。扣掉本单用时，等单约 <b>${Math.round(adv.idle)}</b> 分钟。</p>
         <button type="button" class="plan-action" data-apply-idle="${Math.round(adv.idle)}">填入“送完无单等待／转场”</button></div>` : '');
     }
@@ -322,14 +322,14 @@
         <div class="plan-offer-actions"><button type="button" class="plan-action" data-slot-unit="fare">仅运费 ${money(ov.fare)}</button>${ov.withQuest != null ? `<button type="button" class="plan-action" data-slot-unit="quest">含 Quest ${money(ov.withQuest)}</button>` : ''}</div></div>
       <p class="plan-scope slot-scope" aria-live="polite"></p>
       <div class="slot-headline" aria-live="polite"></div>
-      <h3 class="slot-h">哪个时段去哪个区</h3><div class="slot-matrix"></div>
+      <h3 class="slot-h">各餐段取餐频率较高的区域</h3><div class="slot-matrix"></div>
       <h3 class="slot-h">完整排名</h3><div class="slot-rank"></div>
-      <details class="plan-hour-details" open><summary>全城逐小时，几点最值 <span>悉尼时间 · 同一位置质量下</span></summary>
-        <div class="plan-hour-scroll" tabindex="0" aria-label="逐小时预期时薪，可横向滚动"><div class="slot-hours"></div></div>
+      <details class="plan-hour-details" open><summary>全城逐小时，哪些时段记录频率高 <span>悉尼时间 · 同一位置质量下</span></summary>
+        <div class="plan-hour-scroll" tabindex="0" aria-label="逐小时推断取餐频率，可横向滚动"><div class="slot-hours"></div></div>
         <p class="plan-hour-info" role="status">点选一个小时，查看样本量。</p>
       </details>
-      <p class="plan-help">预期收入 = 预测取餐频率 × （平均每单收入 − ${money(cost)} 成本）。频率来自 GPS 推断的取餐次数 ÷ 记录小时；记录小时不等于平台在线小时，取餐也含其他平台订单，所以这是“跑这个时段大约能做多少单”的个人历史估计，不是平台保证。</p>
-      <p class="plan-help">为避免样本小而被运气带偏：先把时间和地点分开估计（某区某个钟点的值 = 全局节奏 × 钟点系数 × 区域系数），再用该区该餐段自己的记录修正，样本越少越向模型预测靠拢。区间为 80% 可信范围；“样本少”表示取餐少于 4 次或班次少于 ${p.min_shifts} 个。Quest 默认不计，需要时用上方按钮切换口径。</p>`;
+      <p class="plan-help">主排名只比较 GPS 推断取餐次数 ÷ GPS 记录小时，并非真实订单密度、平台派单概率或 Uber 在线时薪。上方单均收入可改作个人情景：按“GPS 全平台取餐频率 × Uber 账本单价”估算金额；跨平台单价可能不同，也没有在线小时和完整成本，因此金额不用于排名，不代表实际收入。</p>
+      <p class="plan-help">为避免样本小而被运气带偏：先把时间和地点分开估计（某区某个钟点的频率 = 全局节奏 × 钟点系数 × 区域系数），再用该区该餐段自己的记录修正，样本越少越向模型预测靠拢。区间为 80% 可信范围；“样本少”表示取餐少于 4 次或班次少于 ${p.min_shifts} 个。</p>`;
     const q = name => host.querySelector(`[name="${name}"]`);
     const valueInput = q('slotValue');
     function filtered(rows) {
@@ -337,7 +337,7 @@
       return rows.filter(r => (day === 'all' || (day === 'weekend') === r.weekend) && (part === 'all' || r.daypart === part));
     }
     const dayLabel = r => (r.weekend ? '周末' : '工作日');
-    const range = r => `${money(r.dollarsLo)}–${money(r.dollarsHi)}`;
+    const range = r => `${r.rateLo.toFixed(2)}–${r.rateHi.toFixed(2)}`;
     function render() {
       const unit = Number(valueInput.value);
       if (!valueInput.validity.valid || !Number.isFinite(unit)) { host.querySelector('.slot-scope').textContent = '请填写有效的平均每单收入'; return; }
@@ -346,33 +346,32 @@
       const all = M.slots(data, filters, opts), rows = filtered(all);
       const curve = M.timeCurve(data, filters, opts);
       const settled = rows.filter(r => !r.thin);
-      host.querySelector('.slot-scope').textContent = `${all.length} 个时间 × 地点组合有足够记录 · 单均 ${money(unit - cost)} 净收入 · 记录截至 ${p.recent_anchor}`
-        + (data.offers && data.offers.by_daypart ? ' · 餐段单价按账本调整' : ' · 各餐段单价相同（账本未按时段汇总）');
+      host.querySelector('.slot-scope').textContent = `${all.length} 个时间 × 地点组合达到最低记录时长 · 单均金额仅作情景参考（${money(unit)}，不影响排名） · 记录截至 ${p.recent_anchor}`;
       const top = settled[0] || rows[0];
       host.querySelector('.slot-headline').innerHTML = top
-        ? `<span>当前口径下预期最高</span><strong>${dayLabel(top)} ${top.daypartLabel} ${top.window} · ${esc(top.label)}</strong><b>${money(top.dollars)}<small>/h</small></b><small>80% 区间 ${range(top)} · ${top.pickups} 次取餐 / ${top.hours.toFixed(1)} 记录小时 / ${top.shifts} 班${top.thin ? ' · 样本少' : ''}</small>`
+        ? `<span>取餐频率最高的试跑候选${top.thin ? ' · 样本少' : ''}</span><strong>${dayLabel(top)} ${top.daypartLabel} ${top.window} · ${esc(top.label)}</strong><b>${top.rate.toFixed(2)}<small> 次 / GPS 记录小时</small></b><small>80% 区间 ${range(top)} 次/小时 · ${top.pickups} 次推断取餐 / ${top.hours.toFixed(1)} 记录小时 / ${top.shifts} 班</small><small>按单均 ${money(unit)} 推算金额约 ${money(top.dollars)}/记录小时；仅为情景参考</small>`
         : '<span>没有满足条件的组合，放宽日期类型或餐段后再看。</span>';
       const days = q('day').value === 'weekday' ? [false] : q('day').value === 'weekend' ? [true] : [false, true];
       const usedParts = parts.filter(d => q('part').value === 'all' || d.key === q('part').value);
       host.querySelector('.slot-matrix').innerHTML = `<div class="slot-table-scroll" tabindex="0" aria-label="时段与地点对照，可横向滚动"><table class="slot-table"><thead><tr><th>餐段</th>${days.map(w => `<th>${w ? '周末' : '工作日'}</th>`).join('')}</tr></thead><tbody>${usedParts.map(d => `<tr><th>${d.label}<small>${d.from}–${d.to}</small></th>${days.map(w => {
         const cell = all.filter(r => r.daypart === d.key && r.weekend === w), best = cell.filter(r => !r.thin)[0] || cell[0], next = cell.filter(r => r !== best && !r.thin)[0];
-        return best ? `<td><button type="button" class="slot-pick ${best.thin ? 'thin' : ''}" data-zone="${esc(best.zone)}"><strong>${esc(best.label)}</strong><b>${money(best.dollars)}<small>/h</small></b><small>${range(best)}${best.thin ? ' · 样本少' : ''}</small></button>${next ? `<small class="slot-next">其次 ${esc(next.label)} ${money(next.dollars)}</small>` : ''}</td>` : '<td class="slot-none">记录不足</td>';
+        return best ? `<td><button type="button" class="slot-pick ${best.thin ? 'thin' : ''}" data-zone="${esc(best.zone)}"><strong>${esc(best.label)}</strong><b>${best.rate.toFixed(2)}<small> 次/记录小时</small></b><small>80% 区间 ${range(best)}${best.thin ? ' · 样本少' : ''}</small></button>${next ? `<small class="slot-next">其次 ${esc(next.label)} ${next.rate.toFixed(2)} 次/记录小时</small>` : ''}</td>` : '<td class="slot-none">记录不足</td>';
       }).join('')}</tr>`).join('')}</tbody></table></div>`;
-      const top10 = rows.slice(0, 10), max = Math.max(1, ...top10.map(r => r.dollarsHi));
+      const top10 = rows.slice(0, 10), max = Math.max(1, ...top10.map(r => r.rateHi));
       host.querySelector('.slot-rank').innerHTML = top10.length ? top10.map((r, i) => `<button type="button" class="slot-row ${r.thin ? 'thin' : ''}" data-zone="${esc(r.zone)}">
           <span class="plan-zone-index">${String(i + 1).padStart(2, '0')}</span>
           <span class="slot-row-main"><strong>${esc(r.label)}</strong><small>${dayLabel(r)} ${r.daypartLabel} ${r.window} · ${r.pickups} 次取餐 / ${r.hours.toFixed(1)} h / ${r.shifts} 班${r.thin ? ' · 样本少' : ''}</small>
-            <span class="slot-bar" role="img" aria-label="区间 ${range(r)}"><i style="left:${r.dollarsLo / max * 100}%;width:${Math.max(2, (r.dollarsHi - r.dollarsLo) / max * 100)}%"></i><em style="left:${r.dollars / max * 100}%"></em></span></span>
-          <span class="plan-zone-rate">${money(r.dollars)}<small>/h · ${range(r)}</small></span></button>`).join('') : '<p class="plan-empty">没有匹配组合。</p>';
+            <span class="slot-bar" role="img" aria-label="80% 区间 ${range(r)} 次/小时"><i style="left:${r.rateLo / max * 100}%;width:${Math.max(2, (r.rateHi - r.rateLo) / max * 100)}%"></i><em style="left:${r.rate / max * 100}%"></em></span></span>
+          <span class="plan-zone-rate">${r.rate.toFixed(2)}<small>次/记录小时 · ${range(r)}</small></span></button>`).join('') : '<p class="plan-empty">没有匹配组合。</p>';
       const hoursAll = [...curve.weekday, ...curve.weekend].map(h => h.hour).filter(h => h >= 9);
       const lo = hoursAll.length ? Math.min(...hoursAll) : 11, hi = hoursAll.length ? Math.max(...hoursAll) : 22;
       const hourList = Array.from({ length: hi - lo + 1 }, (_, i) => i + lo);
-      const maxD = Math.max(1, ...[...curve.weekday, ...curve.weekend].filter(h => h.enough).map(h => h.dollars));
+      const maxD = Math.max(1, ...[...curve.weekday, ...curve.weekend].filter(h => h.enough).map(h => h.rate));
       const grid = [['工作日', curve.weekday], ['周末', curve.weekend]].filter(([label]) => days.length === 2 || (days[0] ? label === '周末' : label === '工作日'));
-      host.querySelector('.slot-hours').innerHTML = `<div class="plan-hour-grid" style="--plan-hours:${hourList.length}"><span class="plan-hour-zone">$ / 小时</span>${hourList.map(h => `<span class="plan-hour-tick">${String(h).padStart(2, '0')}</span>`).join('')}${grid.map(([label, list]) => `<span class="plan-hour-zone">${label}</span>${hourList.map(hour => {
+      host.querySelector('.slot-hours').innerHTML = `<div class="plan-hour-grid" style="--plan-hours:${hourList.length}"><span class="plan-hour-zone">次 / GPS h</span>${hourList.map(h => `<span class="plan-hour-tick">${String(h).padStart(2, '0')}</span>`).join('')}${grid.map(([label, list]) => `<span class="plan-hour-zone">${label}</span>${hourList.map(hour => {
         const h = list.find(x => x.hour === hour);
-        const info = !h ? `${label} ${hour}:00，没有记录` : `${label} ${hour}:00–${hour + 1}:00，预期 ${money(h.dollars)}/h（${money(h.dollarsLo)}–${money(h.dollarsHi)}），${h.hours.toFixed(1)} 记录小时，${h.pickups} 次取餐${h.enough ? '' : '，样本不足'}`;
-        return `<button type="button" class="plan-hour-cell ${!h ? 'empty' : h.enough ? '' : 'thin'}" style="--plan-intensity:${h && h.enough ? .2 + .65 * h.dollars / maxD : 0}" data-hour-info="${esc(info)}" aria-label="${esc(info)}">${h && h.enough ? Math.round(h.dollars) : '·'}</button>`;
+        const info = !h ? `${label} ${hour}:00，没有记录` : `${label} ${hour}:00–${hour + 1}:00，${h.rate.toFixed(2)} 次推断取餐 / GPS 记录小时（80% 区间 ${h.rateLo.toFixed(2)}–${h.rateHi.toFixed(2)}），${h.hours.toFixed(1)} 记录小时，${h.pickups} 次取餐${h.enough ? '' : '，样本不足'}`;
+        return `<button type="button" class="plan-hour-cell ${!h ? 'empty' : h.enough ? '' : 'thin'}" style="--plan-intensity:${h && h.enough ? .2 + .65 * h.rate / maxD : 0}" data-hour-info="${esc(info)}" aria-label="${esc(info)}">${h && h.enough ? h.rate.toFixed(1) : '·'}</button>`;
       }).join('')}`).join('')}</div>`;
     }
     host.addEventListener('change', e => { if (['period', 'day', 'part'].includes(e.target.name)) render(); });

@@ -247,7 +247,10 @@
         thin: x.p < thinPickups || x.shifts.size < thinShifts,
       });
     }
-    return rows.sort((a, b) => b.dollars - a.dollars || b.hours - a.hours || a.label.localeCompare(b.label));
+    // Rank by the observed proxy the source data supports. Dollar fields remain
+    // available only as a user-entered scenario; GPS activity is cross-platform
+    // and recorded time is not platform online time.
+    return rows.sort((a, b) => Number(a.thin) - Number(b.thin) || b.rate - a.rate || b.hours - a.hours || a.label.localeCompare(b.label));
   }
   function timeCurve(data, filters = {}, opts = {}) {
     const fit = fitRates(data, filters, opts);

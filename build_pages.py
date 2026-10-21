@@ -170,7 +170,7 @@ SECTIONS = {
     'dlv_zones':    find_section_by_title('区域排行'),
     'dlv_chain':    find_section_by_title('接单区还是送达区'),
     'dlv_offers':   find_section_by_title('这一单该不该接'),
-    'dlv_slots':    find_section_by_title('什么时候去哪最赚'),
+    'dlv_slots':    find_section_by_title('什么时候去哪试跑'),
     'dlv_map':      find_section_by_title('热点地图'),
     'dlv_roads':    find_section_by_title('路段好坏'),
     'dlv_hours':    find_section_by_title('时段规律'),
@@ -280,6 +280,7 @@ PAGE_TEMPLATE = """<!DOCTYPE html>
 <script src="assets/recovery.js"></script>
 {delivery_js}<script src="assets/app.js"></script>
 <script src="assets/site-ui.js"></script>
+<script src="assets/analysis-guide.js"></script>
 </body>
 </html>
 """
