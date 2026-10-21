@@ -272,10 +272,19 @@
         if (sort === 'wait') return Number(b.waitCount >= 4)-Number(a.waitCount >= 4) || (a.waitCount>=4 && b.waitCount>=4 ? a.wait-b.wait : 0) || b.hours-a.hours;
         return Number(b.enough)-Number(a.enough) || (b.rate || 0)-(a.rate || 0) || b.hours-a.hours;
       });
-      host.querySelector('.plan-zone-list').innerHTML = rows.length ? rows.map((z,i)=>`<div class="plan-zone-row"><button type="button" class="plan-zone ${z.enough?'':'thin'}" data-zone="${esc(z.name)}" aria-pressed="false">
+      const rowHtml = (z,i)=>`<div class="plan-zone-row"><button type="button" class="plan-zone ${z.enough?'':'thin'}" data-zone="${esc(z.name)}" aria-pressed="false">
         <span class="plan-zone-index">${String(i+1).padStart(2,'0')}</span><span class="plan-zone-main"><strong>${esc(z.label)}</strong><small>${z.pickups} 次取餐 · ${z.hours.toFixed(1)} h · ${z.shifts} 班次</small></span>
-        <span class="plan-zone-rate">${sort === 'wait' ? (z.waitCount >= 4 ? (z.wait/60).toFixed(1) : '—') : sort === 'hours' ? z.hours.toFixed(1) : z.rate == null ? '—' : z.rate.toFixed(1)}<small>${sort === 'wait' ? '停留中位 / min' : sort === 'hours' ? '记录小时' : z.enough ? '次 / 记录小时' : '待积累样本'}</small></span></button><button type="button" class="plan-compare-toggle" data-compare="${esc(z.name)}" aria-pressed="${selected.includes(z.name)}" aria-label="${selected.includes(z.name)?'取消比较':'比较'} ${esc(z.label)}" ${selected.length>=3 && !selected.includes(z.name)?'disabled':''}>${selected.includes(z.name)?'✓':'+'}</button></div>`).join('') : '<p class="plan-empty">没有匹配区域。可修改搜索词或扩大记录范围。</p>';
-      host.querySelector('.plan-zone-status').textContent = `显示 ${rows.length} / ${allRows.length} 区${selected.length === 3 ? ' · 已选满 3 区，移除后可换区' : ''}`;
+        <span class="plan-zone-rate">${sort === 'wait' ? (z.waitCount >= 4 ? (z.wait/60).toFixed(1) : '—') : sort === 'hours' ? z.hours.toFixed(1) : z.rate == null ? '—' : z.rate.toFixed(1)}<small>${sort === 'wait' ? '停留中位 / min' : sort === 'hours' ? '记录小时' : z.enough ? '次 / 记录小时' : '待积累样本'}</small></span></button><button type="button" class="plan-compare-toggle" data-compare="${esc(z.name)}" aria-pressed="${selected.includes(z.name)}" aria-label="${selected.includes(z.name)?'取消比较':'比较'} ${esc(z.label)}" ${selected.length>=3 && !selected.includes(z.name)?'disabled':''}>${selected.includes(z.name)?'✓':'+'}</button></div>`;
+      const list = host.querySelector('.plan-zone-list');
+      if (!rows.length) list.innerHTML = '<p class="plan-empty">没有匹配区域。可修改搜索词或扩大记录范围。</p>';
+      else if (search) list.innerHTML = rows.map(rowHtml).join('');
+      else {
+        const primary = rows.slice(0, 5), more = rows.slice(5);
+        list.innerHTML = primary.map(rowHtml).join('') + (more.length ? `<details class="plan-zone-more"><summary>查看其他 ${more.length} 个区域</summary>${more.map((z,i)=>rowHtml(z,i+5)).join('')}</details>` : '');
+      }
+      host.querySelector('.plan-zone-status').textContent = search
+        ? `显示 ${rows.length} 个匹配区域 / ${allRows.length} 区`
+        : `先显示前 ${Math.min(5, rows.length)} 区${selected.length === 3 ? ' · 已选满 3 区，移除后可换区' : ''}`;
       highlight();
     }
     function renderFilters() {
@@ -313,23 +322,25 @@
     if (!p) { host.innerHTML = '<p class="plan-empty">暂无区域记录，请先生成配送数据。</p>'; return; }
     const ov = M.orderValue(data), cost = M.DEFAULTS.cost;
     const parts = M.DAYPARTS;
-    host.innerHTML = `<div class="plan-filters slot-filters">
+    host.innerHTML = `<div class="slot-headline" aria-live="polite"></div>
+      <p class="plan-scope slot-scope" aria-live="polite"></p>
+      <div class="plan-filters slot-filters">
         <label>记录范围<select name="period"><option value="all">全部记录</option><option value="recent">最近有记录的 28 天</option></select></label>
         <label>日期类型<select name="day"><option value="all">工作日与周末</option><option value="weekday">工作日</option><option value="weekend">周末</option></select></label>
         <label>餐段<select name="part"><option value="all">全部餐段</option>${parts.map(d => `<option value="${d.key}">${d.label} ${d.from}–${d.to}</option>`).join('')}</select></label>
       </div>
       <div class="plan-fields slot-value">${field('slotValue', '平均每单收入', ov.fare.toFixed(2), 'A$', 1000, .01)}
         <div class="plan-offer-actions"><button type="button" class="plan-action" data-slot-unit="fare">仅运费 ${money(ov.fare)}</button>${ov.withQuest != null ? `<button type="button" class="plan-action" data-slot-unit="quest">含 Quest ${money(ov.withQuest)}</button>` : ''}</div></div>
-      <p class="plan-scope slot-scope" aria-live="polite"></p>
-      <div class="slot-headline" aria-live="polite"></div>
-      <h3 class="slot-h">各餐段取餐频率较高的区域</h3><div class="slot-matrix"></div>
-      <h3 class="slot-h">完整排名</h3><div class="slot-rank"></div>
-      <details class="plan-hour-details" open><summary>全城逐小时，哪些时段记录频率高 <span>悉尼时间 · 同一位置质量下</span></summary>
+      <h3 class="slot-h">分餐段比较试跑区域</h3><div class="slot-matrix"></div>
+      <details class="slot-more"><summary>查看其他时段候选</summary><div class="slot-rank"></div></details>
+      <details class="plan-hour-details"><summary>查看全城逐小时分布 <span>悉尼时间 · 同一位置质量下</span></summary>
         <div class="plan-hour-scroll" tabindex="0" aria-label="逐小时推断取餐频率，可横向滚动"><div class="slot-hours"></div></div>
         <p class="plan-hour-info" role="status">点选一个小时，查看样本量。</p>
       </details>
-      <p class="plan-help">主排名只比较 GPS 推断取餐次数 ÷ GPS 记录小时，并非真实订单密度、平台派单概率或 Uber 在线时薪。上方单均收入可改作个人情景：按“GPS 全平台取餐频率 × Uber 账本单价”估算金额；跨平台单价可能不同，也没有在线小时和完整成本，因此金额不用于排名，不代表实际收入。</p>
-      <p class="plan-help">为避免样本小而被运气带偏：先把时间和地点分开估计（某区某个钟点的频率 = 全局节奏 × 钟点系数 × 区域系数），再用该区该餐段自己的记录修正，样本越少越向模型预测靠拢。区间为 80% 可信范围；“样本少”表示取餐少于 4 次或班次少于 ${p.min_shifts} 个。</p>`;
+      <details class="slot-method"><summary>估算口径和限制</summary>
+        <p class="plan-help">排序指标是 GPS 推断取餐次数 ÷ GPS 记录小时，不是实时订单密度、平台派单概率或 Uber 在线时薪。金额只是“全平台 GPS 取餐频率 × Uber 账本单价”的情景估算；跨平台单价可能不同，且没有在线小时和完整成本，因此不代表实际收入。</p>
+        <p class="plan-help">频率估计结合全局节奏、钟点、区域和该区域餐段记录；样本较少时会更多收缩到整体估计。区间为 80% 可信范围；取餐少于 4 次或班次少于 ${p.min_shifts} 个会标为样本少。</p>
+      </details>`;
     const q = name => host.querySelector(`[name="${name}"]`);
     const valueInput = q('slotValue');
     function filtered(rows) {

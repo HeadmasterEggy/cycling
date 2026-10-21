@@ -359,7 +359,7 @@
   }
 
   function resultForPage() {
-    if (page === 'dashboard') return '按顺序使用：先选试跑区域，再核对眼前报价，最后记录送完后的落点。';
+    if (page === 'dashboard') return '先看历史记录里值得试跑的时段，再选区域；用真实报价检查单笔，送完后记录实际收入与时间来校准。时段排序依据 GPS 推断取餐频率，不是 Uber 在线时薪。';
     if (page === 'delivery') {
       const data = window.DELIVERY_DATA;
       const model = window.DeliveryModel;
@@ -441,7 +441,12 @@
       const text = document.createElement('span'); text.textContent = value;
       block.append(title, text); cols.append(block);
     });
-    guide.append(top, cols);
+    const methods = document.createElement('details');
+    methods.className = 'analysis-guide-methods';
+    const summary = document.createElement('summary');
+    summary.textContent = '阅读顺序、结论范围与数据限制';
+    methods.append(summary, cols);
+    guide.append(top, methods);
     const main = $('main');
     if (!main) return null;
     if (page === 'dashboard') {
@@ -469,7 +474,7 @@
       const title = heading.textContent.replace(/\s+/g, ' ').trim();
       const note = SECTION_COPY.find(([prefix]) => title.startsWith(prefix));
       if (!note) return;
-      const reading = document.createElement('p');
+      const reading = document.createElement('div');
       reading.className = 'section-reading';
       const finding = document.createElement('span');
       finding.className = 'section-reading-finding';
@@ -478,10 +483,15 @@
       label.textContent = '当前筛选';
       const value = document.createElement('span');
       finding.append(label, value);
+      const methods = document.createElement('details');
+      methods.className = 'section-reading-methods';
+      const summary = document.createElement('summary');
+      summary.textContent = '怎么读这张图';
       const interpretation = document.createElement('span');
       interpretation.className = 'section-reading-note';
       interpretation.textContent = note[1];
-      reading.append(finding, interpretation);
+      methods.append(summary, interpretation);
+      reading.append(finding, methods);
       subtitle.after(reading);
       readings.push({ title, value, note: note[1] });
     });

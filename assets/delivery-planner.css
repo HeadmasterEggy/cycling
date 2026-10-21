@@ -158,6 +158,8 @@ body[data-page="delivery"] .main > .analysis-section:first-child { margin-top: 0
 .plan-zone-row .plan-zone-main small { font-size:11px; }
 .plan-zone-row .plan-zone-rate { font-size:19px; flex-shrink:0; }
 .plan-zone-row .plan-zone-rate small { font-size:10px; }
+.plan-zone-more { margin-top:8px; border-top:1px solid #354144; }
+.plan-zone-more summary { min-height:42px; display:flex; align-items:center; cursor:pointer; color:#aebcb5; font-size:11px; }
 .plan-compare-toggle { flex:0 0 34px; height:40px; border:1px solid #40564e; border-radius:7px; background:transparent; color:#9bcebf; font-size:20px !important; cursor:pointer; }
 .plan-compare-toggle[aria-pressed="true"] { background:#284c3e; border-color:#73ac92; }
 .plan-zone-status { font-size:10px; color:#99aaa3; margin:10px 0; }
@@ -238,6 +240,8 @@ body[data-page="delivery"] .main > .analysis-section:first-child { margin-top: 0
 .slot-next { display:block; color:#93a39d; font-size:10px; padding:4px 2px 0; }
 .slot-none { color:#7f8e8b; font-size:11px; padding:10px 4px !important; }
 .slot-rank { display:grid; }
+.slot-more,.slot-method { margin-top:12px; border-top:1px solid #344145; padding-top:10px; }
+.slot-more summary,.slot-method summary { min-height:36px; display:flex; align-items:center; cursor:pointer; color:#b7c5bd; font-size:12px; }
 .slot-row { display:flex; align-items:center; gap:10px; width:100%; background:transparent; border:0; border-bottom:1px solid #2b3336; color:#dedfd8; padding:12px 4px; text-align:left; cursor:pointer; }
 .slot-row:hover { background:#283a3d; border-radius:7px; }
 .slot-row-main { flex:1; min-width:0; }
