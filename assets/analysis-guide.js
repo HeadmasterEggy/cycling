@@ -11,7 +11,7 @@
     rides: ['骑行', '先看典型距离，再看极值与单次轨迹', '中位数描述常见骑行；最长、最快和最大爬升只是个别记录。', 'GPS 距离、速度与海拔会受设备采样和路线影响。'],
     explorer: ['逐次', '选一趟记录，沿时间轴核对路线和剖面', '先确认日期与路线，再把海拔、速度和心率当作同一趟活动的证据。', '缺失的传感器数据不会因图表显示而补齐。'],
     recovery: ['复元', '先看长期基线，再观察连续几天的偏离', '连续记录比单日读数更有解释力；先检查样本是否足够，再读变化方向。', '个人设备读数不用于诊断，也不能单独决定是否训练。'],
-    delivery: ['配送分析', '先看当前报价，再用时段与区域缩小候选', '时段与区域按 GPS 推断取餐频率选试跑候选；单均金额只作跨平台情景参考。要验证收益，需要记录真实在线时长与实际收入。', 'GPS 记录小时不是平台在线小时；GPS 活动还包含其他平台订单。'],
+    delivery: ['配送分析', '先用合并 GPS 找试跑候选，再用单个平台的在线时间和收入核算', '候选只回答“这些轨迹里，哪个区域和时段出现推断取餐较多”；Uber 账单只能估计 GPS 对 Uber 订单的覆盖，不能识别未匹配停留来自 DoorDash、熊猫还是误判。', '取餐频率不是 Uber 派单率或时薪；平台利润需要该平台自己的订单、在线时间、成本和收入。'],
     dashboard: ['配送作战台', '先选试跑区，再核对当前报价与送达落点', '区域和时段只用于挑选试跑候选；接单判断要输入这单实际的去店、等餐和送达时间。', '历史估算不代表下一单派单概率，也不等于实际平台在线时薪。'],
     all: ['全景', '先按问题进入专题，不要横向比较不同口径的图', '节律看出发习惯；训练看负荷；复元看连续生理记录；配送看报价与历史 GPS 线索。', '全景页混合了不同设备、时间范围和估算口径。'],
   };
@@ -60,7 +60,7 @@
     ['路段好坏', '额外分钟是相对模型自由流速度的估计；它用于找反复慢点，不是精确的信号灯延误。'],
     ['区域档案', '把区域环境特征与个人骑行结果分开读；相关性不说明餐厅密度造成了更高收益或更慢速度。'],
     ['这一脚是在干嘛', '分类依赖停留时长、位置和人工核验；模糊样本会影响后续所有配送频率估计。'],
-    ['判得准不准', '用真实订单逐条核对推断标签，并同时看漏判与误判；样本覆盖范围限制准确率的外推。'],
+    ['平台归属与核验', 'Uber 账单只验证识别覆盖，不足以给所有 GPS 停留贴平台标签；看召回率，不把未匹配项分给 DoorDash 或熊猫。'],
   ];
 
   function filtered(read) {
@@ -88,7 +88,7 @@
     return s.length % 2 ? s[i] : (s[i - 1] + s[i]) / 2;
   };
   const valid = (rows, key) => rows.map(r => r[key]).filter(v => v !== null && v !== undefined && Number.isFinite(Number(v))).map(Number);
-  let deliveryFilters = {period:'recent', day:'all', time:'all'};
+  let deliveryFilters = {period:'all', day:'all', time:'all'};
 
   function sectionFinding(title) {
     const H = window.HEALTH_DATA || {}, daily = H.daily || [], ws = H.workouts || [];
@@ -315,7 +315,7 @@
       const slots = model && D.planning ? model.slots(D, {period:deliveryFilters.period}, {value:0,cost:0}) : [];
       const candidate = slots.find(x => !x.thin) || slots[0];
       if (!candidate) return '当前没有足够的区域×时段样本生成候选；先扩大日期范围。';
-      return `模型试跑候选：${candidate.label} · ${candidate.weekend ? '周末' : '工作日'} ${candidate.daypartLabel}；约 ${number(candidate.rate,2)} 次推断取餐 / GPS 记录小时（${candidate.pickups} 次 / ${number(candidate.hours,1)} 小时 / ${candidate.shifts} 班）。这是个人历史活动频率，不是平台派单概率或收入。`;
+      return `跨平台试跑候选：${candidate.label} · ${candidate.weekend ? '周末' : '工作日'} ${candidate.daypartLabel}，约 ${number(candidate.rate,2)} 次 GPS 推断取餐 / 记录小时；${number(candidate.shifts)} 个班次、${number(candidate.hours,1)} 小时、${number(candidate.pickups)} 次。它混合 Uber、DoorDash、熊猫活动，不能据此判断单个平台最赚钱。`;
     }
     if (keyed('接单区还是送达区')) {
       const s = D.summary || {}, c = D.chain || {};
@@ -349,10 +349,10 @@
       const examples = D.samples || {}, uncertain = D.meta?.uncertain || 0;
       return `样例包含 ${number((examples.quick_pickups || []).length)} 个候选取餐停留和 ${number((examples.long_lights || []).length)} 个长等灯停留；全量 ${number(uncertain)} 个样本标记不确定，分类应逐条对照地图与真实订单。`;
     }
-    if (keyed('判得准不准')) {
+    if (keyed('平台归属与核验') || keyed('判得准不准')) {
       const v = D.validation;
       if (!v) return '目前没有可对照的真实订单日志；无法从 GPS 推断值计算准确率。';
-      return `对照 ${number(v.in_window)} 笔真实订单：送达召回 ${number(v.recall_drop,1)}%、取餐召回 ${number(v.recall_pickup,1)}%、区域命中 ${number(v.zone_pct,1)}%；覆盖 ${number(v.coverage_pct,1)}%。这些准确率只适用于这批有日志的日期。`;
+      return `Uber 对照 ${number(v.in_window)} 笔手表录制时段内订单：GPS 找到 ${number(v.recall_drop)}% 送达、${number(v.recall_pickup)}% 取餐。只有 ${number(v.matched_drops)} / ${number(v.total_drops)} 个推断送达能按时间与 Uber 对上（${number(v.platform_share_pct)}%，不是 Uber 订单占比）；其余无法区分 DoorDash、熊猫或误判。`;
     }
     if (keyed('逐次骑行')) return '选中一趟记录后，先核对日期与路线，再沿同一趟的海拔、速度和心率读变化。';
     return '';
@@ -367,7 +367,9 @@
       const slots = model.slots(data, { period: deliveryFilters.period }, { value: 0, cost: 0 });
       const candidate = slots.find(x => !x.thin) || slots[0];
       if (!candidate) return '现有记录不足以生成时段与区域候选。';
-      return `试跑候选：${candidate.label} · ${candidate.weekend ? '周末' : '工作日'} ${candidate.daypartLabel}，约 ${number(candidate.rate,2)} 次推断取餐 / GPS 记录小时；样本为 ${number(candidate.shifts)} 个班次、${number(candidate.hours,1)} 小时、${number(candidate.pickups)} 次取餐。只是历史 GPS 活动频率，不是派单概率或收入。`;
+      const v = data.validation;
+      const matched = v ? `Uber 对照找到 ${number(v.recall_drop)}% 送达、${number(v.recall_pickup)}% 取餐；其余 GPS 停留无法区分平台。` : '目前没有 Uber 账单可做覆盖核验。';
+      return `先试跑：${candidate.label} · ${candidate.weekend ? '周末' : '工作日'} ${candidate.daypartLabel}。历史 GPS 推断 ${number(candidate.rate,2)} 次取餐 / 记录小时（${number(candidate.pickups)} 次 / ${number(candidate.hours,1)} 小时 / ${number(candidate.shifts)} 班）。这是 Uber、DoorDash、熊猫混合活动的候选，不是单平台订单率或收入。${matched}`;
     }
     return filtered(() => {
       const H = window.HEALTH_DATA || {};
@@ -444,7 +446,7 @@
     const methods = document.createElement('details');
     methods.className = 'analysis-guide-methods';
     const summary = document.createElement('summary');
-    summary.textContent = '阅读顺序、结论范围与数据限制';
+    summary.textContent = page === 'delivery' ? '为什么这是跨平台试跑候选，而不是 Uber 收益预测' : '阅读顺序、结论范围与数据限制';
     methods.append(summary, cols);
     guide.append(top, methods);
     const main = $('main');
@@ -464,6 +466,67 @@
         blocks[0][1] = `${order}：${first.textContent.trim()} → ${second.textContent.trim()}。`;
         cols.querySelector('.analysis-guide-block span').textContent = blocks[0][1];
       }
+    }
+    if (page === 'delivery') {
+      const deepSections = new Map([
+        ['接单区还是送达区', '查看取餐与送达点位如何续接'],
+        ['热点地图', '按需查看地图、点位与路线细节'],
+        ['配送概览', '查看 GPS 推断的单次配送时间拆分'],
+        ['平台归属与核验', '查看时间对齐、错分样例与核验口径'],
+        ['时段规律', '查看分时段与星期的历史分布'],
+        ['路段好坏', '查看常走与难走路段'],
+        ['区域档案', '查看各区域的详细画像'],
+        ['这一脚是在干嘛', '查看 GPS 停留分类方法与样例'],
+      ]);
+      main.querySelectorAll(':scope > section.analysis-section').forEach(section => {
+        const heading = section.querySelector('.section-title');
+        const subtitle = section.querySelector('.section-sub');
+        if (!heading || !subtitle) return;
+        const title = heading.textContent.replace(/\s+/g, ' ').trim();
+        const match = [...deepSections].find(([prefix]) => title.startsWith(prefix));
+        if (!match || section.querySelector(':scope > .delivery-evidence')) return;
+        const details = document.createElement('details');
+        details.className = 'delivery-evidence';
+        const label = document.createElement('summary');
+        label.textContent = match[1];
+        details.append(label);
+        const visibleKpis = title.startsWith('平台归属与核验')
+          ? section.querySelector(':scope > #dlvValidation') : null;
+        let node = visibleKpis ? visibleKpis.nextSibling : subtitle.nextSibling;
+        while (node) {
+          const next = node.nextSibling;
+          details.append(node);
+          node = next;
+        }
+        section.append(details);
+        if (title.startsWith('热点地图')) {
+          details.addEventListener('toggle', () => {
+            if (!details.open) return;
+            window.setTimeout(() => {
+              if (typeof DLVMAP !== 'undefined' && DLVMAP.map) DLVMAP.map.invalidateSize();
+            }, 100);
+          });
+        }
+      });
+      const filterNavigation = () => {
+        const nav = $('.section-index');
+        if (!nav) return;
+        const primary = new Set(['什么时候去哪试跑', '区域排行', '这一单该不该接', '平台归属与核验']);
+        nav.querySelectorAll('a[href^="#"]').forEach(link => {
+          if (!primary.has(link.textContent.trim())) link.remove();
+        });
+        const evidenceSection = [...main.querySelectorAll(':scope > section.analysis-section')]
+          .find(section => section.querySelector('.section-title')?.textContent.trim().startsWith('接单区还是送达区'));
+        if (evidenceSection && !nav.querySelector('[data-delivery-evidence-link]')) {
+          const link = document.createElement('a');
+          link.href = `#${evidenceSection.id}`;
+          link.textContent = '研究依据';
+          link.dataset.deliveryEvidenceLink = 'true';
+          nav.append(link);
+        }
+      };
+      filterNavigation();
+      window.setTimeout(filterNavigation, 0);
     }
     const readings = [];
     main.querySelectorAll(':scope > section.analysis-section').forEach(section => {
@@ -517,6 +580,7 @@
       refresh();
     });
     refresh();
+    window.setTimeout(refresh, 0);
     if (typeof window.__rerunRanged === 'function') {
       const rerun = window.__rerunRanged;
       window.__rerunRanged = function (...args) {

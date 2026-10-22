@@ -10,3 +10,4 @@ health_data/
 # Bytecode from running parse_health.py / build_pages.py.
 __pycache__/
 *.py[cod]
+.vercel

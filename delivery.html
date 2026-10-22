@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>配送 · Delivery</title>
-<meta name="description" content="悉尼送外卖的效率地图 —— 每一次停车判成取餐/送达/等红灯，区域好跑指数、取餐点与红灯堵点、路段耗时，以及时段 × 区域的出单规律。">
+<meta name="description" content="用跨平台 GPS 轨迹筛选外卖试跑时段与区域；Uber 账单只用于核验识别覆盖，不能把混合平台活动分成 Uber、DoorDash 或熊猫订单。">
 <meta name="theme-color" content="#0f0e0c">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Cycling Atlas">
 <meta property="og:title" content="配送 · Delivery">
-<meta property="og:description" content="悉尼送外卖的效率地图 —— 每一次停车判成取餐/送达/等红灯，区域好跑指数、取餐点与红灯堵点、路段耗时，以及时段 × 区域的出单规律。">
+<meta property="og:description" content="用跨平台 GPS 轨迹筛选外卖试跑时段与区域；Uber 账单只用于核验识别覆盖，不能把混合平台活动分成 Uber、DoorDash 或熊猫订单。">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="assets/favicon.svg?v=69ad9d413362" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="assets/styles.css?v=d1652980118b">
 <link rel="stylesheet" href="assets/delivery-planner.css?v=cb8d4c60fd36">
 <link rel="stylesheet" href="assets/delivery-charts.css?v=aa5b91abf5d1">
-<link rel="stylesheet" href="assets/site-ui.css?v=89fd7c557b64">
+<link rel="stylesheet" href="assets/site-ui.css?v=c418bbcc1df0">
 </head>
 <body data-page="delivery">
 
@@ -29,8 +29,8 @@
 
 <section class="hero">
   <div class="hero-meta"><span id="heroMetaText">配送 · Delivery</span><span class="hero-fresh" id="heroFresh"></span></div>
-  <h1 id="heroH1">哪儿的单好跑<br><em>区域与路段</em></h1>
-  <p class="hero-sub" id="heroSub">把区域记录与眼前的订单放在一起：看取餐频率、算整轮收益、核对 Quest 与落点成本。GPS 提供历史线索，Uber 账本提供收入分类；每个估算都保留口径和样本。</p>
+  <h1 id="heroH1">先选试跑时段<br><em>再核对平台收益</em></h1>
+  <p class="hero-sub" id="heroSub">GPS 里的 Uber、DoorDash 和熊猫活动混在一起；只有 Uber 有可导出的订单记录。先用合并轨迹找值得试跑的时段，再用平台自己的在线时间和收入验证。</p>
 </section>
 
 
@@ -38,26 +38,15 @@
 
 <main class="main">
 <section class="analysis-section">
-  <div class="section-title">这一单该不该接<em>·</em>Offer Planner</div>
-  <div class="section-sub">先算整轮时间，再看报价和奖励增量。输入当前派单的实际情况；历史账本和三周保底单独核对。</div>
-  <div class="delivery-tools">
-    <div class="chart-card"><div id="dlvOfferCalc"></div></div>
-    <div class="chart-card"><div class="chart-title">Uber 三周最低收入</div><div id="dlvSettlement"></div></div>
-  </div>
-  <div class="chart-card" style="margin-top:24px"><div class="chart-title">历史收入分类</div><div id="dlvOfferWeeks"></div></div>
-</section>
-
-
-<section class="analysis-section">
   <div class="section-title">什么时候去哪试跑<em>·</em>Best Time &amp; Place</div>
-  <div class="section-sub">按历史 GPS 推断的取餐频率挑时段和区域：先看每个餐段，再看全城逐小时。频率不是派单概率或收入；每个数字都带区间和样本量。</div>
+  <div class="section-sub">按历史 GPS 推断的取餐频率挑时段和区域：先看每个餐段，再看全城逐小时。记录混合 Uber、DoorDash 和熊猫，所以这里只比较活动频率，不估算平台收入；每个数字都带区间和样本量。</div>
   <div class="chart-card"><div id="dlvSlots"></div></div>
 </section>
 
 
 <section class="analysis-section">
   <div class="section-title">区域排行<em>·</em>Zone Leaderboard</div>
-  <div class="section-sub">先按相同日期和时段比较取餐频率，再结合全期骑行效率与落点续接。可选择最多三个区域并排比较，地图取餐频率会跟随筛选。</div>
+  <div class="section-sub">默认用全部历史记录比较混合平台 GPS 推断取餐频率，样本更稳定；可切到最近 28 天观察变化。频率不是派单率、平台订单率或时薪。</div>
   <div class="chart-card">
     <div id="dlvZonePlanner" style="margin-bottom:28px"></div>
     <svg id="zoneQuadrant" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid meet"></svg>
@@ -88,6 +77,75 @@
       </table>
     </div>
   </div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">这一单该不该接<em>·</em>Offer Planner</div>
+  <div class="section-sub">先算整轮时间，再看报价和奖励增量。输入当前派单的实际情况；历史账本和三周保底单独核对。</div>
+  <div class="delivery-tools">
+    <div class="chart-card"><div id="dlvOfferCalc"></div></div>
+    <div class="chart-card"><div class="chart-title">Uber 三周最低收入</div><div id="dlvSettlement"></div></div>
+  </div>
+  <div class="chart-card" style="margin-top:24px"><div class="chart-title">历史收入分类</div><div id="dlvOfferWeeks"></div></div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">平台归属与核验<em>·</em>Platform Attribution</div>
+  <div class="section-sub">Uber 账单只核验 GPS 对 Uber 订单的识别覆盖（召回率）。没有 DoorDash、熊猫账单，无法判断每个 GPS 停留属于哪个平台，也无法计算分类准确率或单平台收益。</div>
+
+  <div class="dlv-kpis" id="dlvValidation"></div>
+
+  <div class="analysis-grid dlv-val-grid">
+    <div class="chart-card">
+      <div class="chart-title">对得有多齐</div>
+      <div class="chart-sub">Time alignment · 送达时刻的中位偏差</div>
+      <div class="dlv-align" id="dlvAlign"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">漏掉的那些去哪了</div>
+      <div class="chart-sub">Where the misses went · 按被误判成什么分</div>
+      <div class="dlv-misses" id="dlvMisses"></div>
+    </div>
+  </div>
+
+  <div class="dlv-note" id="dlvValNote"></div>
+</section>
+
+
+<section class="analysis-section">
+  <div class="section-title">接单区还是送达区<em>·</em>Collect or Deliver</div>
+  <div class="section-sub">同一个区，做「取餐点」和做「送达点」是两件不同的事 —— 而真正吃掉时薪的是第三件：把餐送到之后，下一单是就在手边，还是要先骑回市区</div>
+
+  <div class="dlv-kpis" id="dlvChainSum"></div>
+
+  <div class="chart-card" style="margin-top: 20px;">
+    <div class="chart-title">送完之后，你在往哪儿骑</div>
+    <div class="chart-sub">Observed transitions · 送达之后到下次取餐，不代表未付费时间</div>
+    <div class="ch-dirs" id="dlvChainDirs"></div>
+  </div>
+
+  <div class="analysis-grid dlv-chain-grid">
+    <div class="chart-card">
+      <div class="chart-title">取餐较多的区</div>
+      <div class="chart-sub">Where the orders come from · 按取餐次数排 · 送出去越近越能多跑</div>
+      <div class="ch-list" id="dlvPickupRank"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">落在这里之后</div>
+      <div class="chart-sub">What landing here costs · 按送完之后的续接时间排，越短越好</div>
+      <div class="ch-list" id="dlvDropRank"></div>
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-top: 20px;">
+    <div class="chart-title">送完之后，下一单从哪来</div>
+    <div class="chart-sub">Drop-off → next pickup · 蓝色是留在同一个区</div>
+    <div class="ch-flows" id="dlvFlows"></div>
+  </div>
+
+  <div class="dlv-note" id="dlvChainNote"></div>
 </section>
 
 
@@ -138,41 +196,6 @@
     </div>
   </div>
   <div class="dlv-map-legend" id="dlvMapLegend"></div>
-</section>
-
-
-<section class="analysis-section">
-  <div class="section-title">接单区还是送达区<em>·</em>Collect or Deliver</div>
-  <div class="section-sub">同一个区，做「取餐点」和做「送达点」是两件不同的事 —— 而真正吃掉时薪的是第三件：把餐送到之后，下一单是就在手边，还是要先骑回市区</div>
-
-  <div class="dlv-kpis" id="dlvChainSum"></div>
-
-  <div class="chart-card" style="margin-top: 20px;">
-    <div class="chart-title">送完之后，你在往哪儿骑</div>
-    <div class="chart-sub">Observed transitions · 送达之后到下次取餐，不代表未付费时间</div>
-    <div class="ch-dirs" id="dlvChainDirs"></div>
-  </div>
-
-  <div class="analysis-grid dlv-chain-grid">
-    <div class="chart-card">
-      <div class="chart-title">取餐较多的区</div>
-      <div class="chart-sub">Where the orders come from · 按取餐次数排 · 送出去越近越能多跑</div>
-      <div class="ch-list" id="dlvPickupRank"></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">落在这里之后</div>
-      <div class="chart-sub">What landing here costs · 按送完之后的续接时间排，越短越好</div>
-      <div class="ch-list" id="dlvDropRank"></div>
-    </div>
-  </div>
-
-  <div class="chart-card" style="margin-top: 20px;">
-    <div class="chart-title">送完之后，下一单从哪来</div>
-    <div class="chart-sub">Drop-off → next pickup · 蓝色是留在同一个区</div>
-    <div class="ch-flows" id="dlvFlows"></div>
-  </div>
-
-  <div class="dlv-note" id="dlvChainNote"></div>
 </section>
 
 
@@ -267,29 +290,6 @@
   <div class="dlv-note" id="dlvRatioNote"></div>
 </section>
 
-
-<section class="analysis-section">
-  <div class="section-title">判得准不准<em>·</em>Ground Truth</div>
-  <div class="section-sub">上面全是从轨迹里推断的。三个平台里有一个能导出真实订单记录 —— 拿它当答案，看看推断到底对了多少</div>
-
-  <div class="dlv-kpis" id="dlvValidation"></div>
-
-  <div class="analysis-grid dlv-val-grid">
-    <div class="chart-card">
-      <div class="chart-title">对得有多齐</div>
-      <div class="chart-sub">Time alignment · 送达时刻的中位偏差</div>
-      <div class="dlv-align" id="dlvAlign"></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">漏掉的那些去哪了</div>
-      <div class="chart-sub">Where the misses went · 按被误判成什么分</div>
-      <div class="dlv-misses" id="dlvMisses"></div>
-    </div>
-  </div>
-
-  <div class="dlv-note" id="dlvValNote"></div>
-</section>
-
 </main>
 
 <footer>
@@ -312,10 +312,10 @@
 <script src="assets/recovery.js?v=2b35cf9c8f19"></script>
 <script src="assets/delivery-data.js?v=580d0942fa00"></script>
 <script src="assets/delivery-model.js?v=f4127ef896d3"></script>
-<script src="assets/delivery-planner.js?v=9f34ddf612a8"></script>
-<script src="assets/delivery.js?v=e07c189c9ca7"></script>
+<script src="assets/delivery-planner.js?v=d582ecbf123c"></script>
+<script src="assets/delivery.js?v=4527225b19b9"></script>
 <script src="assets/app.js?v=40b227072a13"></script>
 <script src="assets/site-ui.js?v=01dd1afd6670"></script>
-<script src="assets/analysis-guide.js?v=7c2d7b6b3790"></script>
+<script src="assets/analysis-guide.js?v=eac52c0f5848"></script>
 </body>
 </html>

@@ -5,7 +5,6 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const money = n => '$' + n.toFixed(2);
   const field = (key, label, value, unit, max = 240, step = 1, required = true) => `<label class="plan-field"><span>${label}</span><div><input name="${key}" type="number" min="0" max="${max}" step="${step}" value="${value}" inputmode="decimal"${required ? ' required' : ''}><i>${unit}</i></div></label>`;
-  const signed = n => (n < 0 ? '−' : '+') + '$' + Math.abs(n).toFixed(2);
   function sydneyNow() {
     try {
       const parts = Object.fromEntries(new Intl.DateTimeFormat('en-AU', { timeZone: 'Australia/Sydney', hour: 'numeric', hour12: false, weekday: 'short' })
@@ -21,11 +20,11 @@
     host.dataset.mounted = 'true';
     // Offer and reward assumptions intentionally reset on reload: yesterday's
     // Quest or another offer's ETA should never silently price today's order.
-    const d = M.DEFAULTS, sydney = sydneyNow(), ov = M.orderValue(data);
+    const d = M.DEFAULTS, sydney = sydneyNow();
     host.classList.add('planner');
     host.innerHTML = `<form class="plan-form" novalidate>
         <div class="plan-fields plan-primary">
-          ${field('fare', '本趟总报价', d.fare, 'A$', 1000, .01)}
+          ${field('fare', '本趟总报价', '', 'A$', 1000, .01)}
           ${field('target', '我的目标', d.target, '$/h', 500, 1)}
         </div>
         <div class="plan-result" aria-live="polite"></div>
@@ -34,25 +33,22 @@
         <details class="plan-saved" hidden><summary>报价对照 <span class="plan-saved-count"></span></summary><div class="plan-saved-list"></div><p class="plan-help">保存当时全部时间与奖励假设；报价变化后可载入修改。刷新页面会清空。</p></details>
         <div class="plan-section-label"><span>整轮时间</span><em>按分钟填写，可直接修改</em></div>
         <div class="plan-fields plan-times">
-          ${field('approach', '去餐厅', d.approach, 'min')}${field('wait', '等出餐', d.wait, 'min')}
-          ${field('ride', '送餐骑行', d.ride, 'min')}${field('handoff', '进楼交付', d.handoff, 'min')}
-          ${field('recovery', '送完无单等待／转场', d.recovery, 'min')}${field('buffer', '额外延误情景', d.buffer, 'min')}
+          ${field('approach', '去餐厅', '', 'min')}${field('wait', '等出餐', '', 'min')}
+          ${field('ride', '送餐骑行', '', 'min')}${field('handoff', '进楼交付', '', 'min')}
+          ${field('recovery', '送完无单等待／转场', '', 'min')}${field('buffer', '额外延误情景', d.buffer, 'min')}
         </div>
         <p class="plan-help">填整趟实际总用时；拼单的重叠时间只算一次。转场不包含下一单接单后的去店时间，避免重复计时。</p>
         <label class="plan-select">送达区域参考<select name="destination"><option value="">选择落点，查看历史续接</option>${data.zones.slice().sort((a,b)=>a.label.localeCompare(b.label)).map(z => `<option value="${esc(z.name)}">${esc(z.label)}</option>`).join('')}</select></label>
-        <div class="plan-destination plan-help">选择区域后显示历史参考，时间由你判断并填写。</div>
-        <details class="plan-details plan-history" open><summary>用历史数据校准 <span class="plan-history-status">对比“不接这单”</span></summary>
-          <p class="plan-help">这里的“继续跑”只是历史情景：按该时段与区域的 GPS 取餐频率，乘以你填的单均金额。GPS 含其他平台、记录小时也不是平台在线小时，所以情景时薪不是实际基线；可按距离和你的实测速度估时间。</p>
+        <div class="plan-destination plan-help">选择落点后查看续接区域样本；混合轨迹只用于比较历史 GPS 活动频率。</div>
+        <details class="plan-details plan-history"><summary>查看该时段的 GPS 取餐频率 <span class="plan-history-status">仅作历史对照</span></summary>
+          <p class="plan-help">Uber、DoorDash 和熊猫轨迹混在一起；这里只显示该时段历史上推断出的 GPS 取餐频率与记录时长。记录可能中断，因此不能换算成实际等单间隔、平台派单率或收入。实际时薪需要对应平台的在线时间和收入。</p>
           <div class="plan-fields">
             <label class="plan-select">现在所在／取餐区<select name="pickupZone">${zoneOptions(data, '不指定（全城平均）')}</select></label>
             <label class="plan-select">接单时段<select name="histHour">${hourOptions(Math.min(23, Math.max(9, sydney.hour)))}</select></label>
             <label class="plan-select">日期类型<select name="histDay"><option value="weekday"${sydney.weekend ? '' : ' selected'}>工作日</option><option value="weekend"${sydney.weekend ? ' selected' : ''}>周末</option></select></label>
-            ${field('unitValue', '平均每单收入', ov.fare.toFixed(2), 'A$', 1000, .01)}
           </div>
-          <div class="plan-offer-actions"><button type="button" class="plan-action" data-unit="fare">仅运费 ${money(ov.fare)}</button>${ov.withQuest != null ? `<button type="button" class="plan-action" data-unit="quest">含 Quest ${money(ov.withQuest)}</button>` : ''}</div>
-          <p class="plan-help">平均每单收入来自 Uber 账本${ov.withQuest != null ? '；“含 Quest”取已核对账单周，Quest 不保证每单都有，偏乐观' : ''}。GPS 取餐包含其他平台订单，这里按相近收入估算，可直接修改。</p>
-          <div class="plan-fields">${field('approachKm', '去店距离（可选）', '', 'km', 100, .1, false)}${field('rideKm', '送餐距离（可选）', '', 'km', 100, .1, false)}</div>
-          <div class="plan-offer-actions"><button type="button" class="plan-action plan-fill-times">按距离和历史填入时间</button><span class="plan-save-status plan-fill-status" role="status"></span></div>
+        <div class="plan-fields">${field('approachKm', '去店距离（可选）', '', 'km', 100, .1, false)}${field('rideKm', '送餐距离（可选）', '', 'km', 100, .1, false)}</div>
+          <div class="plan-offer-actions"><button type="button" class="plan-action plan-fill-times">按距离和个人实测速度填时间</button><span class="plan-save-status plan-fill-status" role="status"></span></div>
           <div class="plan-history-out" aria-live="polite"></div>
         </details>
         <details class="plan-details"><summary>Quest 奖励 <span class="plan-quest-status">未计入</span></summary>
@@ -65,10 +61,10 @@
           </div><p class="plan-help plan-quest-note"></p>
         </details>
         <details class="plan-details"><summary>成本与计算说明</summary>
-          ${field('cost','本趟增量成本',d.cost,'A$',1000,.01)}
-          <p class="plan-help">结果 =（报价 + 奖励增量 − 增量成本）÷ 整轮小时。成本可包含电费、磨损等；这里是税前贡献估算，不含固定租车费、税或保底补差。默认值只是演示，请按当前派单修改。</p>
+          ${field('cost','本趟增量成本',0,'A$',1000,.01)}
+          <p class="plan-help">结果 =（报价 + 奖励增量 − 增量成本）÷ 整轮小时。成本可包含电费、磨损等；这里是税前贡献估算，不含固定租车费、税或保底补差。成本默认按 A$0 计算，记得补入自己的成本。</p>
         </details>
-        <button type="reset" class="plan-reset">恢复演示输入</button>
+        <button type="reset" class="plan-reset">清空报价和时间</button>
       </form>`;
     const form = host.querySelector('form');
     const saved = [];
@@ -83,25 +79,16 @@
         <button type="button" class="plan-action" data-load-offer="${s.id}">载入报价 ${s.id}</button></article>`).join('');
       host.querySelector('.plan-save-offer').disabled = !current || saved.length >= 3;
     }
-    function edgeHtml(r) {
-      if (r.baseline == null) return '<div class="plan-edge muted"><span>历史情景对照</span><p>这个时段没有足够记录，暂无法计算历史情景参考。</p></div>';
-      const beats = r.edge >= 0, hitsTarget = r.rate >= r.target;
-      const call = hitsTarget && beats ? '高于历史情景且达到目标' : hitsTarget ? '达到目标，低于历史情景' : beats ? '高于历史情景，低于目标' : '低于历史情景与目标';
-      return `<div class="plan-edge ${beats ? 'up' : 'down'}"><span>历史情景对照 · ${call}</span><strong>${signed(r.edge)}<small>/h</small></strong>
-        <p>历史情景参考 ${money(r.baseline)}/h。按此情景比较，报价至少 <b>${money(r.neededBaseline)}</b>；延误后差额 ${signed(r.slowEdge)}/h。此值不是实际在线时薪。</p></div>`;
-    }
     function renderHistory(adv) {
       const out = host.querySelector('.plan-history-out'), status = host.querySelector('.plan-history-status');
       if (!adv || !adv.known) {
-        out.innerHTML = '<p class="plan-help">这个时段没有足够的 GPS 记录，无法估算历史情景参考。</p>';
+        out.innerHTML = '<p class="plan-help">该时段 GPS 样本不足，无法估计取餐频率。</p>';
         status.textContent = '该时段无历史';
         return;
       }
-      status.textContent = `历史情景约 ${money(adv.baseline)}/h`;
-      out.innerHTML = `<div class="plan-history-card"><span>按历史 GPS 节奏继续跑的情景值</span><b>${money(adv.baseline)}<small>/记录小时</small></b>
-        <small>80% 区间 ${money(adv.baselineLo)}–${money(adv.baselineHi)} · 约 ${adv.rate.toFixed(1)} 次推断取餐/GPS 记录小时 × 每单净 ${money(adv.net)} · ${adv.hours.toFixed(1)} 个时段记录小时；GPS 含其他平台，非实际在线收入</small></div>`
-        + (adv.cycleMin ? `<div class="plan-history-idle"><p>送完约 ${String(adv.endHour).padStart(2, '0')}:00，${esc(host.querySelector('[name="destination"]').selectedOptions[0].value ? host.querySelector('[name="destination"]').selectedOptions[0].textContent : '全城')}历史上约每 <b>${adv.cycleMin.toFixed(0)}</b> 分钟出一单（整轮）。扣掉本单用时，等单约 <b>${Math.round(adv.idle)}</b> 分钟。</p>
-        <button type="button" class="plan-action" data-apply-idle="${Math.round(adv.idle)}">填入“送完无单等待／转场”</button></div>` : '');
+      status.textContent = `${adv.rate.toFixed(1)} 次 / GPS 记录小时`;
+      out.innerHTML = `<div class="plan-history-card"><span>历史 GPS 推断取餐频率</span><b>${adv.rate.toFixed(1)}<small> 次 / 记录小时</small></b>
+        <small>80% 区间 ${adv.rateLo.toFixed(1)}–${adv.rateHi.toFixed(1)} · ${adv.hours.toFixed(1)} 个小时有记录；混合平台，不能代表在线派单或等单时间</small></div>`;
     }
     function renderInsights(values, r) {
       const parts = [['approach','去店'],['wait','等餐'],['ride','骑行'],['handoff','交付'],['recovery','送完等待／转场']];
@@ -132,11 +119,10 @@
         const invalid = [...form.querySelectorAll('input')].find(el => !el.disabled && !el.validity.valid);
         if (invalid) throw new Error(`请检查「${invalid.closest('label').querySelector('span').textContent}」的输入`);
         const service = ['approach', 'wait', 'ride', 'handoff'].reduce((t, k) => t + (Number(values[k]) || 0), 0);
-        const unit = Number(values.unitValue);
-        const adv = Number.isFinite(unit) && unit >= 0 ? M.advise(data, { zone: values.pickupZone || null, dest: values.destination || null,
-          weekend: values.histDay === 'weekend', hour: Number(values.histHour), service, value: M.valueByDaypart(data, unit), cost: Number(values.cost) || 0 }) : null;
+        const adv = M.advise(data, { zone: values.pickupZone || null, dest: values.destination || null,
+          weekend: values.histDay === 'weekend', hour: Number(values.histHour), service, value: 0 });
         renderHistory(adv);
-        const r = M.estimate({ ...values, baseline: adv && adv.known ? adv.baseline : '' });
+        const r = M.estimate(values);
         current = { values, result: r, destination: dest && dest.label };
         const labels = { strong: '延误后仍达到目标', borderline: '正常达到目标，延误后不足', weak: '当前情景低于目标' };
         result.className = 'plan-result ' + r.verdict;
@@ -144,7 +130,6 @@
           <p class="plan-verdict">${labels[r.verdict]}</p>
           <div class="plan-result-grid"><div><span>整轮用时</span><b>${r.minutes.toFixed(0)} <small>min</small></b></div><div><span>延误 ${r.buffer} 分钟后</span><b>${money(r.slowRate)} <small>/h</small></b></div></div>
           <div class="plan-threshold">达到 ${money(r.target)}/h，报价需 <strong>${money(r.needed)}</strong><span>延误情景需 ${money(r.neededSlow)}</span></div>
-          ${edgeHtml(r)}
           <div class="plan-formula">报价 ${money(r.fare)} + 奖励增量 ${money(r.quest)} − 成本 ${money(r.cost)}<br>不计奖励时 ${money(r.baseRate)}/h · 不含保底补差</div>`;
         host.querySelector('.plan-quest-note').textContent = r.questNote;
         host.querySelector('.plan-quest-status').textContent = mode === 'none' ? '未计入' : '增量 ' + money(r.quest);
@@ -165,26 +150,19 @@
       const load = e.target.closest('[data-load-offer]');
       const remove = e.target.closest('[data-remove-offer]');
       const delay = e.target.closest('[data-delay]');
-      const unit = e.target.closest('[data-unit]');
-      const idle = e.target.closest('[data-apply-idle]');
       const fill = e.target.closest('.plan-fill-times');
-      if (unit) {
-        form.elements.unitValue.value = (unit.dataset.unit === 'quest' ? ov.withQuest : ov.fare).toFixed(2); paint();
-      } else if (idle) {
-        form.elements.recovery.value = idle.dataset.applyIdle; paint();
-        host.querySelector('.plan-fill-status').textContent = '已填入历史推算的等单时间，可继续修改';
-      } else if (fill) {
+      if (fill) {
         const status = host.querySelector('.plan-fill-status');
         const aKm = form.elements.approachKm.value, rKm = form.elements.rideKm.value;
         if (aKm === '' && rKm === '') { status.textContent = '先填写去店或送餐距离'; return; }
         try {
-          const t = M.suggestTimes(data, { pickupZone: form.elements.pickupZone.value, destZone: form.elements.destination.value, approachKm: aKm || 0, rideKm: rKm || 0 });
+        const t = M.suggestTimes(data, { pickupZone: form.elements.pickupZone.value, destZone: form.elements.destination.value, approachKm: aKm || 0, rideKm: rKm || 0 });
           if (aKm !== '') form.elements.approach.value = t.approach;
           if (rKm !== '') form.elements.ride.value = t.ride;
           if (t.wait != null) form.elements.wait.value = t.wait;
           if (t.handoff != null) form.elements.handoff.value = t.handoff;
           paint();
-          status.textContent = `已按实测通行 ${t.pace.toFixed(1)} / ${t.destPace.toFixed(1)} min/km（含红灯）和取餐停留中位填入，可修改`;
+          status.textContent = `已按 GPS 实测 ${t.pace.toFixed(1)} / ${t.destPace.toFixed(1)} min/km 和停留中位填入，可修改`;
         } catch (err) { status.textContent = err.message; }
       } else if (save && current && saved.length < 3) {
         saved.push({ id: ++serial, ...current, values: { ...current.values } });
@@ -224,9 +202,9 @@
     host.dataset.mounted = 'true'; host.classList.add('planner');
     const p = data.planning;
     if (!p) { host.innerHTML = '<p class="plan-empty">暂无区域记录，请先生成配送数据。</p>'; return; }
-    let selected = [], filters = { period: 'recent', day: 'all', time: 'all' }, allRows = [];
+    let selected = [], filters = { period: 'all', day: 'all', time: 'all' }, allRows = [];
     host.innerHTML = `<div class="plan-filters">
-      <label>记录范围<select name="period"><option value="recent">最近有记录的 28 天</option><option value="all">全部记录</option></select></label>
+      <label>记录范围<select name="period"><option value="all">全部记录</option><option value="recent">最近有记录的 28 天</option></select></label>
       <label>日期类型<select name="day"><option value="all">每天</option><option value="weekday">工作日</option><option value="weekend">周末</option></select></label>
       <label>取餐时段<select name="time"><option value="all">全天</option><option value="lunch">午餐 11–14</option><option value="dinner">晚餐 17–20</option><option value="late">晚间 20–23</option></select></label>
     </div><p class="plan-scope"></p>
@@ -320,7 +298,6 @@
     host.dataset.mounted = 'true'; host.classList.add('planner');
     const p = data.planning;
     if (!p) { host.innerHTML = '<p class="plan-empty">暂无区域记录，请先生成配送数据。</p>'; return; }
-    const ov = M.orderValue(data), cost = M.DEFAULTS.cost;
     const parts = M.DAYPARTS;
     host.innerHTML = `<div class="slot-headline" aria-live="polite"></div>
       <p class="plan-scope slot-scope" aria-live="polite"></p>
@@ -329,8 +306,6 @@
         <label>日期类型<select name="day"><option value="all">工作日与周末</option><option value="weekday">工作日</option><option value="weekend">周末</option></select></label>
         <label>餐段<select name="part"><option value="all">全部餐段</option>${parts.map(d => `<option value="${d.key}">${d.label} ${d.from}–${d.to}</option>`).join('')}</select></label>
       </div>
-      <div class="plan-fields slot-value">${field('slotValue', '平均每单收入', ov.fare.toFixed(2), 'A$', 1000, .01)}
-        <div class="plan-offer-actions"><button type="button" class="plan-action" data-slot-unit="fare">仅运费 ${money(ov.fare)}</button>${ov.withQuest != null ? `<button type="button" class="plan-action" data-slot-unit="quest">含 Quest ${money(ov.withQuest)}</button>` : ''}</div></div>
       <h3 class="slot-h">分餐段比较试跑区域</h3><div class="slot-matrix"></div>
       <details class="slot-more"><summary>查看其他时段候选</summary><div class="slot-rank"></div></details>
       <details class="plan-hour-details"><summary>查看全城逐小时分布 <span>悉尼时间 · 同一位置质量下</span></summary>
@@ -338,11 +313,10 @@
         <p class="plan-hour-info" role="status">点选一个小时，查看样本量。</p>
       </details>
       <details class="slot-method"><summary>估算口径和限制</summary>
-        <p class="plan-help">排序指标是 GPS 推断取餐次数 ÷ GPS 记录小时，不是实时订单密度、平台派单概率或 Uber 在线时薪。金额只是“全平台 GPS 取餐频率 × Uber 账本单价”的情景估算；跨平台单价可能不同，且没有在线小时和完整成本，因此不代表实际收入。</p>
+        <p class="plan-help">这里只比较 GPS 推断取餐次数 ÷ GPS 记录小时，不估算收入。记录混合 Uber、DoorDash 和熊猫，且 GPS 小时不是平台在线小时；现有 Uber 账本无法给其他平台的取餐定价。要比较实际时薪，需要同一平台的有效在线时间、收入和成本。</p>
         <p class="plan-help">频率估计结合全局节奏、钟点、区域和该区域餐段记录；样本较少时会更多收缩到整体估计。区间为 80% 可信范围；取餐少于 4 次或班次少于 ${p.min_shifts} 个会标为样本少。</p>
       </details>`;
     const q = name => host.querySelector(`[name="${name}"]`);
-    const valueInput = q('slotValue');
     function filtered(rows) {
       const day = q('day').value, part = q('part').value;
       return rows.filter(r => (day === 'all' || (day === 'weekend') === r.weekend) && (part === 'all' || r.daypart === part));
@@ -350,17 +324,15 @@
     const dayLabel = r => (r.weekend ? '周末' : '工作日');
     const range = r => `${r.rateLo.toFixed(2)}–${r.rateHi.toFixed(2)}`;
     function render() {
-      const unit = Number(valueInput.value);
-      if (!valueInput.validity.valid || !Number.isFinite(unit)) { host.querySelector('.slot-scope').textContent = '请填写有效的平均每单收入'; return; }
       const filters = { period: q('period').value };
-      const opts = { value: M.valueByDaypart(data, unit), cost };
+      const opts = { value: 0, cost: 0 };
       const all = M.slots(data, filters, opts), rows = filtered(all);
       const curve = M.timeCurve(data, filters, opts);
       const settled = rows.filter(r => !r.thin);
-      host.querySelector('.slot-scope').textContent = `${all.length} 个时间 × 地点组合达到最低记录时长 · 单均金额仅作情景参考（${money(unit)}，不影响排名） · 记录截至 ${p.recent_anchor}`;
+      host.querySelector('.slot-scope').textContent = `${all.length} 个时间 × 地点组合达到最低记录时长 · 只比较跨平台 GPS 取餐频率，不估算平台收入 · 记录截至 ${p.recent_anchor}`;
       const top = settled[0] || rows[0];
       host.querySelector('.slot-headline').innerHTML = top
-        ? `<span>取餐频率最高的试跑候选${top.thin ? ' · 样本少' : ''}</span><strong>${dayLabel(top)} ${top.daypartLabel} ${top.window} · ${esc(top.label)}</strong><b>${top.rate.toFixed(2)}<small> 次 / GPS 记录小时</small></b><small>80% 区间 ${range(top)} 次/小时 · ${top.pickups} 次推断取餐 / ${top.hours.toFixed(1)} 记录小时 / ${top.shifts} 班</small><small>按单均 ${money(unit)} 推算金额约 ${money(top.dollars)}/记录小时；仅为情景参考</small>`
+        ? `<span>取餐频率最高的试跑候选${top.thin ? ' · 样本少' : ''}</span><strong>${dayLabel(top)} ${top.daypartLabel} ${top.window} · ${esc(top.label)}</strong><b>${top.rate.toFixed(2)}<small> 次 / GPS 记录小时</small></b><small>80% 区间 ${range(top)} 次/小时 · ${top.pickups} 次推断取餐 / ${top.hours.toFixed(1)} 记录小时 / ${top.shifts} 班</small>`
         : '<span>没有满足条件的组合，放宽日期类型或餐段后再看。</span>';
       const days = q('day').value === 'weekday' ? [false] : q('day').value === 'weekend' ? [true] : [false, true];
       const usedParts = parts.filter(d => q('part').value === 'all' || d.key === q('part').value);
@@ -386,10 +358,8 @@
       }).join('')}`).join('')}</div>`;
     }
     host.addEventListener('change', e => { if (['period', 'day', 'part'].includes(e.target.name)) render(); });
-    host.addEventListener('input', e => { if (e.target.name === 'slotValue') render(); });
     host.addEventListener('click', e => {
-      const unit = e.target.closest('[data-slot-unit]'), zone = e.target.closest('[data-zone]'), hour = e.target.closest('[data-hour-info]');
-      if (unit) { valueInput.value = (unit.dataset.slotUnit === 'quest' ? ov.withQuest : ov.fare).toFixed(2); render(); }
+      const zone = e.target.closest('[data-zone]'), hour = e.target.closest('[data-hour-info]');
       if (zone) focus(zone.dataset.zone);
       if (hour) host.querySelector('.plan-hour-info').textContent = hour.dataset.hourInfo;
     });

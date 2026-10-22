@@ -166,7 +166,7 @@ SECTIONS = {
     'recovery_composite': find_section_by_title('晨间生理'),
     'dlv_kpis':     find_section_by_title('配送概览'),
     'dlv_method':   find_section_by_title('这一脚是在干嘛'),
-    'dlv_truth':    find_section_by_title('判得准不准'),
+    'dlv_truth':    find_section_by_title('平台归属与核验'),
     'dlv_zones':    find_section_by_title('区域排行'),
     'dlv_chain':    find_section_by_title('接单区还是送达区'),
     'dlv_offers':   find_section_by_title('这一单该不该接'),
@@ -383,17 +383,18 @@ PAGES = [
     },
     {
         'file': 'delivery.html',
-        'description': '悉尼送外卖的效率地图 —— 每一次停车判成取餐/送达/等红灯，区域好跑指数、取餐点与红灯堵点、路段耗时，以及时段 × 区域的出单规律。',
+        'description': '用跨平台 GPS 轨迹筛选外卖试跑时段与区域；Uber 账单只用于核验识别覆盖，不能把混合平台活动分成 Uber、DoorDash 或熊猫订单。',
         'page_key': 'delivery',
         'title': '配送 · Delivery',
         'hero': make_hero(
-            custom_h1='哪儿的单好跑<br><em>区域与路段</em>',
-            custom_sub='把区域记录与眼前的订单放在一起：看取餐频率、算整轮收益、核对 Quest 与落点成本。GPS 提供历史线索，Uber 账本提供收入分类；每个估算都保留口径和样本。',
+            custom_h1='先选试跑时段<br><em>再核对平台收益</em>',
+            custom_sub='GPS 里的 Uber、DoorDash 和熊猫活动混在一起；只有 Uber 有可导出的订单记录。先用合并轨迹找值得试跑的时段，再用平台自己的在线时间和收入验证。',
             custom_meta='配送 · Delivery'),
         'intro': '',
-        # Start with planning, then supporting observations and methodology.
-        'sections': ['dlv_offers', 'dlv_slots', 'dlv_zones', 'dlv_map', 'dlv_chain', 'dlv_kpis',
-                     'dlv_hours', 'dlv_roads', 'dlv_profile', 'dlv_method', 'dlv_truth'],
+        # Start with the cross-platform candidate, then compare zones and offers;
+        # make the Uber-only validation boundary visible before deep diagnostics.
+        'sections': ['dlv_slots', 'dlv_zones', 'dlv_offers', 'dlv_truth', 'dlv_chain', 'dlv_map', 'dlv_kpis',
+                     'dlv_hours', 'dlv_roads', 'dlv_profile', 'dlv_method'],
         'has_filter': False,
         # Delivery analysis is Sydney-only by construction — a city picker
         # here would offer three choices that all empty the page.

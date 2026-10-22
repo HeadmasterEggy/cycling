@@ -77,7 +77,7 @@ function dlvNum(v, digits = 1, dash = '—') {
 }
 
 // The planner owns the date/day/time controls; every rate chart shares them.
-let DLV_FILTERS = { period: 'recent', day: 'all', time: 'all' };
+let DLV_FILTERS = { period: 'all', day: 'all', time: 'all' };
 let dlvPlanningCache = null;
 function dlvPlanningRows() {
   if (!dlvPlanningCache) dlvPlanningCache = window.DeliveryModel ? DeliveryModel.aggregate(dlvData(), DLV_FILTERS) : [];
@@ -133,7 +133,7 @@ function dlvRoving(chart, nodes, columns = 0) {
 }
 function dlvChartZone(name) { dlvSetFocus(name); }
 window.addEventListener('delivery-filter-change', ev => {
-  DLV_FILTERS = { period: 'recent', day: 'all', time: 'all', ...ev.detail };
+  DLV_FILTERS = { period: 'all', day: 'all', time: 'all', ...ev.detail };
   dlvPlanningCache = null;
   renderZoneQuadrant(); renderZoneTable(); renderHourBars(); renderHourZone();
   if (typeof DLVMAP !== 'undefined' && DLVMAP.map) { dlvRedraw(); dlvRenderFocusBar(); }
@@ -1329,8 +1329,6 @@ function renderValidation() {
   const cards = [
     ['送达召回率', v.recall_drop, '%', `手表在录时发生的 ${v.in_window} 单里，判对了 ${Math.round(v.in_window * v.recall_drop / 100)} 单`],
     ['取餐召回率', v.recall_pickup, '%', `同一批单，取餐那一头判对的比例`],
-    ['区域判对', v.zone_pct, '%', `对上的单里，送达区和真实地址所在区一致`],
-    ['餐厅命中', v.venue_pct, '%', `对上的取餐点，地图上确实有餐饮店`],
   ];
   host.innerHTML = cards.map(([label, value, unit, foot]) => `
     <div class="dlv-kpi">
@@ -1380,7 +1378,7 @@ function renderValidation() {
       + `<br><br>`
       + `<b>只有召回率，没有准确率</b>：这一份记录只是三个平台里的一个 —— 另外两个（熊猫外卖、DoorDash）`
       + `没有记录可对。这份记录覆盖期间，我判出的 ${v.total_drops} 个送达里，只有 ${v.matched_drops} 个能在这份记录里找到，`
-      + `约 ${v.platform_share_pct}%；其余可能是其他平台的单，也可能是误判，现有记录无法区分。`
+      + `约 ${v.platform_share_pct}%；这是“Uber 记录与 GPS 推断送达的时间匹配比例”，不是 Uber 订单占比。其余可能是 DoorDash、熊猫订单，也可能是误判，现有记录无法区分。`
       + `所以「判多了」这件事这里量不出来，页面也不会假装量得出来。`
       + `<br><br>`
       + `<b>还有 ${100 - v.coverage_pct}% 对不上是因为没录</b>：${v.orders - v.in_window} 单发生在手表没在记录的时段，`
