@@ -167,10 +167,10 @@ SECTIONS = {
     'dlv_kpis':     find_section_by_title('配送概览'),
     'dlv_method':   find_section_by_title('这一脚是在干嘛'),
     'dlv_truth':    find_section_by_title('平台归属与核验'),
-    'dlv_zones':    find_section_by_title('区域排行'),
-    'dlv_chain':    find_section_by_title('接单区还是送达区'),
+    'dlv_zones':    find_section_by_title('哪个区值得跑'),
+    'dlv_chain':    find_section_by_title('送完去哪等'),
     'dlv_offers':   find_section_by_title('这一单该不该接'),
-    'dlv_slots':    find_section_by_title('什么时候去哪试跑'),
+    'dlv_slots':    find_section_by_title('什么时候去'),
     'dlv_map':      find_section_by_title('热点地图'),
     'dlv_roads':    find_section_by_title('路段好坏'),
     'dlv_hours':    find_section_by_title('时段规律'),
@@ -383,18 +383,17 @@ PAGES = [
     },
     {
         'file': 'delivery.html',
-        'description': '用跨平台 GPS 轨迹筛选外卖试跑时段与区域；Uber 账单只用于核验识别覆盖，不能把混合平台活动分成 Uber、DoorDash 或熊猫订单。',
+        'description': '悉尼外卖配送决策：什么时候去、去哪个区、这一单该不该接、送完去哪等。',
         'page_key': 'delivery',
         'title': '配送 · Delivery',
         'hero': make_hero(
-            custom_h1='先选试跑时段<br><em>再核对平台收益</em>',
-            custom_sub='GPS 里的 Uber、DoorDash 和熊猫活动混在一起；只有 Uber 有可导出的订单记录。先用合并轨迹找值得试跑的时段，再用平台自己的在线时间和收入验证。',
+            custom_h1='怎么多赚一点<br><em>时段 · 区域 · 接单</em>',
+            custom_sub='六张图回答六个问题：一趟赚多少、什么时候去、去哪个区、这单接不接、送完去哪等、哪里单最多。',
             custom_meta='配送 · Delivery'),
         'intro': '',
-        # Start with the cross-platform candidate, then compare zones and offers;
-        # make the Uber-only validation boundary visible before deep diagnostics.
-        'sections': ['dlv_slots', 'dlv_zones', 'dlv_offers', 'dlv_truth', 'dlv_chain', 'dlv_map', 'dlv_kpis',
-                     'dlv_hours', 'dlv_roads', 'dlv_profile', 'dlv_method'],
+        # Decision flow: overview → timing → zone → offers → next pickup → map
+        'sections': ['dlv_kpis', 'dlv_slots', 'dlv_zones', 'dlv_offers',
+                     'dlv_chain', 'dlv_map'],
         'has_filter': False,
         # Delivery analysis is Sydney-only by construction — a city picker
         # here would offer three choices that all empty the page.
