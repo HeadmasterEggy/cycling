@@ -68,7 +68,7 @@
       </form>`;
     const form = host.querySelector('form');
     const saved = [];
-    let current = null, serial = 0;
+    let current = null, serial = 0, historyPeriod = 'all';
     function renderSaved() {
       host.querySelector('.plan-saved').hidden = !saved.length;
       host.querySelector('.plan-saved-count').textContent = `${saved.length} / 3`;
@@ -81,14 +81,15 @@
     }
     function renderHistory(adv) {
       const out = host.querySelector('.plan-history-out'), status = host.querySelector('.plan-history-status');
+      const scope = historyPeriod === 'recent' ? '最近有记录的 28 天' : '全部记录';
       if (!adv || !adv.known) {
         out.innerHTML = '<p class="plan-help">该时段 GPS 样本不足，无法估计取餐频率。</p>';
-        status.textContent = '该时段无历史';
+        status.textContent = `该时段无历史 · ${scope}`;
         return;
       }
-      status.textContent = `${adv.rate.toFixed(1)} 次 / GPS 记录小时`;
+      status.textContent = `${adv.rate.toFixed(1)} 次 / GPS 记录小时 · ${scope}`;
       out.innerHTML = `<div class="plan-history-card"><span>历史 GPS 推断取餐频率</span><b>${adv.rate.toFixed(1)}<small> 次 / 记录小时</small></b>
-        <small>80% 区间 ${adv.rateLo.toFixed(1)}–${adv.rateHi.toFixed(1)} · ${adv.hours.toFixed(1)} 个小时有记录；混合平台，不能代表在线派单或等单时间</small></div>`;
+        <small>${scope} · 80% 区间 ${adv.rateLo.toFixed(1)}–${adv.rateHi.toFixed(1)} · ${adv.hours.toFixed(1)} 个小时有记录；混合平台，不能代表在线派单或等单时间</small></div>`;
     }
     function renderInsights(values, r) {
       const parts = [['approach','去店'],['wait','等餐'],['ride','骑行'],['handoff','交付'],['recovery','送完等待／转场']];
@@ -114,14 +115,14 @@
       host.querySelector('.plan-destination').innerHTML = ad
         ? `<strong>${esc(dest.label)}</strong> · 送达后到下一次取餐中位 <b>${ad.dead_min} min</b> / ${ad.dead_km} km · ${ad.legs} 段${ad.legs < 8 ? '，样本偏少' : ''}。<br>含等单和已接单去店，不能整段当无偿转场；全期数据，未按时段筛选。`
         : dest ? `<strong>${esc(dest.label)}</strong> · 这个区域暂无续接样本，时间请按当前情况填写。` : '选择区域后显示历史参考，时间由你判断并填写。';
+      const service = ['approach', 'wait', 'ride', 'handoff'].reduce((t, k) => t + (Number(values[k]) || 0), 0);
+      const adv = M.advise(data, { period: historyPeriod, zone: values.pickupZone || null, dest: values.destination || null,
+        weekend: values.histDay === 'weekend', hour: Number(values.histHour), service, value: 0 });
+      renderHistory(adv);
       const result = host.querySelector('.plan-result');
       try {
         const invalid = [...form.querySelectorAll('input')].find(el => !el.disabled && !el.validity.valid);
         if (invalid) throw new Error(`请检查「${invalid.closest('label').querySelector('span').textContent}」的输入`);
-        const service = ['approach', 'wait', 'ride', 'handoff'].reduce((t, k) => t + (Number(values[k]) || 0), 0);
-        const adv = M.advise(data, { zone: values.pickupZone || null, dest: values.destination || null,
-          weekend: values.histDay === 'weekend', hour: Number(values.histHour), service, value: 0 });
-        renderHistory(adv);
         const r = M.estimate(values);
         const budget = M.delayBudget(values);
         // Round down: a displayed extra minute must not exceed the budget.
@@ -197,11 +198,25 @@
     form.addEventListener('submit', e => e.preventDefault());
     form.addEventListener('input', paint);
     form.addEventListener('change', e => { paint(); if(e.target.name === 'destination') focus(e.target.value || null); });
-    form.addEventListener('reset', () => setTimeout(() => { focus(null); paint(); }, 0));
+    form.addEventListener('reset', () => setTimeout(() => { historyPeriod = 'all'; focus(null); paint(); }, 0));
     window.addEventListener('delivery-zone-focus', e => {
       if ([...form.elements.destination.options].some(o => o.value === e.detail)) {
         form.elements.destination.value = e.detail; paint();
       }
+    });
+    window.addEventListener('delivery-slot-select', e => {
+      const detail = e.detail || {};
+      if (![...form.elements.pickupZone.options].some(o => o.value === detail.zone)) return;
+      form.elements.pickupZone.value = detail.zone;
+      form.elements.histDay.value = detail.weekend ? 'weekend' : 'weekday';
+      if ([...form.elements.histHour.options].some(o => Number(o.value) === Number(detail.hour))) {
+        form.elements.histHour.value = String(Number(detail.hour));
+      }
+      historyPeriod = detail.period === 'recent' ? 'recent' : 'all';
+      host.querySelector('.plan-history').open = true;
+      paint();
+      host.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      form.elements.pickupZone.focus({ preventScroll: true });
     });
     paint();
   }
@@ -331,6 +346,14 @@
     }
     const dayLabel = r => (r.weekend ? '周末' : '工作日');
     const range = r => `${r.rateLo.toFixed(2)}–${r.rateHi.toFixed(2)}`;
+    const anchorHour = (weekend, daypart, curve) => {
+      const part = parts.find(d => d.key === daypart);
+      const hours = curve[weekend ? 'weekend' : 'weekday']
+        .filter(h => part && h.hour >= part.from && h.hour < part.to && h.hours > 0)
+        .sort((a, b) => b.hours - a.hours || b.rate - a.rate);
+      return hours.length ? hours[0].hour : (part ? part.from : 18);
+    };
+    const slotAttributes = (r, curve, period) => `data-slot-offer data-zone="${esc(r.zone)}" data-weekend="${r.weekend}" data-daypart="${r.daypart}" data-period="${esc(period)}" data-hour="${anchorHour(r.weekend, r.daypart, curve)}"`;
     function render() {
       const filters = { period: q('period').value };
       const opts = { value: 0, cost: 0 };
@@ -340,16 +363,16 @@
       host.querySelector('.slot-scope').textContent = `${all.length} 个时间 × 地点组合达到最低记录时长 · 只比较跨平台 GPS 取餐频率，不估算平台收入 · 记录截至 ${p.recent_anchor}`;
       const top = settled[0] || rows[0];
       host.querySelector('.slot-headline').innerHTML = top
-        ? `<span>取餐频率最高的试跑候选${top.thin ? ' · 样本少' : ''}</span><strong>${dayLabel(top)} ${top.daypartLabel} ${top.window} · ${esc(top.label)}</strong><b>${top.rate.toFixed(2)}<small> 次 / GPS 记录小时</small></b><small>80% 区间 ${range(top)} 次/小时 · ${top.pickups} 次推断取餐 / ${top.hours.toFixed(1)} 记录小时 / ${top.shifts} 班</small>`
+        ? `<span>取餐频率最高的试跑候选${top.thin ? ' · 样本少' : ''}</span><strong>${dayLabel(top)} ${top.daypartLabel} ${top.window} · ${esc(top.label)}</strong><b>${top.rate.toFixed(2)}<small> 次 / GPS 记录小时</small></b><small>80% 区间 ${range(top)} 次/小时 · ${top.pickups} 次推断取餐 / ${top.hours.toFixed(1)} 记录小时 / ${top.shifts} 班</small><button type="button" class="slot-offer-cta" ${slotAttributes(top, curve, filters.period)}>带入${String(anchorHour(top.weekend, top.daypart, curve)).padStart(2, '0')}:00 的历史对照 <span>选好区域与时段 ↓</span></button>`
         : '<span>没有满足条件的组合，放宽日期类型或餐段后再看。</span>';
       const days = q('day').value === 'weekday' ? [false] : q('day').value === 'weekend' ? [true] : [false, true];
       const usedParts = parts.filter(d => q('part').value === 'all' || d.key === q('part').value);
       host.querySelector('.slot-matrix').innerHTML = `<div class="slot-table-scroll" tabindex="0" aria-label="时段与地点对照，可横向滚动"><table class="slot-table"><thead><tr><th>餐段</th>${days.map(w => `<th>${w ? '周末' : '工作日'}</th>`).join('')}</tr></thead><tbody>${usedParts.map(d => `<tr><th>${d.label}<small>${d.from}–${d.to}</small></th>${days.map(w => {
         const cell = all.filter(r => r.daypart === d.key && r.weekend === w), best = cell.filter(r => !r.thin)[0] || cell[0], next = cell.filter(r => r !== best && !r.thin)[0];
-        return best ? `<td><button type="button" class="slot-pick ${best.thin ? 'thin' : ''}" data-zone="${esc(best.zone)}"><strong>${esc(best.label)}</strong><b>${best.rate.toFixed(2)}<small> 次/记录小时</small></b><small>80% 区间 ${range(best)}${best.thin ? ' · 样本少' : ''}</small></button>${next ? `<small class="slot-next">其次 ${esc(next.label)} ${next.rate.toFixed(2)} 次/记录小时</small>` : ''}</td>` : '<td class="slot-none">记录不足</td>';
+        return best ? `<td><button type="button" class="slot-pick ${best.thin ? 'thin' : ''}" ${slotAttributes(best, curve, filters.period)} aria-label="${esc(`${best.label}，${dayLabel(best)} ${best.daypartLabel}，代入接单计算器的历史对照`)}"><strong>${esc(best.label)}</strong><b>${best.rate.toFixed(2)}<small> 次/记录小时</small></b><small>80% 区间 ${range(best)}${best.thin ? ' · 样本少' : ''}</small><span class="slot-pick-action">带入接单检查 ↓</span></button>${next ? `<small class="slot-next">其次 ${esc(next.label)} ${next.rate.toFixed(2)} 次/记录小时</small>` : ''}</td>` : '<td class="slot-none">记录不足</td>';
       }).join('')}</tr>`).join('')}</tbody></table></div>`;
       const top10 = rows.slice(0, 10), max = Math.max(1, ...top10.map(r => r.rateHi));
-      host.querySelector('.slot-rank').innerHTML = top10.length ? top10.map((r, i) => `<button type="button" class="slot-row ${r.thin ? 'thin' : ''}" data-zone="${esc(r.zone)}">
+      host.querySelector('.slot-rank').innerHTML = top10.length ? top10.map((r, i) => `<button type="button" class="slot-row ${r.thin ? 'thin' : ''}" ${slotAttributes(r, curve, filters.period)} aria-label="${esc(`${r.label}，${dayLabel(r)} ${r.daypartLabel}，代入接单计算器的历史对照`)}">
           <span class="plan-zone-index">${String(i + 1).padStart(2, '0')}</span>
           <span class="slot-row-main"><strong>${esc(r.label)}</strong><small>${dayLabel(r)} ${r.daypartLabel} ${r.window} · ${r.pickups} 次取餐 / ${r.hours.toFixed(1)} h / ${r.shifts} 班${r.thin ? ' · 样本少' : ''}</small>
             <span class="slot-bar" role="img" aria-label="80% 区间 ${range(r)} 次/小时"><i style="left:${r.rateLo / max * 100}%;width:${Math.max(2, (r.rateHi - r.rateLo) / max * 100)}%"></i><em style="left:${r.rate / max * 100}%"></em></span></span>
@@ -367,8 +390,18 @@
     }
     host.addEventListener('change', e => { if (['period', 'day', 'part'].includes(e.target.name)) render(); });
     host.addEventListener('click', e => {
-      const zone = e.target.closest('[data-zone]'), hour = e.target.closest('[data-hour-info]');
-      if (zone) focus(zone.dataset.zone);
+      const zone = e.target.closest('[data-zone]'), hour = e.target.closest('[data-hour-info]'), slot = e.target.closest('[data-slot-offer]');
+      // A trial slot identifies the pickup area. Keep the destination example
+      // independent so the following drop-zone analysis is not silently set
+      // to the same suburb.
+      if (zone && !slot) focus(zone.dataset.zone);
+      if (slot) window.dispatchEvent(new CustomEvent('delivery-slot-select', { detail: {
+        zone: slot.dataset.zone,
+        weekend: slot.dataset.weekend === 'true',
+        daypart: slot.dataset.daypart,
+        period: slot.dataset.period,
+        hour: Number(slot.dataset.hour),
+      } }));
       if (hour) host.querySelector('.plan-hour-info').textContent = hour.dataset.hourInfo;
     });
     host.addEventListener('focusin', e => { if (e.target.dataset && e.target.dataset.hourInfo) host.querySelector('.plan-hour-info').textContent = e.target.dataset.hourInfo; });

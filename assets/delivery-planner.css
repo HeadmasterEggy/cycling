@@ -225,6 +225,10 @@ body[data-page="delivery"] .main > .analysis-section:first-child { margin-top: 0
 .slot-headline > b { font:34px var(--mono,monospace); font-weight:500; color:#f1d4a7; letter-spacing:-.03em; }
 .slot-headline b small { font-size:12px; color:#b6b7af; }
 .slot-headline > small { display:block; color:#aeb0a6; font-size:11px; margin-top:4px; }
+.slot-offer-cta { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:12px; width:100%; min-height:44px; border:1px solid #7b6948; border-radius:8px; background:#32281d; color:#f1d8b0; padding:9px 12px; text-align:left; font:inherit; font-size:12px; cursor:pointer; }
+.slot-offer-cta span { margin-left:auto; color:#bdae94; font-size:10px; }
+.slot-offer-cta:hover { background:#3a2f21; border-color:#9b8156; }
+.slot-offer-cta:focus-visible, .slot-pick:focus-visible { outline:2px solid #e9c98f; outline-offset:2px; }
 .slot-h { margin:22px 0 8px; font-size:13px; font-weight:600; color:#d9dad2; }
 .slot-table-scroll { overflow-x:auto; }
 .slot-table { border-collapse:separate; border-spacing:6px; width:100%; min-width:380px; }
@@ -238,6 +242,7 @@ body[data-page="delivery"] .main > .analysis-section:first-child { margin-top: 0
 .slot-pick b { font:17px var(--mono,monospace); font-weight:500; color:#a9dfc2; }
 .slot-pick b small, .slot-pick > small { font-size:10px; color:#9eb0a8; }
 .slot-pick > small { display:block; margin-top:2px; }
+.slot-pick-action { display:block; margin-top:8px; color:#f0d1a1; font-size:10px; letter-spacing:.04em; }
 .slot-pick.thin { border-style:dashed; border-color:#5f6a5c; }
 .slot-pick.thin b { color:#c4c9b3; }
 .slot-next { display:block; color:#93a39d; font-size:10px; padding:4px 2px 0; }
@@ -251,6 +256,7 @@ body[data-page="delivery"] .main > .analysis-section:first-child { margin-top: 0
 .slot-row-main strong { display:block; font-size:14px; font-weight:500; }
 .slot-row-main small { display:block; color:#a1aaa7; font-size:10px; margin-top:4px; }
 .slot-row.thin .plan-zone-rate { color:#9ba7a6; }
+.slot-row:focus-visible { outline:2px solid #e9c98f; outline-offset:2px; }
 .slot-bar { display:block; position:relative; height:6px; margin-top:8px; border-radius:3px; background:#232d30; }
 .slot-bar i { position:absolute; top:0; bottom:0; border-radius:3px; background:#4b7f72; }
 .slot-bar em { position:absolute; top:-2px; bottom:-2px; width:2px; background:#f1d4a7; }
