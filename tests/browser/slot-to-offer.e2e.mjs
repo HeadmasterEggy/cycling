@@ -14,7 +14,7 @@ await page.selectOption('#dashSlots [name=period]', 'recent');
 await page.waitForSelector('#dashSlots .slot-pick[data-slot-offer]');
 const candidate = await page.evaluate(() => {
   const el = document.querySelector('#dashSlots .slot-pick[data-slot-offer]');
-  return { zone:el.dataset.zone, weekend:el.dataset.weekend, hour:el.dataset.hour, period:el.dataset.period };
+  return { zone:el.dataset.zone, label:el.querySelector('strong').textContent, weekend:el.dataset.weekend, hour:el.dataset.hour, period:el.dataset.period };
 });
 assert.equal(candidate.period, 'recent');
 await page.evaluate(() => document.querySelector('#dashSlots .slot-pick[data-slot-offer]').click());
@@ -31,6 +31,7 @@ const state = await page.evaluate(() => {
     hour: form.elements.histHour.value,
     status: document.querySelector('#dashOffer .plan-history-status').textContent,
     active: document.activeElement && document.activeElement.name,
+    context: document.querySelector('#dashOffer .plan-context').textContent,
     fare: form.elements.fare.value,
     wait: form.elements.wait.value,
   };
@@ -41,6 +42,8 @@ assert.equal(state.weekend, candidate.weekend === 'true' ? 'weekend' : 'weekday'
 assert.equal(state.hour, candidate.hour);
 assert.match(state.status, /最近有记录的 28 天/);
 assert.equal(state.active, 'pickupZone');
+assert.match(state.context, new RegExp(candidate.label));
+assert.match(state.context, /最近有记录的 28 天/);
 assert.equal(state.fare, '', 'slot context must not invent a real offer fare');
 assert.equal(state.wait, '', 'slot context must not invent a real wait time');
 await page.evaluate(() => document.querySelector('#dashZones .plan-zone[data-zone]').click());

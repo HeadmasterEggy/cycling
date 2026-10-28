@@ -28,6 +28,7 @@
           ${field('target', '我的目标', d.target, '$/h', 500, 1)}
         </div>
         <div class="plan-result" aria-live="polite"></div>
+        <div class="plan-context" aria-live="polite" hidden></div>
         <div class="plan-offer-actions"><button type="button" class="plan-action plan-save-offer">暂存这份报价</button><span class="plan-save-status" role="status">最多比较 3 份，本次页面有效</span></div>
         <div class="plan-offer-insights"></div>
         <details class="plan-saved" hidden><summary>报价对照 <span class="plan-saved-count"></span></summary><div class="plan-saved-comparison" aria-live="polite" hidden></div><div class="plan-saved-list"></div><p class="plan-help">保存当时全部时间与奖励假设；报价变化后可载入修改。刷新页面会清空。</p></details>
@@ -83,16 +84,17 @@
         }).sort((a, b) => b.stressRate - a.stressRate || b.result.rate - a.result.rate || a.id - b.id);
         const best = ranked[0], next = ranked[1], gap = best.stressRate - next.stressRate;
         const gapText = gap > 0.005 ? `比报价 ${next.id} 高 ${money(gap)}/h` : `与报价 ${next.id} 持平`;
+        const mixedContexts = new Set(ranked.map(offer => offer.context.summary)).size > 1;
         comparison.hidden = false;
-        comparison.innerHTML = `<div class="plan-saved-best"><span>统一压力测试 · 整轮再延误 5 分钟</span><strong>${best.meetsTarget ? `报价 ${best.id} 相对稳健` : `最高候选报价 ${best.id} 仍低于目标`}</strong><b>${money(best.stressRate)}<small>/h</small></b><p>${gapText}。每份报价的 Quest 截止会单独重算；只比较手头候选，不是取消订单建议。</p></div>
-          <div class="plan-rank-list" role="list">${ranked.map((offer, index) => `<div class="plan-rank-row" role="listitem" data-offer-rank="${offer.id}" data-stress-rate="${offer.stressRate}">
-            <span>#${index + 1}</span><div><strong>报价 ${offer.id}</strong><small>${esc(offer.destination || '未选落点')} · 报价 ${money(offer.result.fare)} · 整轮 ${offer.result.minutes.toFixed(0)} min</small></div>
+        comparison.innerHTML = `<div class="plan-saved-best"><span>统一压力测试 · 整轮再延误 5 分钟</span><strong>${best.meetsTarget ? `报价 ${best.id} 相对稳健` : `最高候选报价 ${best.id} 仍低于目标`}</strong><b>${money(best.stressRate)}<small>/h</small></b><p>${gapText}。${mixedContexts ? '候选使用了不同试跑情景，先核对地点与时段差异。' : ''}每份报价的 Quest 截止会单独重算；只比较手头候选，不是取消订单建议。</p></div>
+          <div class="plan-rank-list" role="list">${ranked.map((offer, index) => `<div class="plan-rank-row" role="listitem" data-offer-rank="${offer.id}" data-stress-rate="${offer.stressRate}" data-offer-context="${esc(offer.context.summary)}">
+            <span>#${index + 1}</span><div><strong>报价 ${offer.id}</strong><small>${esc(offer.context.summary)} · 落点 ${esc(offer.destination || '未选')} · 报价 ${money(offer.result.fare)} · ${offer.result.minutes.toFixed(0)} min</small></div>
             <b>${money(offer.stressRate)}<small>/h</small></b><em class="${offer.meetsTarget ? 'meets' : ''}">${offer.meetsTarget ? '达到目标' : '低于目标'}</em>
           </div>`).join('')}</div>`;
       }
       host.querySelector('.plan-saved-list').innerHTML = saved.map(s => `<article class="plan-saved-card">
         <div class="plan-saved-heading"><strong>报价 ${s.id} · ${money(s.result.fare)}</strong><button type="button" data-remove-offer="${s.id}" aria-label="移除报价 ${s.id}">×</button></div>
-        <p>${esc(s.destination || '未选落点')} · ${s.result.minutes} min</p>
+        <p><strong>${esc(s.context.summary)}</strong><br>落点 ${esc(s.destination || '未选')} · ${s.result.minutes} min</p>
         <dl><div><dt>正常 / 延误</dt><dd>${money(s.result.rate)} / ${money(s.result.slowRate)}<small>$/h · 额外延误 ${s.result.buffer} min</small></dd></div><div><dt>奖励增量</dt><dd>${money(s.result.quest)}<small>目标 ${money(s.result.target)}/h</small></dd></div></dl>
         <button type="button" class="plan-action" data-load-offer="${s.id}">载入报价 ${s.id}</button></article>`).join('');
       host.querySelector('.plan-save-offer').disabled = !current || saved.length >= 3;
@@ -130,6 +132,20 @@
       const values = Object.fromEntries(new FormData(form));
       const dest = data.zones.find(z => z.name === values.destination);
       const ad = dest && dest.as_drop;
+      const pickup = data.zones.find(z => z.name === values.pickupZone);
+      const contextHour = Number(values.histHour);
+      const context = {
+        zone: values.pickupZone || '',
+        weekend: values.histDay === 'weekend',
+        hour: contextHour,
+        period: historyPeriod,
+        summary: `${pickup ? pickup.label : '全城平均'} · ${values.histDay === 'weekend' ? '周末' : '工作日'} ${String(contextHour).padStart(2, '0')}:00 · ${historyPeriod === 'recent' ? '最近有记录的 28 天' : '全部记录'}`,
+      };
+      const contextNode = host.querySelector('.plan-context');
+      contextNode.hidden = !context.zone;
+      contextNode.innerHTML = context.zone
+        ? `<span>正在核对的试跑情景</span><strong>${esc(context.summary)}</strong><small>只用于取餐活动对照，不参与这单的收入计算。</small>`
+        : '';
       host.querySelector('.plan-destination').innerHTML = ad
         ? `<strong>${esc(dest.label)}</strong> · 送达后到下一次取餐中位 <b>${ad.dead_min} min</b> / ${ad.dead_km} km · ${ad.legs} 段${ad.legs < 8 ? '，样本偏少' : ''}。<br>含等单和已接单去店，不能整段当无偿转场；全期数据，未按时段筛选。`
         : dest ? `<strong>${esc(dest.label)}</strong> · 这个区域暂无续接样本，时间请按当前情况填写。` : '选择区域后显示历史参考，时间由你判断并填写。';
@@ -149,7 +165,7 @@
           ? `按计划完成已低于目标；报价还需增加 ${money(budget.fareGap)}，才达到目标。`
           : extra === 0 ? '已到目标边界，按填写精度已无额外延误余量。'
           : `最多再增加 ${extra} 分钟${budget.limit === 'questDeadline' ? '，受 Quest 截止限制' : '，再久就低于目标'}。`;
-        current = { values, result: r, destination: dest && dest.label };
+        current = { values, result: r, destination: dest && dest.label, context };
         const labels = { strong: '延误后仍达到目标', borderline: '正常达到目标，延误后不足', weak: '当前情景低于目标' };
         result.className = 'plan-result ' + r.verdict;
         result.innerHTML = `<div class="plan-eyebrow">本趟税前贡献 · 情景估算</div><div class="plan-rate"><b>${money(r.rate)}</b><span>/ 小时</span></div>
@@ -198,6 +214,7 @@
       } else if (load) {
         const selected = saved.find(s=>s.id===Number(load.dataset.loadOffer));
         if (selected) {
+          historyPeriod = selected.context.period === 'recent' ? 'recent' : 'all';
           Object.entries(selected.values).forEach(([key, value]) => { if (form.elements[key]) form.elements[key].value = value; });
           paint(); focus(selected.values.destination || null);
           host.querySelector('.plan-save-status').textContent = `已载入报价 ${selected.id}，可继续修改`;

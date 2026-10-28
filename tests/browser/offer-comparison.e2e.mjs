@@ -12,10 +12,13 @@ await page.goto('http://127.0.0.1:8766/dashboard.html?comparison-check=' + Date.
 await page.waitForSelector('#dashOffer form [name=fare]');
 const form = '#dashOffer form';
 
-async function fillOffer({ fare, buffer }) {
+async function fillOffer({ fare, buffer, zone, day = 'weekday', hour = 12 }) {
   for (const [name, value] of Object.entries({ fare, buffer, target: 30, approach: 5, wait: 3, ride: 10, handoff: 2, recovery: 5 })) {
     await page.fill(`${form} [name=${name}]`, String(value));
   }
+  await page.selectOption(`${form} [name=pickupZone]`, zone);
+  await page.selectOption(`${form} [name=histDay]`, day);
+  await page.selectOption(`${form} [name=histHour]`, String(hour));
 }
 
 async function saveOffer(values) {
@@ -23,10 +26,10 @@ async function saveOffer(values) {
   await page.click(`${form} .plan-save-offer`);
 }
 
-await saveOffer({ fare: 20, buffer: 0 });
+await saveOffer({ fare: 20, buffer: 0, zone: 'Newtown', day: 'weekend', hour: 19 });
 assert.equal(await page.evaluate(() => !document.querySelector('#dashOffer .plan-saved-comparison').hidden), false,
   'one saved offer has nothing to rank');
-await saveOffer({ fare: 18, buffer: 15 });
+await saveOffer({ fare: 18, buffer: 15, zone: 'Glebe', day: 'weekday', hour: 12 });
 await page.waitForFunction(() => !document.querySelector('#dashOffer .plan-saved-comparison').hidden);
 
 const comparison = await page.evaluate(() => {
@@ -36,19 +39,30 @@ const comparison = await page.evaluate(() => {
     rows: [...host.querySelectorAll('[data-offer-rank]')].map(row => ({
       offer: row.dataset.offerRank,
       stressRate: Number(row.dataset.stressRate),
+      context: row.dataset.offerContext,
     })),
   };
 });
 assert.match(comparison.text, /统一压力测试 · 整轮再延误 5 分钟/);
 assert.match(comparison.text, /报价 1/);
 assert.deepEqual(comparison.rows, [
-  { offer: '1', stressRate: 40 },
-  { offer: '2', stressRate: 36 },
+  { offer: '1', stressRate: 40, context: 'Newtown · 周末 19:00 · 全部记录' },
+  { offer: '2', stressRate: 36, context: 'Glebe · 工作日 12:00 · 全部记录' },
 ], 'rank every offer at the same +5 minute delay, not each card buffer');
 assert.match(comparison.text, /达到目标/);
+assert.match(comparison.text, /不同试跑情景/);
+
+await fillOffer({ fare: 20, buffer: 0, zone: 'Newtown', day: 'weekend', hour: 19 });
+assert.match(await page.evaluate(() => document.querySelector('#dashOffer .plan-context').textContent), /Newtown · 周末 19:00 · 全部记录/);
+const preservedContexts = await page.evaluate(() => [...document.querySelectorAll('#dashOffer [data-offer-rank]')]
+  .map(row => row.dataset.offerContext));
+assert.deepEqual(preservedContexts, [
+  'Newtown · 周末 19:00 · 全部记录',
+  'Glebe · 工作日 12:00 · 全部记录',
+], 'changing the next offer must not rewrite saved trial contexts');
 
 await page.click('#dashOffer [data-remove-offer="2"]');
 assert.equal(await page.evaluate(() => document.querySelector('#dashOffer .plan-saved-comparison').hidden), true,
   'remove the recommendation when only one offer remains');
-console.log('PASS: saved offers rank under a common +5 minute delay and disappear below two offers');
+console.log('PASS: saved offers rank under a common delay and preserve their trial contexts');
 await task.finish({ keep:[] });
