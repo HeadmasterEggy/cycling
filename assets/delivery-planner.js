@@ -123,6 +123,13 @@
           weekend: values.histDay === 'weekend', hour: Number(values.histHour), service, value: 0 });
         renderHistory(adv);
         const r = M.estimate(values);
+        const budget = M.delayBudget(values);
+        // Round down: a displayed extra minute must not exceed the budget.
+        const extra = budget.extraMinutes == null ? null : Math.floor((budget.extraMinutes + 1e-8) * 10) / 10;
+        const budgetText = budget.belowTarget
+          ? `按计划完成已低于目标；报价还需增加 ${money(budget.fareGap)}，才达到目标。`
+          : extra === 0 ? '已到目标边界，按填写精度已无额外延误余量。'
+          : `最多再增加 ${extra} 分钟${budget.limit === 'questDeadline' ? '，受 Quest 截止限制' : '，再久就低于目标'}。`;
         current = { values, result: r, destination: dest && dest.label };
         const labels = { strong: '延误后仍达到目标', borderline: '正常达到目标，延误后不足', weak: '当前情景低于目标' };
         result.className = 'plan-result ' + r.verdict;
@@ -130,6 +137,7 @@
           <p class="plan-verdict">${labels[r.verdict]}</p>
           <div class="plan-result-grid"><div><span>整轮用时</span><b>${r.minutes.toFixed(0)} <small>min</small></b></div><div><span>延误 ${r.buffer} 分钟后</span><b>${money(r.slowRate)} <small>/h</small></b></div></div>
           <div class="plan-threshold">达到 ${money(r.target)}/h，报价需 <strong>${money(r.needed)}</strong><span>延误情景需 ${money(r.neededSlow)}</span></div>
+          <div class="plan-budget"><strong>${budgetText}</strong><small>从填写的整轮计划起算，包含额外等餐、骑行或转场延误；已填的等餐不重复加算。不是到店后重新开始的计时器，也不代表应取消订单。</small></div>
           <div class="plan-formula">报价 ${money(r.fare)} + 奖励增量 ${money(r.quest)} − 成本 ${money(r.cost)}<br>不计奖励时 ${money(r.baseRate)}/h · 不含保底补差</div>`;
         host.querySelector('.plan-quest-note').textContent = r.questNote;
         host.querySelector('.plan-quest-status').textContent = mode === 'none' ? '未计入' : '增量 ' + money(r.quest);

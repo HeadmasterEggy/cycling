@@ -64,6 +64,25 @@
       baseRate, rate, slowRate, needed, neededSlow, baseline, edge, slowEdge, neededBaseline,
       verdict: Math.min(rate, slowRate) >= values.target ? 'strong' : rate >= values.target ? 'borderline' : 'weak' };
   }
+  // Extra delay affordable from the planned cycle, including a discontinuous
+  // loss of milestone reward. It is a planning limit, not a cancellation rule.
+  function delayBudget(input) {
+    const r = estimate({ ...input, buffer: 0 });
+    const budget = (r.fare + r.quest - r.cost) * 60 / r.target - r.minutes;
+    const fareGap = Math.max(0, r.needed - r.fare);
+    if (budget < -1e-9) return { belowTarget: true, extraMinutes: null, fareGap, limit: 'target' };
+    let extraMinutes = Math.max(0, budget), limit = 'target';
+    const delayed = estimate({ ...input, buffer: extraMinutes });
+    if (delayed.slowQuest < r.quest) {
+      const cutoff = Number(({ ...DEFAULTS, ...input }).deadline) - r.service;
+      const afterCutoff = (r.fare + delayed.slowQuest - r.cost) * 60 / r.target - r.minutes;
+      // Completing exactly at the deadline still qualifies. If the lower
+      // reward can fund more time, the hourly target is the binding limit.
+      extraMinutes = Math.max(cutoff, afterCutoff, 0);
+      limit = afterCutoff > cutoff ? 'target' : 'questDeadline';
+    }
+    return { belowTarget: false, extraMinutes, fareGap, limit };
+  }
   function settlement(input) {
     const hours = numeric(input.hours, '有效接单小时');
     const rate = numeric(input.rate, '最低标准', 0.01);
@@ -320,7 +339,7 @@
         quest: r.slowQuest, needed: r.neededSlow, meetsTarget: r.slowRate >= r.target };
     });
   }
-  const api = { DEFAULTS, DAYPARTS, estimate, sensitivity, settlement, aggregate, hourly, median,
+  const api = { DEFAULTS, DAYPARTS, estimate, delayBudget, sensitivity, settlement, aggregate, hourly, median,
     fitRates, orderValue, valueByDaypart, slots, timeCurve, advise, suggestTimes, daypartOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.DeliveryModel = api;

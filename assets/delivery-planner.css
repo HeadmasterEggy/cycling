@@ -36,6 +36,9 @@
 .plan-threshold strong { font-family: var(--mono, monospace); color: #f2d4a9; font-size: 17px; }
 .plan-threshold > span { display: block; color: #b2b3aa; }
 .plan-formula { color: #aaa99f; font-size: 11px; line-height: 1.8; margin-top: 12px; }
+.plan-budget { margin-top: 14px; padding: 12px 14px; border-left: 3px solid #d0b47d; background: #ffffff06; border-radius: 0 6px 6px 0; }
+.plan-budget strong { display: block; color: #e9d3ad; font-size: 13px; line-height: 1.7; font-weight: 500; }
+.plan-budget small { display: block; margin-top: 6px; line-height: 1.7; }
 .plan-select { display: block; font-size: 12px; color: #b8b8b0; margin: 14px 0; }
 .planner select { display: block; width: 100%; margin-top: 6px; height: 44px; border: 1px solid #393c40; border-radius: 7px; background: #141a1d; color: #e5e5dd; padding: 0 10px; }
 .plan-details { border-top: 1px solid #303638; padding: 13px 0; }
