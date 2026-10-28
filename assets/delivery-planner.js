@@ -30,7 +30,7 @@
         <div class="plan-result" aria-live="polite"></div>
         <div class="plan-offer-actions"><button type="button" class="plan-action plan-save-offer">暂存这份报价</button><span class="plan-save-status" role="status">最多比较 3 份，本次页面有效</span></div>
         <div class="plan-offer-insights"></div>
-        <details class="plan-saved" hidden><summary>报价对照 <span class="plan-saved-count"></span></summary><div class="plan-saved-list"></div><p class="plan-help">保存当时全部时间与奖励假设；报价变化后可载入修改。刷新页面会清空。</p></details>
+        <details class="plan-saved" hidden><summary>报价对照 <span class="plan-saved-count"></span></summary><div class="plan-saved-comparison" aria-live="polite" hidden></div><div class="plan-saved-list"></div><p class="plan-help">保存当时全部时间与奖励假设；报价变化后可载入修改。刷新页面会清空。</p></details>
         <div class="plan-section-label"><span>整轮时间</span><em>按分钟填写，可直接修改</em></div>
         <div class="plan-fields plan-times">
           ${field('approach', '去餐厅', '', 'min')}${field('wait', '等出餐', '', 'min')}
@@ -72,6 +72,24 @@
     function renderSaved() {
       host.querySelector('.plan-saved').hidden = !saved.length;
       host.querySelector('.plan-saved-count').textContent = `${saved.length} / 3`;
+      const comparison = host.querySelector('.plan-saved-comparison');
+      if (saved.length < 2) {
+        comparison.hidden = true;
+        comparison.innerHTML = '';
+      } else {
+        const ranked = saved.map(offer => {
+          const stress = M.sensitivity(offer.values, [5])[0];
+          return { ...offer, stressRate: stress.rate, meetsTarget: stress.meetsTarget };
+        }).sort((a, b) => b.stressRate - a.stressRate || b.result.rate - a.result.rate || a.id - b.id);
+        const best = ranked[0], next = ranked[1], gap = best.stressRate - next.stressRate;
+        const gapText = gap > 0.005 ? `比报价 ${next.id} 高 ${money(gap)}/h` : `与报价 ${next.id} 持平`;
+        comparison.hidden = false;
+        comparison.innerHTML = `<div class="plan-saved-best"><span>统一压力测试 · 整轮再延误 5 分钟</span><strong>${best.meetsTarget ? `报价 ${best.id} 相对稳健` : `最高候选报价 ${best.id} 仍低于目标`}</strong><b>${money(best.stressRate)}<small>/h</small></b><p>${gapText}。每份报价的 Quest 截止会单独重算；只比较手头候选，不是取消订单建议。</p></div>
+          <div class="plan-rank-list" role="list">${ranked.map((offer, index) => `<div class="plan-rank-row" role="listitem" data-offer-rank="${offer.id}" data-stress-rate="${offer.stressRate}">
+            <span>#${index + 1}</span><div><strong>报价 ${offer.id}</strong><small>${esc(offer.destination || '未选落点')} · 报价 ${money(offer.result.fare)} · 整轮 ${offer.result.minutes.toFixed(0)} min</small></div>
+            <b>${money(offer.stressRate)}<small>/h</small></b><em class="${offer.meetsTarget ? 'meets' : ''}">${offer.meetsTarget ? '达到目标' : '低于目标'}</em>
+          </div>`).join('')}</div>`;
+      }
       host.querySelector('.plan-saved-list').innerHTML = saved.map(s => `<article class="plan-saved-card">
         <div class="plan-saved-heading"><strong>报价 ${s.id} · ${money(s.result.fare)}</strong><button type="button" data-remove-offer="${s.id}" aria-label="移除报价 ${s.id}">×</button></div>
         <p>${esc(s.destination || '未选落点')} · ${s.result.minutes} min</p>

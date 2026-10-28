@@ -133,6 +133,24 @@ body[data-page="delivery"] .main > .analysis-section:first-child { margin-top: 0
 .plan-delay small { font-size:10px; margin-left:3px; }
 .plan-delay em { color:#aab8b1; font-size:9px; font-style:normal; }
 .plan-saved-count { color:#91c6bf; margin-left:8px; }
+.plan-saved-comparison { margin-top:12px; }
+.plan-saved-best { border:1px solid #536c5f; border-radius:8px; background:#192923; padding:12px; }
+.plan-saved-best > span { display:block; color:#9eb9ae; font-size:10px; letter-spacing:.04em; }
+.plan-saved-best > strong { display:block; margin-top:5px; color:#dbe7dc; font-size:13px; font-weight:600; }
+.plan-saved-best > b { display:block; margin-top:5px; color:#d8bd8e; font:26px var(--mono,monospace); font-weight:500; }
+.plan-saved-best b small { font-size:11px; color:#aebdb5; }
+.plan-saved-best > p { margin:5px 0 0; color:#9eafa8; font-size:10px; line-height:1.6; }
+.plan-rank-list { display:grid; gap:5px; margin-top:10px; }
+.plan-rank-row { display:grid; grid-template-columns:24px minmax(0,1fr) auto auto; align-items:center; gap:8px; border-top:1px solid #30403b; padding:8px 2px; }
+.plan-rank-row > span { color:#77988a; font:10px var(--mono,monospace); }
+.plan-rank-row > div { min-width:0; }
+.plan-rank-row strong, .plan-rank-row small { display:block; }
+.plan-rank-row strong { color:#d2e0d7; font-size:11px; font-weight:500; }
+.plan-rank-row small { margin-top:3px; overflow:hidden; color:#93a69e; font-size:9px; text-overflow:ellipsis; white-space:nowrap; }
+.plan-rank-row > b { color:#dce5db; font:13px var(--mono,monospace); font-weight:500; white-space:nowrap; }
+.plan-rank-row > b small { display:inline; margin:0; color:#9eafa8; font-size:9px; }
+.plan-rank-row > em { color:#d5aa77; font-size:9px; font-style:normal; white-space:nowrap; }
+.plan-rank-row > em.meets { color:#99d1af; }
 .plan-saved-list { display:grid; gap:10px; margin-top:10px; }
 .plan-saved-card { border-top:1px solid #374542; padding-top:10px; }
 .plan-saved-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
@@ -187,6 +205,8 @@ body[data-page="delivery"] .main > .analysis-section:first-child { margin-top: 0
 .plan-hour-info { color:#a7c1b0; font-size:10px; min-height:44px; margin:10px 0 0; line-height:1.7; }
 @media(max-width:700px) {
   .plan-offer-actions .plan-action { min-height:44px; }
+  .plan-rank-row { grid-template-columns:22px minmax(0,1fr) auto; }
+  .plan-rank-row > em { grid-column:2/-1; text-align:right; }
   .plan-compare-toggle { flex-basis:40px; height:44px; }
   .plan-zone-toolbar input { font-size:16px; }
   .plan-zone-row .plan-zone-main strong { font-size:14px; }
