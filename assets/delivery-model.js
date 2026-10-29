@@ -235,6 +235,24 @@
       return perOrder * ((r.n * r.mean + k * overall) / (r.n + k)) / overall;
     };
   }
+  // Compare the quoted fare with the rider's own historical Uber fares for
+  // the same meal window. This stays separate from the whole-cycle estimate:
+  // it has no distance, duration, Quest, tip or live-demand information.
+  function fareReference(data, input = {}) {
+    const dp = daypartOf(Number(input.hour));
+    const row = dp && data && data.offers && data.offers.by_daypart && data.offers.by_daypart[dp.key];
+    const n = Number(row && row.n), mean = Number(row && row.mean), fare = Number(input.fare);
+    if (!dp || input.fare === '' || input.fare == null ||
+      !Number.isFinite(n) || n <= 0 || !Number.isFinite(mean) || mean <= 0 ||
+      !Number.isFinite(fare) || fare < 0) return null;
+    const difference = Math.round((fare - mean) * 100) / 100;
+    return {
+      daypart: dp.key, label: dp.label, window: `${dp.from}–${dp.to}`,
+      n, mean, asOf: (data.offers && data.offers.as_of) || (data.meta && data.meta.last) || null,
+      fare, difference, percent: Math.round(Math.abs(difference) / mean * 100),
+      direction: difference > 0 ? 'higher' : difference < 0 ? 'lower' : 'equal',
+    };
+  }
   function slots(data, filters = {}, opts = {}) {
     const fit = fitRates(data, filters, opts);
     if (!fit) return [];
@@ -340,7 +358,7 @@
     });
   }
   const api = { DEFAULTS, DAYPARTS, estimate, delayBudget, sensitivity, settlement, aggregate, hourly, median,
-    fitRates, orderValue, valueByDaypart, slots, timeCurve, advise, suggestTimes, daypartOf };
+    fitRates, orderValue, valueByDaypart, fareReference, slots, timeCurve, advise, suggestTimes, daypartOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.DeliveryModel = api;
 })(typeof window !== 'undefined' ? window : this);

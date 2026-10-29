@@ -114,6 +114,15 @@ body[data-page="delivery"] .main > .analysis-section:first-child { margin-top: 0
 .plan-context > span { color:#8fb5ad; font-size:10px; letter-spacing:.04em; }
 .plan-context > strong { color:#d7e7df; font-size:12px; font-weight:500; }
 .plan-context > small { flex-basis:100%; color:#94aaa2; font-size:10px; }
+.plan-fare-reference { display:grid; gap:7px; margin:12px 0; padding:13px 14px; border:1px solid #4d5048; border-radius:9px; background:linear-gradient(135deg,#22231f,#171d1d); overflow-wrap:anywhere; }
+.plan-reference-heading { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:4px 12px; }
+.plan-reference-heading span { color:#b3b4aa; font-size:10px; letter-spacing:.035em; }
+.plan-reference-heading strong { color:#d9dfd6; font-size:12px; font-weight:500; }
+.plan-reference-compare { display:flex; flex-wrap:wrap; align-items:baseline; gap:5px 10px; }
+.plan-reference-compare b { color:#f0d5a7; font:24px var(--mono,monospace); font-weight:500; letter-spacing:-.03em; }
+.plan-reference-compare span { color:#c7cec5; font-size:11px; }
+.plan-fare-reference[data-direction="lower"] .plan-reference-compare b { color:#bfd7dc; }
+.plan-fare-reference small { color:#9eaaa4; font-size:10px; line-height:1.65; }
 .plan-insights, .plan-saved { border:1px solid #354442; border-radius:9px; padding:12px; margin:12px 0; background:#172021; }
 .plan-insights summary, .plan-saved summary, .plan-hour-details summary { min-height:28px; cursor:pointer; color:#d3ded7; font-size:12px; }
 .plan-insights summary span, .plan-hour-details summary span { color:#9cacaa; display:block; font-size:10px; margin:4px 0 0 15px; }
@@ -167,6 +176,7 @@ body[data-page="delivery"] .main > .analysis-section:first-child { margin-top: 0
 .plan-saved-card dt { color:#a6b8af; font-size:10px; }
 .plan-saved-card dd { margin:4px 0 0; font:13px var(--mono,monospace); color:#d6dcd1; }
 .plan-saved-card dd small { display:block; margin-top:6px; color:#9cacaa; font:10px -apple-system,sans-serif; }
+.plan-saved-card .plan-saved-fare { grid-column:1/-1; padding-top:8px; border-top:1px solid #2d3b38; }
 
 .plan-zone-toolbar { display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); gap:10px; margin:12px 0; }
 .plan-zone-toolbar label { color:#adbab7; font-size:11px; }

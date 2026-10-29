@@ -29,6 +29,7 @@
         </div>
         <div class="plan-result" aria-live="polite"></div>
         <div class="plan-context" aria-live="polite" hidden></div>
+        <div class="plan-fare-reference" aria-live="polite" hidden></div>
         <div class="plan-offer-actions"><button type="button" class="plan-action plan-save-offer">暂存这份报价</button><span class="plan-save-status" role="status">最多比较 3 份，本次页面有效</span></div>
         <div class="plan-offer-insights"></div>
         <details class="plan-saved" hidden><summary>报价对照 <span class="plan-saved-count"></span></summary><div class="plan-saved-comparison" aria-live="polite" hidden></div><div class="plan-saved-list"></div><p class="plan-help">保存当时全部时间与奖励假设；报价变化后可载入修改。刷新页面会清空。</p></details>
@@ -95,7 +96,7 @@
       host.querySelector('.plan-saved-list').innerHTML = saved.map(s => `<article class="plan-saved-card">
         <div class="plan-saved-heading"><strong>报价 ${s.id} · ${money(s.result.fare)}</strong><button type="button" data-remove-offer="${s.id}" aria-label="移除报价 ${s.id}">×</button></div>
         <p><strong>${esc(s.context.summary)}</strong><br>落点 ${esc(s.destination || '未选')} · ${s.result.minutes} min</p>
-        <dl><div><dt>正常 / 延误</dt><dd>${money(s.result.rate)} / ${money(s.result.slowRate)}<small>$/h · 额外延误 ${s.result.buffer} min</small></dd></div><div><dt>奖励增量</dt><dd>${money(s.result.quest)}<small>目标 ${money(s.result.target)}/h</small></dd></div></dl>
+        <dl><div><dt>正常 / 延误</dt><dd>${money(s.result.rate)} / ${money(s.result.slowRate)}<small>$/h · 额外延误 ${s.result.buffer} min</small></dd></div><div><dt>奖励增量</dt><dd>${money(s.result.quest)}<small>目标 ${money(s.result.target)}/h</small></dd></div>${s.fareReference ? `<div class="plan-saved-fare"><dt>同餐段运费</dt><dd>历史${s.fareReference.label} ${money(s.fareReference.mean)}<small>${s.fareReference.n} 笔 Fare · 当前${s.fareReference.direction === 'higher' ? '高' : s.fareReference.direction === 'lower' ? '低' : '持平'}${s.fareReference.difference ? ' ' + money(Math.abs(s.fareReference.difference)) : ''}</small></dd></div>` : ''}</dl>
         <button type="button" class="plan-action" data-load-offer="${s.id}">载入报价 ${s.id}</button></article>`).join('');
       host.querySelector('.plan-save-offer').disabled = !current || saved.length >= 3;
     }
@@ -110,6 +111,18 @@
       status.textContent = `${adv.rate.toFixed(1)} 次 / GPS 记录小时 · ${scope}`;
       out.innerHTML = `<div class="plan-history-card"><span>历史 GPS 推断取餐频率</span><b>${adv.rate.toFixed(1)}<small> 次 / 记录小时</small></b>
         <small>${scope} · 80% 区间 ${adv.rateLo.toFixed(1)}–${adv.rateHi.toFixed(1)} · ${adv.hours.toFixed(1)} 个小时有记录；混合平台，不能代表在线派单或等单时间</small></div>`;
+    }
+    function renderFareReference(ref) {
+      const out = host.querySelector('.plan-fare-reference');
+      out.hidden = !ref;
+      if (!ref) { out.innerHTML = ''; out.removeAttribute('data-direction'); return; }
+      out.dataset.direction = ref.direction;
+      const comparison = ref.direction === 'equal'
+        ? '与历史平均持平'
+        : `比历史平均 ${money(ref.mean)} ${ref.direction === 'higher' ? '高' : '低'} ${money(Math.abs(ref.difference))} · 约 ${ref.percent}%`;
+      out.innerHTML = `<div class="plan-reference-heading"><span>我的账号 · Uber 原有账本</span><strong>${esc(ref.label)} ${esc(ref.window)}</strong></div>
+        <div class="plan-reference-compare"><b>${money(ref.fare)}</b><span>${comparison}</span></div>
+        <small>${ref.n} 笔 Fare 记录${ref.asOf ? ` · 截至 ${esc(ref.asOf)}` : ''}。只比较 Fare；Quest、小费和 Other 均未计入。不参与时薪估算，也不代表派单概率或当前市场行情。</small>`;
     }
     function renderInsights(values, r) {
       const parts = [['approach','去店'],['wait','等餐'],['ride','骑行'],['handoff','交付'],['recovery','送完等待／转场']];
@@ -141,6 +154,8 @@
         period: historyPeriod,
         summary: `${pickup ? pickup.label : '全城平均'} · ${values.histDay === 'weekend' ? '周末' : '工作日'} ${String(contextHour).padStart(2, '0')}:00 · ${historyPeriod === 'recent' ? '最近有记录的 28 天' : '全部记录'}`,
       };
+      const fareReference = values.fare === '' ? null : M.fareReference(data, { hour: contextHour, fare: values.fare });
+      renderFareReference(fareReference);
       const contextNode = host.querySelector('.plan-context');
       contextNode.hidden = !context.zone;
       contextNode.innerHTML = context.zone
@@ -165,7 +180,7 @@
           ? `按计划完成已低于目标；报价还需增加 ${money(budget.fareGap)}，才达到目标。`
           : extra === 0 ? '已到目标边界，按填写精度已无额外延误余量。'
           : `最多再增加 ${extra} 分钟${budget.limit === 'questDeadline' ? '，受 Quest 截止限制' : '，再久就低于目标'}。`;
-        current = { values, result: r, destination: dest && dest.label, context };
+        current = { values, result: r, destination: dest && dest.label, context, fareReference };
         const labels = { strong: '延误后仍达到目标', borderline: '正常达到目标，延误后不足', weak: '当前情景低于目标' };
         result.className = 'plan-result ' + r.verdict;
         result.innerHTML = `<div class="plan-eyebrow">本趟税前贡献 · 情景估算</div><div class="plan-rate"><b>${money(r.rate)}</b><span>/ 小时</span></div>

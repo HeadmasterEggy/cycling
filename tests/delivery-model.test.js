@@ -177,3 +177,34 @@ test('suggested times use the rider\'s own pace and fall back to the city median
   assert.equal(M.suggestTimes(D, {approachKm:1, rideKm:1}).approach, 5);
   assert.throws(() => M.suggestTimes(D, {approachKm:'', rideKm:1}));
 });
+test('offer fare reference uses only the self-account Uber daypart fare', () => {
+  const D = {
+    meta: {last: '2026-10-11'},
+    offers: {
+      by_daypart: {
+        lunch: {n: 62, mean: 9.84, quest: 500, tips: 20, other: 30},
+        afternoon: {n: 26, mean: 9.03},
+        dinner: {n: 171, mean: 10.65},
+        late: {n: 71, mean: 9.94},
+      },
+    },
+    other_account: {offers: {by_daypart: {dinner: {n: 999, mean: 99}}}},
+  };
+  assert.equal(M.fareReference(D, {hour: 10, fare: 12}), null);
+  assert.equal(M.fareReference(D, {hour: 11, fare: 12}).label, '午餐');
+  assert.equal(M.fareReference(D, {hour: 13, fare: 12}).label, '午餐');
+  assert.equal(M.fareReference(D, {hour: 14, fare: 12}).label, '下午');
+  assert.equal(M.fareReference(D, {hour: 17, fare: 12}).label, '晚餐');
+  assert.equal(M.fareReference(D, {hour: 20, fare: 12}).label, '夜宵');
+  assert.equal(M.fareReference(D, {hour: 23, fare: 12}), null);
+  assert.deepEqual(M.fareReference(D, {hour: 19, fare: 18}), {
+    daypart: 'dinner', label: '晚餐', window: '17–20', n: 171, mean: 10.65,
+    asOf: '2026-10-11', fare: 18, difference: 7.35, percent: 69, direction: 'higher',
+  });
+  assert.equal(M.fareReference(D, {hour: 19, fare: 8}).difference, -2.65);
+  assert.equal(M.fareReference(D, {hour: 19, fare: 8}).direction, 'lower');
+  assert.equal(M.fareReference(D, {hour: 19, fare: 10.65}).direction, 'equal');
+  assert.equal(M.fareReference({offers: {}}, {hour: 19, fare: 18}), null,
+    'missing source data must not fall back to an invented average');
+  assert.equal(M.fareReference(D, {hour: 19, fare: ''}), null);
+});
