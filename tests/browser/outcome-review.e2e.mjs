@@ -43,10 +43,28 @@ assert.match(firstResult, /落在计划与延误情景之间/);
 assert.match(firstResult, /比接单估算 低 \$6\.00\/h/);
 assert.match(firstResult, /用时多 5\.0 min/);
 assert.match(firstResult, /不含保底补差和未到账小费/);
+assert.match(await read('#dashOffer .plan-outcome-ranking'), /已完成 1 \/ 2 份报价/);
+assert.match(await read('#dashOffer .plan-outcome-ranking'), /未完成或无效输入不参与排名/);
 
 const secondBlank = await read(`${second} .plan-outcome-result`);
 assert.match(secondBlank, /填写实际用时和运费/);
 assert.doesNotMatch(secondBlank, /42\.00/);
+await page.click(`${second} .plan-outcome summary`);
+await page.fill(`${second} [data-outcome-input=minutes]`, '20');
+await page.fill(`${second} [data-outcome-input=fare]`, '18');
+await page.fill(`${second} [data-outcome-input=cost]`, '1');
+const ranked = await page.evaluate(() => [...document.querySelectorAll('#dashOffer [data-outcome-rank]')].map(row => ({
+  offer: row.dataset.outcomeRank,
+  rate: Number(row.dataset.outcomeRate),
+  text: row.textContent,
+})));
+assert.deepEqual(ranked.map(row => row.offer), ['2', '1'],
+  'completed trial results must rank by actual hourly contribution');
+assert.equal(ranked[0].rate, 51);
+assert.match(ranked[0].text, /Glebe/);
+assert.match(ranked[1].text, /Newtown/);
+assert.match(await read('#dashOffer .plan-outcome-ranking'), /报价 2 实绩最高/);
+assert.match(await read('#dashOffer .plan-outcome-ranking'), /已录入 2 \/ 2 份/);
 
 await page.fill(`${first} [data-outcome-input=minutes]`, '20');
 assert.match(await read(`${first} .plan-outcome-result`), /高于接单估算/);
@@ -64,18 +82,22 @@ await page.cdp('Emulation.setDeviceMetricsOverride', {width: 1440, height: 1000,
 await page.waitForFunction(() => innerWidth === 1440);
 const desktopLayout = await page.evaluate(() => {
   const fields = document.querySelector('#dashOffer .plan-outcome-fields');
-  return { columns: getComputedStyle(fields).gridTemplateColumns, overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth };
+  const rank = document.querySelector('#dashOffer .plan-outcome-rank-row');
+  return { columns: getComputedStyle(fields).gridTemplateColumns, rankDisplay: getComputedStyle(rank).display, overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth };
 });
 assert.equal(desktopLayout.columns.trim().split(/\s+/).length, 2);
+assert.equal(desktopLayout.rankDisplay, 'grid');
 assert.equal(desktopLayout.overflow, false);
 
 await page.cdp('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
 await page.waitForFunction(() => innerWidth === 390);
 const mobileLayout = await page.evaluate(() => {
   const fields = document.querySelector('#dashOffer .plan-outcome-fields');
-  return { columns: getComputedStyle(fields).gridTemplateColumns, overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth };
+  const rank = document.querySelector('#dashOffer .plan-outcome-rank-row');
+  return { columns: getComputedStyle(fields).gridTemplateColumns, rankDisplay: getComputedStyle(rank).display, overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth };
 });
 assert.equal(mobileLayout.columns.trim().split(/\s+/).length, 1);
+assert.equal(mobileLayout.rankDisplay, 'grid');
 assert.equal(mobileLayout.overflow, false);
-console.log('PASS: completed-order review validates, calculates and isolates each saved offer');
+console.log('PASS: completed-order review validates, calculates, ranks and isolates each saved offer');
 await task.finish({ keep:[] });

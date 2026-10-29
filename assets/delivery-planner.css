@@ -197,6 +197,23 @@ body[data-page="delivery"] .main > .analysis-section:first-child { margin-top: 0
 .plan-outcome-result[data-verdict="worse"] > b, .plan-outcome-result[data-verdict="worse"] > em, .plan-outcome-result[data-verdict="invalid"] > span { color:#e0ad91; }
 .plan-outcome-result > div { display:flex; flex-wrap:wrap; gap:4px 14px; color:#a8b9b1; }
 .plan-outcome-result > small { color:#91a49d; font-size:9px; }
+.plan-outcome-ranking { margin-top:10px; }
+.plan-outcome-best { border:1px solid #4b675a; border-radius:8px; background:linear-gradient(135deg,#1a2c26,#17221f); padding:12px; }
+.plan-outcome-best > span { display:block; color:#9eb9ad; font-size:10px; letter-spacing:.04em; }
+.plan-outcome-best > strong { display:block; margin-top:5px; color:#dce9de; font-size:13px; font-weight:600; }
+.plan-outcome-best > b { display:block; margin-top:5px; color:#a9deb9; font:26px var(--mono,monospace); font-weight:500; }
+.plan-outcome-best b small { font-size:11px; color:#aebdb5; }
+.plan-outcome-best > p { margin:5px 0 0; color:#9eafa8; font-size:10px; line-height:1.6; }
+.plan-outcome-rank-list { display:grid; gap:5px; margin-top:8px; }
+.plan-outcome-rank-row { display:grid; grid-template-columns:24px minmax(0,1fr) auto; align-items:center; gap:8px; border-top:1px solid #30403b; padding:8px 2px; }
+.plan-outcome-rank-row > span { color:#77988a; font:10px var(--mono,monospace); }
+.plan-outcome-rank-row > div { min-width:0; }
+.plan-outcome-rank-row strong, .plan-outcome-rank-row small { display:block; }
+.plan-outcome-rank-row strong { color:#d2e0d7; font-size:11px; font-weight:500; }
+.plan-outcome-rank-row small { margin-top:3px; overflow:hidden; color:#93a69e; font-size:9px; text-overflow:ellipsis; white-space:nowrap; }
+.plan-outcome-rank-row > b { color:#a9deb9; font:13px var(--mono,monospace); font-weight:500; white-space:nowrap; }
+.plan-outcome-rank-row > b small { display:inline; margin:0; color:#9eafa8; font-size:9px; }
+.plan-outcome-rank-row > em { grid-column:2/-1; color:#9eaea8; font-size:9px; font-style:normal; text-align:right; }
 
 .plan-zone-toolbar { display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); gap:10px; margin:12px 0; }
 .plan-zone-toolbar label { color:#adbab7; font-size:11px; }

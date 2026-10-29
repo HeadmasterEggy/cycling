@@ -59,6 +59,27 @@ test('completed-order review calculates the rider-entered platform result withou
   assert.throws(()=>M.actualOutcome({minutes:20,fare:18,bonus:-1}),/已确认奖励超出有效范围/);
   assert.equal(M.actualOutcome({minutes:20,fare:10,bonus:'',cost:''}).rate,30);
 });
+test('outcome review ranks only completed valid trials and preserves prediction deltas', () => {
+  const review = M.outcomeReview([
+    {id:3,context:{summary:'Newtown · 周末 19:00'},destination:'Newtown',result:{rate:36},
+      outcome:{minutes:30,fare:20,bonus:2,cost:1}},
+    {id:1,context:{summary:'Glebe · 工作日 12:00'},destination:'Glebe',result:{rate:40},
+      outcome:{minutes:'',fare:'',bonus:'',cost:'0.5'}},
+    {id:2,context:{summary:'Alexandria · 工作日 12:00'},destination:'Alexandria',result:{rate:30},
+      outcome:{minutes:20,fare:18,bonus:'',cost:'1'}},
+  ]);
+  assert.equal(review.total,3);
+  assert.equal(review.completed,2);
+  assert.deepEqual(review.rows.map(row=>row.id),[2,3]);
+  assert.equal(review.best.id,2);
+  assert.equal(review.rows[0].rate,51);
+  assert.equal(review.rows[0].rateDelta,21);
+  assert.equal(review.rows[1].rate,42);
+  assert.equal(review.rows[1].rateDelta,6);
+  assert.equal(review.gap, 9);
+  assert.equal(M.outcomeReview([{id:1,outcome:{minutes:0,fare:20}}]).completed,0);
+  assert.equal(M.outcomeReview(null).completed,0);
+});
 function fixture() {
   const cells = Array.from({length:4},(_,shift)=>({shift,zone:'A',date:'2026-08-29',weekday:5,hour:18,seconds:1800,pickups:2,drops:1,wait_s:[60]}));
   cells.push({shift:0,zone:'A',date:'2026-08-29',weekday:5,hour:19,seconds:7200,pickups:0,drops:0,wait_s:[]});

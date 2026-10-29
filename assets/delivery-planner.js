@@ -92,7 +92,7 @@
           <div class="plan-rank-list" role="list">${ranked.map((offer, index) => `<div class="plan-rank-row" role="listitem" data-offer-rank="${offer.id}" data-stress-rate="${offer.stressRate}" data-offer-context="${esc(offer.context.summary)}">
             <span>#${index + 1}</span><div><strong>报价 ${offer.id}</strong><small>${esc(offer.context.summary)} · 落点 ${esc(offer.destination || '未选')} · 报价 ${money(offer.result.fare)} · ${offer.result.minutes.toFixed(0)} min</small></div>
             <b>${money(offer.stressRate)}<small>/h</small></b><em class="${offer.meetsTarget ? 'meets' : ''}">${offer.meetsTarget ? '达到目标' : '低于目标'}</em>
-          </div>`).join('')}</div>`;
+          </div>`).join('')}</div><div class="plan-outcome-ranking" aria-live="polite"></div>`;
       }
       host.querySelector('.plan-saved-list').innerHTML = saved.map(s => `<article class="plan-saved-card">
         <div class="plan-saved-heading"><strong>报价 ${s.id} · ${money(s.result.fare)}</strong><button type="button" data-remove-offer="${s.id}" aria-label="移除报价 ${s.id}">×</button></div>
@@ -111,7 +111,33 @@
         </details></article>`).join('');
       host.querySelectorAll('.plan-outcome').forEach(node => { node.open = openOutcomes.has(Number(node.dataset.savedId)); });
       saved.forEach(s => renderOutcome(s));
+      renderOutcomeSummary();
       host.querySelector('.plan-save-offer').disabled = !current || saved.length >= 3;
+    }
+    function renderOutcomeSummary() {
+      const panel = host.querySelector('.plan-outcome-ranking');
+      if (!panel || saved.length < 2) return;
+      const review = M.outcomeReview(saved);
+      panel.hidden = !review.completed;
+      if (!review.completed) {
+        panel.innerHTML = '';
+        return;
+      }
+      const best = review.best;
+      const verdict = review.completed > 1
+        ? `报价 ${best.id} 实绩最高`
+        : `已完成 1 / ${review.total} 份报价`;
+      const gap = review.completed > 1
+        ? (review.gap > 0.005 ? `比下一份高 ${money(review.gap)}/h` : `与下一份持平`)
+        : '再完成一份报价即可按实绩排序';
+      panel.innerHTML = `<div class="plan-outcome-best"><span>跑后实绩 · 只比较有效完成结果</span><strong>${verdict}</strong><b>${money(best.rate)}<small>/h</small></b><p>${gap}。已录入 ${review.completed} / ${review.total} 份；未完成或无效输入不参与排名。当前页样本有限，只用于本轮试跑复盘；不把地点差异当作因果，也不上传或持久保存。</p></div>
+        <div class="plan-outcome-rank-list" role="list">${review.rows.map((row, index) => {
+          const delta = row.rateDelta == null ? '' : `比接单估算${row.rateDelta >= 0 ? '高' : '低'} ${money(Math.abs(row.rateDelta))}/h`;
+          return `<div class="plan-outcome-rank-row" role="listitem" data-outcome-rank="${row.id}" data-outcome-rate="${row.rate}">
+            <span>#${index + 1}</span><div><strong>报价 ${row.id}</strong><small>${esc(row.context)} · 落点 ${esc(row.destination || '未选')} · ${row.minutes.toFixed(1)} min</small></div>
+            <b>${money(row.rate)}<small>/h</small></b><em>${delta}</em>
+          </div>`;
+        }).join('')}</div>`;
     }
     function renderOutcome(s, card) {
       const node = card || host.querySelector(`.plan-outcome[data-saved-id="${s.id}"]`);
@@ -299,6 +325,7 @@
       if (!savedOffer) return;
       savedOffer.outcome[input.dataset.outcomeInput] = input.value;
       renderOutcome(savedOffer, card);
+      renderOutcomeSummary();
     });
     form.addEventListener('reset', () => setTimeout(() => { historyPeriod = 'all'; focus(null); paint(); }, 0));
     window.addEventListener('delivery-zone-focus', e => {

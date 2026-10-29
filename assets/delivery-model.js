@@ -103,6 +103,37 @@
     const contribution = fare + bonus - cost;
     return { minutes, fare, bonus, cost, contribution, rate: contribution * 60 / minutes };
   }
+  // Rank only completed, valid results. Incomplete drafts and malformed rows
+  // stay out so a partial entry cannot appear to beat a finished trial.
+  function outcomeReview(offers = []) {
+    const rows = [];
+    for (const offer of Array.isArray(offers) ? offers : []) {
+      try {
+        const actual = actualOutcome(offer.outcome || {});
+        const plannedRate = offer.result && Number.isFinite(Number(offer.result.rate))
+          ? Number(offer.result.rate) : null;
+        rows.push({
+          id: offer.id,
+          context: (offer.context && offer.context.summary) || '',
+          destination: offer.destination || '',
+          ...actual,
+          plannedRate,
+          rateDelta: plannedRate == null ? null : actual.rate - plannedRate,
+        });
+      } catch (e) {
+        // A saved offer becomes comparable only after all required outcome
+        // fields are valid; the individual form still shows its own error.
+      }
+    }
+    rows.sort((a, b) => b.rate - a.rate || Number(a.id) - Number(b.id));
+    return {
+      total: Array.isArray(offers) ? offers.length : 0,
+      completed: rows.length,
+      rows,
+      best: rows[0] || null,
+      gap: rows.length > 1 ? rows[0].rate - rows[1].rate : null,
+    };
+  }
   function median(a) {
     if (!a.length) return null;
     const s = a.slice().sort((x, y) => x - y), m = Math.floor(s.length / 2);
@@ -368,7 +399,7 @@
         quest: r.slowQuest, needed: r.neededSlow, meetsTarget: r.slowRate >= r.target };
     });
   }
-  const api = { DEFAULTS, DAYPARTS, estimate, delayBudget, sensitivity, settlement, actualOutcome, aggregate, hourly, median,
+  const api = { DEFAULTS, DAYPARTS, estimate, delayBudget, sensitivity, settlement, actualOutcome, outcomeReview, aggregate, hourly, median,
     fitRates, orderValue, valueByDaypart, fareReference, slots, timeCurve, advise, suggestTimes, daypartOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.DeliveryModel = api;
