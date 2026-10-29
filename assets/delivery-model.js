@@ -92,6 +92,17 @@
     const minimum = hours * rate;
     return { eligible, minimum, topup: Math.max(0, minimum - eligible) };
   }
+  // Calibrate an accepted offer with the rider's own completed-order result.
+  // This stays separate from GPS and from other accounts: only same-platform
+  // amounts entered by the rider are eligible.
+  function actualOutcome(input = {}) {
+    const minutes = numeric(input.minutes, '实际整轮用时', 0.1, 10080);
+    const fare = numeric(input.fare, '实际本趟运费', 0, 1000);
+    const bonus = input.bonus === '' || input.bonus == null ? 0 : numeric(input.bonus, '已确认奖励', 0, 10000);
+    const cost = input.cost === '' || input.cost == null ? 0 : numeric(input.cost, '实际增量成本', 0, 1000);
+    const contribution = fare + bonus - cost;
+    return { minutes, fare, bonus, cost, contribution, rate: contribution * 60 / minutes };
+  }
   function median(a) {
     if (!a.length) return null;
     const s = a.slice().sort((x, y) => x - y), m = Math.floor(s.length / 2);
@@ -357,7 +368,7 @@
         quest: r.slowQuest, needed: r.neededSlow, meetsTarget: r.slowRate >= r.target };
     });
   }
-  const api = { DEFAULTS, DAYPARTS, estimate, delayBudget, sensitivity, settlement, aggregate, hourly, median,
+  const api = { DEFAULTS, DAYPARTS, estimate, delayBudget, sensitivity, settlement, actualOutcome, aggregate, hourly, median,
     fitRates, orderValue, valueByDaypart, fareReference, slots, timeCurve, advise, suggestTimes, daypartOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.DeliveryModel = api;

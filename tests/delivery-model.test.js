@@ -50,6 +50,15 @@ test('minimum income compares the entire period including promotions, never adds
   assert.equal(M.settlement({hours:0,rate:31.3,fare:0,promotions:0}).topup,0);
   assert.throws(()=>M.settlement({hours:'',rate:31.3,fare:200,promotions:50}));
 });
+test('completed-order review calculates the rider-entered platform result without inventing optional amounts', () => {
+  const r = M.actualOutcome({minutes:24,fare:18,bonus:2,cost:1});
+  assert.deepEqual(r,{minutes:24,fare:18,bonus:2,cost:1,contribution:19,rate:47.5});
+  assert.equal(M.actualOutcome({minutes:20,fare:10}).rate,30);
+  assert.throws(()=>M.actualOutcome({minutes:0,fare:18}),/实际整轮用时超出有效范围/);
+  assert.throws(()=>M.actualOutcome({minutes:20}),/请填写实际本趟运费/);
+  assert.throws(()=>M.actualOutcome({minutes:20,fare:18,bonus:-1}),/已确认奖励超出有效范围/);
+  assert.equal(M.actualOutcome({minutes:20,fare:10,bonus:'',cost:''}).rate,30);
+});
 function fixture() {
   const cells = Array.from({length:4},(_,shift)=>({shift,zone:'A',date:'2026-08-29',weekday:5,hour:18,seconds:1800,pickups:2,drops:1,wait_s:[60]}));
   cells.push({shift:0,zone:'A',date:'2026-08-29',weekday:5,hour:19,seconds:7200,pickups:0,drops:0,wait_s:[]});

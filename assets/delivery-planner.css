@@ -177,6 +177,26 @@ body[data-page="delivery"] .main > .analysis-section:first-child { margin-top: 0
 .plan-saved-card dd { margin:4px 0 0; font:13px var(--mono,monospace); color:#d6dcd1; }
 .plan-saved-card dd small { display:block; margin-top:6px; color:#9cacaa; font:10px -apple-system,sans-serif; }
 .plan-saved-card .plan-saved-fare { grid-column:1/-1; padding-top:8px; border-top:1px solid #2d3b38; }
+.plan-saved-actions { display:flex; justify-content:flex-start; }
+.plan-outcome { margin-top:10px; padding:10px 12px; border:1px solid #344b48; border-radius:8px; background:#141f20; }
+.plan-outcome summary { color:#cfe1d9; font-size:11px; cursor:pointer; }
+.plan-outcome summary span { float:right; color:#8fb7b2; font-size:10px; }
+.plan-outcome .plan-help { margin:10px 0; color:#9dafaa; font-size:10px; line-height:1.65; }
+.plan-outcome-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.plan-outcome-fields label { min-width:0; color:#b4c4bd; font-size:10px; }
+.plan-outcome-fields label > div { display:flex; align-items:center; margin-top:5px; border:1px solid #3d4d49; border-radius:6px; background:#101819; overflow:hidden; }
+.plan-outcome-fields input { width:100%; min-width:0; height:38px; border:0; background:transparent; color:#edf2e9; padding:0 8px; font:16px var(--mono,monospace); }
+.plan-outcome-fields i { flex:0 0 auto; padding-right:8px; color:#8e9f99; font:9px var(--mono,monospace); font-style:normal; }
+.plan-outcome-result { display:grid; gap:5px; margin-top:10px; border-top:1px solid #2c3a37; padding-top:10px; color:#a7b8b1; font-size:10px; line-height:1.6; }
+.plan-outcome-result > span { color:#9fb8ae; }
+.plan-outcome-result > b { color:#d9e6dc; font:24px var(--mono,monospace); font-weight:500; }
+.plan-outcome-result > b small { color:#9fb2ab; font-size:10px; }
+.plan-outcome-result > em { width:max-content; border:1px solid #52645e; border-radius:99px; padding:2px 7px; color:#c7d3cd; font-size:9px; font-style:normal; }
+.plan-outcome-result[data-verdict="better"] > b, .plan-outcome-result[data-verdict="better"] > em { color:#a8ddbb; }
+.plan-outcome-result[data-verdict="planned"] > b { color:#d7c08f; }
+.plan-outcome-result[data-verdict="worse"] > b, .plan-outcome-result[data-verdict="worse"] > em, .plan-outcome-result[data-verdict="invalid"] > span { color:#e0ad91; }
+.plan-outcome-result > div { display:flex; flex-wrap:wrap; gap:4px 14px; color:#a8b9b1; }
+.plan-outcome-result > small { color:#91a49d; font-size:9px; }
 
 .plan-zone-toolbar { display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); gap:10px; margin:12px 0; }
 .plan-zone-toolbar label { color:#adbab7; font-size:11px; }
@@ -222,6 +242,7 @@ body[data-page="delivery"] .main > .analysis-section:first-child { margin-top: 0
   .plan-offer-actions .plan-action { min-height:44px; }
   .plan-rank-row { grid-template-columns:22px minmax(0,1fr) auto; }
   .plan-rank-row > em { grid-column:2/-1; text-align:right; }
+  .plan-outcome-fields { grid-template-columns:1fr; }
   .plan-compare-toggle { flex-basis:40px; height:44px; }
   .plan-zone-toolbar input { font-size:16px; }
   .plan-zone-row .plan-zone-main strong { font-size:14px; }

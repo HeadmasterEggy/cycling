@@ -30,7 +30,7 @@
         <div class="plan-result" aria-live="polite"></div>
         <div class="plan-context" aria-live="polite" hidden></div>
         <div class="plan-fare-reference" aria-live="polite" hidden></div>
-        <div class="plan-offer-actions"><button type="button" class="plan-action plan-save-offer">暂存这份报价</button><span class="plan-save-status" role="status">最多比较 3 份，本次页面有效</span></div>
+        <div class="plan-offer-actions"><button type="button" class="plan-action plan-save-offer">暂存这份报价</button><span class="plan-save-status" role="status">最多比较 3 份；暂存后可记录实际跑单结果</span></div>
         <div class="plan-offer-insights"></div>
         <details class="plan-saved" hidden><summary>报价对照 <span class="plan-saved-count"></span></summary><div class="plan-saved-comparison" aria-live="polite" hidden></div><div class="plan-saved-list"></div><p class="plan-help">保存当时全部时间与奖励假设；报价变化后可载入修改。刷新页面会清空。</p></details>
         <div class="plan-section-label"><span>整轮时间</span><em>按分钟填写，可直接修改</em></div>
@@ -72,6 +72,7 @@
     const saved = [];
     let current = null, serial = 0, historyPeriod = 'all';
     function renderSaved() {
+      const openOutcomes = new Set([...host.querySelectorAll('.plan-outcome[open]')].map(node => Number(node.dataset.savedId)));
       host.querySelector('.plan-saved').hidden = !saved.length;
       host.querySelector('.plan-saved-count').textContent = `${saved.length} / 3`;
       const comparison = host.querySelector('.plan-saved-comparison');
@@ -97,8 +98,50 @@
         <div class="plan-saved-heading"><strong>报价 ${s.id} · ${money(s.result.fare)}</strong><button type="button" data-remove-offer="${s.id}" aria-label="移除报价 ${s.id}">×</button></div>
         <p><strong>${esc(s.context.summary)}</strong><br>落点 ${esc(s.destination || '未选')} · ${s.result.minutes} min</p>
         <dl><div><dt>正常 / 延误</dt><dd>${money(s.result.rate)} / ${money(s.result.slowRate)}<small>$/h · 额外延误 ${s.result.buffer} min</small></dd></div><div><dt>奖励增量</dt><dd>${money(s.result.quest)}<small>目标 ${money(s.result.target)}/h</small></dd></div>${s.fareReference ? `<div class="plan-saved-fare"><dt>同餐段运费</dt><dd>历史${s.fareReference.label} ${money(s.fareReference.mean)}<small>${s.fareReference.n} 笔 Fare · 当前${s.fareReference.direction === 'higher' ? '高' : s.fareReference.direction === 'lower' ? '低' : '持平'}${s.fareReference.difference ? ' ' + money(Math.abs(s.fareReference.difference)) : ''}</small></dd></div>` : ''}</dl>
-        <button type="button" class="plan-action" data-load-offer="${s.id}">载入报价 ${s.id}</button></article>`).join('');
+        <div class="plan-saved-actions"><button type="button" class="plan-action" data-load-offer="${s.id}">载入报价 ${s.id}</button></div>
+        <details class="plan-outcome" data-saved-id="${s.id}"><summary>跑后复盘 <span>记录实际结果</span></summary>
+          <p class="plan-help">只填写同一平台、这趟已完成订单的结果。不要混入 GPS 推断、其他账号、客户地址或尚未到账的小费；这里只在当前页面计算。</p>
+          <div class="plan-outcome-fields">
+            <label>实际整轮用时<div><input data-outcome-input="minutes" type="number" min="0.1" max="10080" step="0.1" inputmode="decimal" value="${esc(s.outcome?.minutes ?? '')}"><i>min</i></div></label>
+            <label>实际本趟运费<div><input data-outcome-input="fare" type="number" min="0" max="1000" step=".01" inputmode="decimal" value="${esc(s.outcome?.fare ?? '')}"><i>A$</i></div></label>
+            <label>已确认奖励<div><input data-outcome-input="bonus" type="number" min="0" max="10000" step=".01" inputmode="decimal" value="${esc(s.outcome?.bonus ?? '')}"><i>A$</i></div></label>
+            <label>实际增量成本<div><input data-outcome-input="cost" type="number" min="0" max="1000" step=".01" inputmode="decimal" value="${esc(s.outcome?.cost ?? String(s.result.cost))}"><i>A$</i></div></label>
+          </div>
+          <div class="plan-outcome-result" aria-live="polite"></div>
+        </details></article>`).join('');
+      host.querySelectorAll('.plan-outcome').forEach(node => { node.open = openOutcomes.has(Number(node.dataset.savedId)); });
+      saved.forEach(s => renderOutcome(s));
       host.querySelector('.plan-save-offer').disabled = !current || saved.length >= 3;
+    }
+    function renderOutcome(s, card) {
+      const node = card || host.querySelector(`.plan-outcome[data-saved-id="${s.id}"]`);
+      const result = node && node.querySelector('.plan-outcome-result');
+      if (!result) return;
+      const outcome = s.outcome || {};
+      const hasRequired = ['minutes', 'fare'].some(key => outcome[key] !== '' && outcome[key] != null);
+      if (!hasRequired) {
+        result.innerHTML = '<span>填写实际用时和运费后，核对这趟是否兑现了接单估算。</span>';
+        result.removeAttribute('data-verdict');
+        return;
+      }
+      try {
+        const actual = M.actualOutcome(outcome);
+        const rateDelta = actual.rate - s.result.rate;
+        const minuteDelta = actual.minutes - s.result.minutes;
+        const fareDelta = actual.fare - s.result.fare;
+        const verdict = actual.rate > s.result.rate + 0.005 ? 'better'
+          : actual.rate >= s.result.slowRate - 0.005 ? 'planned'
+          : 'worse';
+        const verdictText = verdict === 'better' ? '高于接单估算'
+          : verdict === 'planned' ? '落在计划与延误情景之间' : '低于延误情景';
+        result.dataset.verdict = verdict;
+        result.innerHTML = `<span>实际税前贡献</span><b>${money(actual.rate)}<small>/h</small></b><em>${verdictText}</em>
+          <div><span>接单估算 ${money(s.result.rate)}/h</span><span>延误情景 ${money(s.result.slowRate)}/h</span></div>
+          <small>比接单估算 ${rateDelta >= 0 ? '高' : '低'} ${money(Math.abs(rateDelta))}/h · 用时${minuteDelta >= 0 ? '多' : '少'} ${Math.abs(minuteDelta).toFixed(1)} min · 运费${fareDelta >= 0 ? '多' : '少'} ${money(Math.abs(fareDelta))}。实际时薪 =（本趟运费 + 已确认奖励 − 实际成本）× 60 ÷ 实际整轮分钟；不含保底补差和未到账小费。</small>`;
+      } catch (e) {
+        result.dataset.verdict = 'invalid';
+        result.innerHTML = `<span>还差有效输入</span><small>${esc(e.message)}。请填写大于 0 的实际整轮用时和实际本趟运费。</small>`;
+      }
     }
     function renderHistory(adv) {
       const out = host.querySelector('.plan-history-out'), status = host.querySelector('.plan-history-status');
@@ -223,7 +266,7 @@
           status.textContent = `已按 GPS 实测 ${t.pace.toFixed(1)} / ${t.destPace.toFixed(1)} min/km 和停留中位填入，可修改`;
         } catch (err) { status.textContent = err.message; }
       } else if (save && current && saved.length < 3) {
-        saved.push({ id: ++serial, ...current, values: { ...current.values } });
+        saved.push({ id: ++serial, ...current, values: { ...current.values }, outcome: { minutes: '', fare: '', bonus: '', cost: String(current.result.cost) } });
         renderSaved(); host.querySelector('.plan-saved').open = true;
         host.querySelector('.plan-save-status').textContent = `已暂存 ${saved.length} / 3 份${saved.length === 3 ? '，可移除后继续' : ''}`;
       } else if (load) {
@@ -248,6 +291,15 @@
     form.addEventListener('submit', e => e.preventDefault());
     form.addEventListener('input', paint);
     form.addEventListener('change', e => { paint(); if(e.target.name === 'destination') focus(e.target.value || null); });
+    host.addEventListener('input', e => {
+      const input = e.target.closest('[data-outcome-input]');
+      if (!input) return;
+      const card = input.closest('.plan-outcome');
+      const savedOffer = saved.find(s => s.id === Number(card.dataset.savedId));
+      if (!savedOffer) return;
+      savedOffer.outcome[input.dataset.outcomeInput] = input.value;
+      renderOutcome(savedOffer, card);
+    });
     form.addEventListener('reset', () => setTimeout(() => { historyPeriod = 'all'; focus(null); paint(); }, 0));
     window.addEventListener('delivery-zone-focus', e => {
       if ([...form.elements.destination.options].some(o => o.value === e.detail)) {

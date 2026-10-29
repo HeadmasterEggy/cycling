@@ -202,6 +202,10 @@ GPS 混合 Uber、DoorDash 和熊猫，记录小时也不是在线小时，因�
 切换下一次输入后旧报价仍保留原试跑情景，载入时也会恢复对应记录范围。
 暂存只在当前页面有效，刷新即清空。
 
+每份暂存报价还可在“跑后复盘”里填写同一平台的实际整轮用时、本趟运费、已确认奖励和增量成本。
+页面据此计算实际税前贡献/小时，并与接单估算及延误情景对照，显示用时和运费偏差。未到账小费、
+混合平台 GPS、其他账号数据不能填入这条复盘；输入只留在当前页面，不上传也不持久化。
+
 结果同时给出“最多还能增加多少分钟”的延误预算。无奖励变化时：
 `额外分钟 = (报价 + 奖励增量 - 成本) × 60 / 目标时薪 - 整轮分钟`。
 若延误跨过 Quest 截止，先重算奖励：奖励消失后无法维持目标时，预算限于截止时刻；
@@ -211,6 +215,7 @@ GPS 混合 Uber、DoorDash 和熊猫，记录小时也不是在线小时，因�
 `ego-browser nodejs < tests/browser/offer-budget.e2e.mjs`（先在本机 8766 端口启动静态服务器）。
 候选带入流程用 `ego-browser nodejs < tests/browser/slot-to-offer.e2e.mjs` 验收。
 多份报价排名用 `ego-browser nodejs < tests/browser/offer-comparison.e2e.mjs` 验收。
+跑后复盘用 `ego-browser nodejs < tests/browser/outcome-review.e2e.mjs` 验收。
 
 奖励默认不计，另外支持两种明确输入的情景：
 
