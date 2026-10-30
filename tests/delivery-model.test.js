@@ -238,3 +238,22 @@ test('offer fare reference uses only the self-account Uber daypart fare', () => 
     'missing source data must not fall back to an invented average');
   assert.equal(M.fareReference(D, {hour: 19, fare: ''}), null);
 });
+test('accept line turns fare, Quest share and target into a minute limit', () => {
+  const r = M.acceptLine({fare: 9, quest: 6, target: 30});
+  near(r.maxMinutes, 30);
+  assert.equal(r.take, null);
+  const fast = M.acceptLine({fare: 9, quest: 6, target: 30, minutes: 20});
+  near(fast.rate, 45); assert.equal(fast.take, true); near(fast.slack, 10);
+  assert.equal(M.acceptLine({fare: 9, quest: 6, target: 30, minutes: 31}).take, false);
+  near(M.acceptLine({fare: 1, quest: 0, cost: 2, target: 30}).maxMinutes, 0);
+  assert.throws(() => M.acceptLine({fare: 9, target: 0}));
+});
+test('ledger since a week splits fare, Quest and other per order', () => {
+  const data = {offers: {weeks: [
+    {week: '2026-08-10', records: 5, fare: 50, quest: 0, other: 0},
+    {week: '2026-08-17', records: 10, fare: 100, quest: 60, other: 40},
+    {week: '2026-08-24', records: 20, fare: 200, quest: 60, other: 0}]}};
+  const l = M.ledgerSince(data, '2026-08-17');
+  assert.equal(l.records, 30); near(l.farePer, 10); near(l.questPer, 4); near(l.questShare, 120 / 460);
+  assert.deepEqual(l.questRange.map(x => Math.round(x * 10) / 10), [6, 3]);
+});

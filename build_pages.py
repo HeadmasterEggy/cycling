@@ -466,6 +466,7 @@ all_html = PAGE_TEMPLATE.format(
 print(f"wrote cycling-analysis.html ({len(all_html)//1024} KB, all sections)")
 
 # The console keeps its own layout, while sharing the same asset versions.
-dashboard = ROOT / 'dashboard.html'
-if dashboard.exists():
-    dashboard.write_text(version_assets(dashboard.read_text(encoding='utf-8')), encoding='utf-8')
+for name in ('dashboard.html', 'plan.html'):
+    page = ROOT / name
+    if page.exists():
+        page.write_text(version_assets(page.read_text(encoding='utf-8')), encoding='utf-8')

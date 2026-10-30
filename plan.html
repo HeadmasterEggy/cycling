@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三件事 · Delivery in Three</title>
+<meta name="description" content="把悉尼配送分析压成三件事：何时出门、在哪等单、这单接不接。">
+<meta name="theme-color" content="#0e1416">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Cycling Atlas">
+<meta property="og:title" content="三件事 · Delivery in Three">
+<meta property="og:description" content="把悉尼配送分析压成三件事：何时出门、在哪等单、这单接不接。">
+<link rel="icon" href="assets/favicon.svg?v=69ad9d413362" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&family=Noto+Serif+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/plan.css?v=9105e29c8cba">
+</head>
+<body data-page="plan">
+<div class="pl">
+  <header class="pl-top">
+    <a class="pl-brand" href="index.html"><span class="pl-mark">↗</span><span><b>CYCLING ATLAS</b><small>SYDNEY · DELIVERY</small></span></a>
+    <nav class="pl-links" aria-label="主导航"><a class="active" href="plan.html" aria-current="page">三件事</a><a href="dashboard.html">作战台</a><a href="delivery.html">配送分析</a></nav>
+  </header>
+
+  <section class="pl-hero">
+    <div class="pl-hero-copy">
+      <div class="pl-kicker">降熵 · 所有分析，压成三件事</div>
+      <h1>少想价格，<br><em>多跑快单。</em></h1>
+      <p id="plLead">Quest 按完成单数给钱，一单 $5 和一单 $15 拿到的奖励一样。所以决定时薪的是<b>每单花了多少分钟</b>，不是报价上那个数字。</p>
+    </div>
+    <div class="pl-hero-side">
+      <div class="pl-stats" id="plStats"></div>
+      <div class="pl-mix" id="plMix"></div>
+    </div>
+  </section>
+
+  <main class="pl-grid">
+    <section class="pl-card pl-offer" id="offer" aria-labelledby="plOfferTitle">
+      <header class="pl-head"><span class="pl-step">01</span><h2 id="plOfferTitle">这单接不接</h2><em>ACCEPT LINE</em></header>
+      <div class="pl-body">
+        <div class="pl-inputs">
+          <label class="pl-field"><span>报价运费</span><div class="pl-num"><i>$</i><input id="plFare" type="number" inputmode="decimal" min="0" step="0.5" placeholder="9"></div></label>
+          <label class="pl-field"><span>整轮分钟 <small>去店＋等餐＋送餐＋交付</small></span>
+            <div class="pl-num pl-step-num"><button type="button" data-step="-1" aria-label="减 1 分钟">−</button><input id="plMin" type="number" inputmode="numeric" min="1" step="1" placeholder="25"><button type="button" data-step="1" aria-label="加 1 分钟">＋</button></div></label>
+        </div>
+        <div class="pl-verdict" id="plVerdict" aria-live="polite"></div>
+        <div class="pl-assume">
+          <div class="pl-assume-row"><span>每单 Quest</span><div class="pl-chips" id="plQuestChips"></div><div class="pl-num pl-mini"><i>$</i><input id="plQuest" type="number" inputmode="decimal" min="0" step="0.5" aria-label="每单 Quest"></div></div>
+          <div class="pl-assume-row"><span>目标时薪</span><div class="pl-chips" id="plTargetChips"></div><div class="pl-num pl-mini"><i>$</i><input id="plTarget" type="number" inputmode="decimal" min="1" step="1" aria-label="目标时薪"></div></div>
+        </div>
+        <div class="pl-sheet">
+          <div class="pl-sheet-head"><h3>背下这张表就够了</h3><span id="plSheetNote"></span></div>
+          <div class="pl-sheet-grid" id="plSheet"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="pl-card pl-time" id="time" aria-labelledby="plTimeTitle">
+      <header class="pl-head"><span class="pl-step">02</span><h2 id="plTimeTitle">什么时候出门</h2><em>WHEN</em></header>
+      <div class="pl-body">
+        <p class="pl-answer" id="plTimeAnswer"></p>
+        <div class="pl-heat" id="plHeat"></div>
+        <div class="pl-legend"><span>少</span><i></i><span>多</span><span class="pl-legend-thin"><b></b>样本不足</span></div>
+      </div>
+    </section>
+
+    <section class="pl-card pl-zone" id="where" aria-labelledby="plZoneTitle">
+      <header class="pl-head"><span class="pl-step">03</span><h2 id="plZoneTitle">在哪里等单</h2><em>WHERE</em></header>
+      <div class="pl-body">
+        <p class="pl-answer" id="plZoneAnswer"></p>
+        <ol class="pl-rank" id="plRank"></ol>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pl-foot">
+    <p id="plBasis"></p>
+    <a href="dashboard.html">需要细节：地图、拼单、延误预算、三周保底 → 作战台</a>
+  </footer>
+</div>
+<script src="assets/delivery-data.js?v=580d0942fa00"></script>
+<script src="assets/delivery-model.js?v=decd78e99a45"></script>
+<script src="assets/plan.js?v=a5bfc0dc748c"></script>
+</body></html>
