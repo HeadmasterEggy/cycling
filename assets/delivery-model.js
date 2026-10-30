@@ -399,7 +399,33 @@
         quest: r.slowQuest, needed: r.neededSlow, meetsTarget: r.slowRate >= r.target };
     });
   }
-  const api = { DEFAULTS, DAYPARTS, estimate, delayBudget, sensitivity, settlement, actualOutcome, outcomeReview, aggregate, hourly, median,
+  // The whole decision in one line: an order is worth taking while its
+  // whole-cycle minutes stay under (fare + Quest share - cost) x 60 / target.
+  function acceptLine(input = {}) {
+    const fare = numeric(input.fare, '运费'), quest = numeric(input.quest == null ? 0 : input.quest, '每单 Quest');
+    const target = numeric(input.target, '目标时薪', 0.01), cost = numeric(input.cost == null ? 0 : input.cost, '增量成本');
+    const value = Math.max(0, fare + quest - cost);
+    const maxMinutes = value * 60 / target;
+    const hasMinutes = input.minutes !== '' && input.minutes != null;
+    const minutes = hasMinutes ? numeric(input.minutes, '整轮分钟', 0.01) : null;
+    const rate = hasMinutes ? value * 60 / minutes : null;
+    return { fare, quest, target, cost, value, maxMinutes, minutes, rate,
+      slack: hasMinutes ? maxMinutes - minutes : null,
+      take: hasMinutes ? rate >= target : null };
+  }
+  // Ledger totals from a start week on, split into fare, Quest and other.
+  // Quest is shared per completed order because it pays per completion.
+  function ledgerSince(data, from) {
+    const weeks = ((data.offers || {}).weeks || []).filter(w => !from || w.week >= from);
+    const sum = k => weeks.reduce((s, w) => s + (w[k] || 0), 0);
+    const records = sum('records'), fare = sum('fare'), quest = sum('quest'), other = sum('other');
+    const total = fare + quest + other;
+    return { from, weeks, records, fare, quest, other, total,
+      farePer: records ? fare / records : null, questPer: records ? quest / records : null,
+      questShare: total ? quest / total : null,
+      questRange: weeks.filter(w => w.records >= 10).map(w => w.quest / w.records) };
+  }
+  const api = { DEFAULTS, acceptLine, ledgerSince, DAYPARTS, estimate, delayBudget, sensitivity, settlement, actualOutcome, outcomeReview, aggregate, hourly, median,
     fitRates, orderValue, valueByDaypart, fareReference, slots, timeCurve, advise, suggestTimes, daypartOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.DeliveryModel = api;
