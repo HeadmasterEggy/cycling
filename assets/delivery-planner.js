@@ -239,8 +239,13 @@
       renderHistory(adv);
       const result = host.querySelector('.plan-result');
       try {
-        const invalid = [...form.querySelectorAll('input')].find(el => !el.disabled && !el.validity.valid);
-        if (invalid) throw new Error(`请检查「${invalid.closest('label').querySelector('span').textContent}」的输入`);
+        const live = [...form.querySelectorAll('input')].filter(el => !el.disabled);
+        const fieldName = el => el.closest('label').querySelector('span').textContent;
+        const invalid = live.find(el => !el.validity.valid && !el.validity.valueMissing);
+        if (invalid) throw new Error(`请检查「${fieldName(invalid)}」的输入`);
+        // Blank fields are an unfinished form, not a mistake: list what is left.
+        const missing = live.filter(el => el.validity.valueMissing);
+        if (missing.length) throw Object.assign(new Error('missing'), { missing: missing.map(fieldName) });
         const r = M.estimate(values);
         const budget = M.delayBudget(values);
         // Round down: a displayed extra minute must not exceed the budget.
@@ -252,8 +257,15 @@
         current = { values, result: r, destination: dest && dest.label, context, fareReference };
         const labels = { strong: '延误后仍达到目标', borderline: '正常达到目标，延误后不足', weak: '当前情景低于目标' };
         result.className = 'plan-result ' + r.verdict;
-        result.innerHTML = `<div class="plan-eyebrow">本趟税前贡献 · 情景估算</div><div class="plan-rate"><b>${money(r.rate)}</b><span>/ 小时</span></div>
-          <p class="plan-verdict">${labels[r.verdict]}</p>
+        const gap = r.rate - r.target;
+        const scale = Math.max(r.target * 1.5, r.rate * 1.1, 1);
+        const pct = v => Math.min(100, Math.max(0, v / scale * 100)).toFixed(1);
+        result.innerHTML = `<div class="plan-eyebrow">本趟税前贡献 · 情景估算</div>
+          <div class="plan-rate-row"><div class="plan-rate"><b>${money(r.rate)}</b><span>/ 小时</span></div><p class="plan-verdict">${labels[r.verdict]}</p></div>
+          <div class="plan-gauge" role="img" aria-label="按计划 ${money(r.rate)}/h，延误后 ${money(r.slowRate)}/h，目标 ${money(r.target)}/h">
+            <div class="plan-gauge-track"><i class="plan-gauge-fill" style="width:${pct(r.rate)}%"></i><i class="plan-gauge-slow" style="width:${pct(r.slowRate)}%"></i><b class="plan-gauge-target" style="left:${pct(r.target)}%"></b></div>
+            <div class="plan-gauge-legend"><span><i class="plan-key-plan"></i>按计划</span><span><i class="plan-key-slow"></i>延误 ${r.buffer} 分钟</span><span class="plan-gauge-gap">${Math.abs(gap) < 0.005 ? '正好达到' : gap > 0 ? `比目标高 ${money(gap)}/h` : `离目标差 ${money(-gap)}/h`}</span></div>
+          </div>
           <div class="plan-result-grid"><div><span>整轮用时</span><b>${r.minutes.toFixed(0)} <small>min</small></b></div><div><span>延误 ${r.buffer} 分钟后</span><b>${money(r.slowRate)} <small>/h</small></b></div></div>
           <div class="plan-threshold">达到 ${money(r.target)}/h，报价需 <strong>${money(r.needed)}</strong><span>延误情景需 ${money(r.neededSlow)}</span></div>
           <div class="plan-budget"><strong>${budgetText}</strong><small>从填写的整轮计划起算，包含额外等餐、骑行或转场延误；已填的等餐不重复加算。不是到店后重新开始的计时器，也不代表应取消订单。</small></div>
@@ -265,8 +277,13 @@
       } catch (e) {
         current = null;
         host.querySelector('.plan-offer-insights').innerHTML = '';
-        result.className = 'plan-result invalid';
-        result.innerHTML = `<div class="plan-eyebrow">等待有效输入</div><p>${esc(e.message)}</p>`;
+        if (e.missing) {
+          result.className = 'plan-result pending';
+          result.innerHTML = `<div class="plan-eyebrow">还差 ${e.missing.length} 项，就能算出这单时薪</div><ul class="plan-missing">${e.missing.map(n => `<li>${esc(n)}</li>`).join('')}</ul>`;
+        } else {
+          result.className = 'plan-result invalid';
+          result.innerHTML = `<div class="plan-eyebrow">输入需要调整</div><p>${esc(e.message)}</p>`;
+        }
         host.querySelector('.plan-quest-note').textContent = '请补全本模式的输入后查看估算。';
         host.querySelector('.plan-quest-status').textContent = '待填写';
       }
