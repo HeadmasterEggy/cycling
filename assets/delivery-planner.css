@@ -27,7 +27,34 @@
 .plan-result.strong .plan-rate b { color: #9cdbbc; }
 .plan-result.weak .plan-rate b { color: #f0b8ab; }
 .plan-rate > span { font-size: 12px; color: #b6b7af; }
-.plan-verdict { margin: 5px 0 18px; font-size: 13px; }
+/* Verdict reads at a glance: colour, icon and a gauge against the target. */
+.plan-result.borderline { border-color: #8a7140; }
+.plan-result.pending { background: #141c1e; border: 1px dashed #47605f; }
+.plan-result.invalid { background: linear-gradient(135deg, #302222, #1e1b1b); border-color: #8a5a52; }
+.plan-result.invalid p { margin: 6px 0 0; color: #f3c6bb; }
+.plan-missing { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 12px 0 0; padding: 0; }
+.plan-missing li { padding: 4px 10px; border: 1px solid #3c5352; border-radius: 999px; color: #c9dcd8; font-size: 12px; background: #1a2729; }
+.plan-rate-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; }
+.plan-verdict { display: inline-flex; align-items: center; gap: 7px; margin: 0; padding: 5px 12px 5px 9px; border-radius: 999px; font-size: 13px; font-weight: 500; color: #f0d9ae; background: #e0b76e1f; border: 1px solid #e0b76e55; }
+.plan-verdict::before { content: '!'; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; font: 700 11px/1 var(--mono, monospace); color: #1b1a16; background: #e0b76e; }
+.plan-result.strong .plan-verdict { color: #bfeed6; background: #77c9a01f; border-color: #77c9a055; }
+.plan-result.strong .plan-verdict::before { content: '✓'; background: #8fd6b2; }
+.plan-result.weak .plan-verdict { color: #f6cbc0; background: #e8907c1f; border-color: #e8907c55; }
+.plan-result.weak .plan-verdict::before { content: '✕'; background: #ee9e8b; }
+.plan-gauge { margin: 22px 0 18px; }
+.plan-gauge-track { position: relative; height: 10px; border-radius: 999px; background: #ffffff10; }
+.plan-gauge-track i { position: absolute; left: 0; top: 0; height: 100%; border-radius: inherit; }
+.plan-gauge-track i { background: #e0b76e; }
+.plan-result.strong .plan-gauge-track i { background: #77c9a0; }
+.plan-result.weak .plan-gauge-track i { background: #e8907c; }
+.plan-gauge-track i.plan-gauge-fill, .plan-gauge-legend i.plan-key-plan { opacity: .45; }
+.plan-gauge-target { position: absolute; top: -4px; width: 2px; height: 18px; margin-left: -1px; background: #f4f1e8; border-radius: 1px; }
+.plan-gauge-target::after { content: '目标'; position: absolute; top: -17px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 400; color: #d6d3c8; white-space: nowrap; }
+.plan-gauge-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-top: 9px; font-size: 11px; color: #b1b2a9; }
+.plan-gauge-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; background: #e0b76e; }
+.plan-result.strong .plan-gauge-legend i { background: #77c9a0; }
+.plan-result.weak .plan-gauge-legend i { background: #e8907c; }
+.plan-gauge-gap { margin-left: auto; font-family: var(--mono, monospace); color: #e8e4d6; }
 .plan-result-grid { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid #ffffff16; padding: 14px 0; gap: 10px; }
 .plan-result-grid span { display: block; color: #b1b2a9; font-size: 11px; }
 .plan-result-grid b { font-family: var(--mono, monospace); font-size: 19px; font-weight: 400; }
