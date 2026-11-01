@@ -347,6 +347,23 @@ body[data-page="delivery"] .main > .analysis-section:first-child { margin-top: 0
 .slot-pick.thin b { color:#c4c9b3; }
 .slot-next { display:block; color:#93a39d; font-size:10px; padding:4px 2px 0; }
 .slot-none { color:#7f8e8b; font-size:11px; padding:10px 4px !important; }
+.slot-table tbody th { width:1%; white-space:nowrap; padding-right:6px; }
+.slot-pick strong { display:flex; align-items:center; gap:6px; }
+.slot-top-tag { font-style:normal; font-size:10px; font-weight:500; padding:1px 7px; border-radius:999px; color:#1d1a14; background:#e9c98f; }
+.slot-pick.is-top { border-color:#a98b55; background:linear-gradient(135deg,#2b261b,#1a231f); }
+.slot-pick.is-top b { color:#f1d4a7; }
+.slot-pick-bar { display:block; height:4px; margin:6px 0 4px; border-radius:2px; background:#ffffff12; overflow:hidden; }
+.slot-pick-bar i { display:block; height:100%; border-radius:inherit; background:#6fb895; }
+.slot-pick.is-top .slot-pick-bar i { background:#e0b76e; }
+.slot-pick.thin .slot-pick-bar i { background:#7d8a7a; }
+@media(max-width:520px) {
+  .slot-table { min-width:0; border-spacing:4px; }
+  .slot-table tbody th { padding:6px 2px; font-size:11px; }
+  .slot-pick { padding:9px 9px; }
+  .slot-pick strong { font-size:12px; }
+  .slot-pick b small { display:block; }
+  .slot-next { font-size:9px; }
+}
 .slot-rank { display:grid; }
 .slot-more,.slot-method { margin-top:12px; border-top:1px solid #344145; padding-top:10px; }
 .slot-more summary,.slot-method summary { min-height:36px; display:flex; align-items:center; cursor:pointer; color:#b7c5bd; font-size:12px; }
