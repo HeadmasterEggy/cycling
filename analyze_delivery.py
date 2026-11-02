@@ -1092,50 +1092,6 @@ def analyse_ride(path, ctx):
     return ride
 
 
-# -- statistics helpers -----------------------------------------------------
-def wpercentile(pairs, p):
-    """Exposure-weighted percentile over (value, weight) pairs.
-
-    Zones are wildly uneven — one has 56 km of riding in it and another 2 —
-    so an unweighted percentile lets a suburb the rider crossed once set the
-    scale for the whole index.
-    """
-    rows = sorted((v, w) for v, w in pairs if w > 0)
-    total = sum(w for _, w in rows)
-    if not rows or total <= 0:
-        return None
-    target = total * p
-    run = 0.0
-    for v, w in rows:
-        run += w
-        if run >= target:
-            return v
-    return rows[-1][0]
-
-
-def shrink(value, exposure, city, prior):
-    """Pull a thin measurement toward the city figure.
-
-    A suburb ridden for 400 m has a median speed, but it is the median of one
-    street on one evening. Rather than hiding those zones or letting them rank,
-    each metric is a weighted blend of what was measured there and what the
-    city does generally, with the blend set by how much was actually ridden.
-    At `prior` km of exposure the two count equally.
-    """
-    if city is None:
-        return value
-    if exposure <= 0:
-        return city
-    return (exposure * value + prior * city) / (exposure + prior)
-
-
-def norm01(value, lo, hi):
-    """Map value into 0-1 with lo -> 0, hi -> 1 (inverted when hi < lo)."""
-    if lo is None or hi is None or hi == lo:
-        return 0.5
-    return max(0.0, min(1.0, (value - lo) / (hi - lo)))
-
-
 # -- aggregation ------------------------------------------------------------
 def build_zones(shifts, subs, ctx):
     Z = defaultdict(lambda: {
