@@ -239,8 +239,13 @@
       renderHistory(adv);
       const result = host.querySelector('.plan-result');
       try {
-        const invalid = [...form.querySelectorAll('input')].find(el => !el.disabled && !el.validity.valid);
-        if (invalid) throw new Error(`请检查「${invalid.closest('label').querySelector('span').textContent}」的输入`);
+        const live = [...form.querySelectorAll('input')].filter(el => !el.disabled);
+        const fieldName = el => el.closest('label').querySelector('span').textContent;
+        const invalid = live.find(el => !el.validity.valid && !el.validity.valueMissing);
+        if (invalid) throw new Error(`请检查「${fieldName(invalid)}」的输入`);
+        // Blank fields are an unfinished form, not a mistake: list what is left.
+        const missing = live.filter(el => el.validity.valueMissing);
+        if (missing.length) throw Object.assign(new Error('missing'), { missing: missing.map(fieldName) });
         const r = M.estimate(values);
         const budget = M.delayBudget(values);
         // Round down: a displayed extra minute must not exceed the budget.
@@ -252,8 +257,15 @@
         current = { values, result: r, destination: dest && dest.label, context, fareReference };
         const labels = { strong: '延误后仍达到目标', borderline: '正常达到目标，延误后不足', weak: '当前情景低于目标' };
         result.className = 'plan-result ' + r.verdict;
-        result.innerHTML = `<div class="plan-eyebrow">本趟税前贡献 · 情景估算</div><div class="plan-rate"><b>${money(r.rate)}</b><span>/ 小时</span></div>
-          <p class="plan-verdict">${labels[r.verdict]}</p>
+        const gap = r.rate - r.target;
+        const scale = Math.max(r.target * 1.5, r.rate * 1.1, 1);
+        const pct = v => Math.min(100, Math.max(0, v / scale * 100)).toFixed(1);
+        result.innerHTML = `<div class="plan-eyebrow">本趟税前贡献 · 情景估算</div>
+          <div class="plan-rate-row"><div class="plan-rate"><b>${money(r.rate)}</b><span>/ 小时</span></div><p class="plan-verdict">${labels[r.verdict]}</p></div>
+          <div class="plan-gauge" role="img" aria-label="按计划 ${money(r.rate)}/h，延误后 ${money(r.slowRate)}/h，目标 ${money(r.target)}/h">
+            <div class="plan-gauge-track"><i class="plan-gauge-fill" style="width:${pct(r.rate)}%"></i><i class="plan-gauge-slow" style="width:${pct(r.slowRate)}%"></i><b class="plan-gauge-target" style="left:${pct(r.target)}%"></b></div>
+            <div class="plan-gauge-legend"><span><i class="plan-key-plan"></i>按计划</span><span><i class="plan-key-slow"></i>延误 ${r.buffer} 分钟</span><span class="plan-gauge-gap">${Math.abs(gap) < 0.005 ? '正好达到' : gap > 0 ? `比目标高 ${money(gap)}/h` : `离目标差 ${money(-gap)}/h`}</span></div>
+          </div>
           <div class="plan-result-grid"><div><span>整轮用时</span><b>${r.minutes.toFixed(0)} <small>min</small></b></div><div><span>延误 ${r.buffer} 分钟后</span><b>${money(r.slowRate)} <small>/h</small></b></div></div>
           <div class="plan-threshold">达到 ${money(r.target)}/h，报价需 <strong>${money(r.needed)}</strong><span>延误情景需 ${money(r.neededSlow)}</span></div>
           <div class="plan-budget"><strong>${budgetText}</strong><small>从填写的整轮计划起算，包含额外等餐、骑行或转场延误；已填的等餐不重复加算。不是到店后重新开始的计时器，也不代表应取消订单。</small></div>
@@ -265,8 +277,13 @@
       } catch (e) {
         current = null;
         host.querySelector('.plan-offer-insights').innerHTML = '';
-        result.className = 'plan-result invalid';
-        result.innerHTML = `<div class="plan-eyebrow">等待有效输入</div><p>${esc(e.message)}</p>`;
+        if (e.missing) {
+          result.className = 'plan-result pending';
+          result.innerHTML = `<div class="plan-eyebrow">还差 ${e.missing.length} 项，就能算出这单时薪</div><ul class="plan-missing">${e.missing.map(n => `<li>${esc(n)}</li>`).join('')}</ul>`;
+        } else {
+          result.className = 'plan-result invalid';
+          result.innerHTML = `<div class="plan-eyebrow">输入需要调整</div><p>${esc(e.message)}</p>`;
+        }
         host.querySelector('.plan-quest-note').textContent = '请补全本模式的输入后查看估算。';
         host.querySelector('.plan-quest-status').textContent = '待填写';
       }
@@ -402,9 +419,14 @@
         if (sort === 'wait') return Number(b.waitCount >= 4)-Number(a.waitCount >= 4) || (a.waitCount>=4 && b.waitCount>=4 ? a.wait-b.wait : 0) || b.hours-a.hours;
         return Number(b.enough)-Number(a.enough) || (b.rate || 0)-(a.rate || 0) || b.hours-a.hours;
       });
-      const rowHtml = (z,i)=>`<div class="plan-zone-row"><button type="button" class="plan-zone ${z.enough?'':'thin'}" data-zone="${esc(z.name)}" aria-pressed="false">
-        <span class="plan-zone-index">${String(i+1).padStart(2,'0')}</span><span class="plan-zone-main"><strong>${esc(z.label)}</strong><small>${z.pickups} 次取餐 · ${z.hours.toFixed(1)} h · ${z.shifts} 班次</small></span>
-        <span class="plan-zone-rate">${sort === 'wait' ? (z.waitCount >= 4 ? (z.wait/60).toFixed(1) : '—') : sort === 'hours' ? z.hours.toFixed(1) : z.rate == null ? '—' : z.rate.toFixed(1)}<small>${sort === 'wait' ? '停留中位 / min' : sort === 'hours' ? '记录小时' : z.enough ? '次 / 记录小时' : '待积累样本'}</small></span></button><button type="button" class="plan-compare-toggle" data-compare="${esc(z.name)}" aria-pressed="${selected.includes(z.name)}" aria-label="${selected.includes(z.name)?'取消比较':'比较'} ${esc(z.label)}" ${selected.length>=3 && !selected.includes(z.name)?'disabled':''}>${selected.includes(z.name)?'✓':'+'}</button></div>`;
+      // Bars compare the sorted metric; wait is "lower is better", so it gets none.
+      const barOf = z => sort === 'hours' ? z.hours : sort === 'rate' && z.enough ? z.rate || 0 : null;
+      const barMax = Math.max(1e-9, ...rows.map(z => barOf(z) || 0));
+      // Sample tiers are display hints only; ranking still uses the model's own threshold.
+      const sample = z => z.hours >= 10 ? [3, '样本充足'] : z.hours >= 4 ? [2, '样本中等'] : [1, '样本少'];
+      const rowHtml = (z,i)=>{ const [dots, sampleText] = sample(z), bar = barOf(z); return `<div class="plan-zone-row"><button type="button" class="plan-zone ${z.enough?'':'thin'}" data-zone="${esc(z.name)}" aria-pressed="false">
+        <span class="plan-zone-index">${String(i+1).padStart(2,'0')}</span><span class="plan-zone-main"><strong>${esc(z.label)}<em class="plan-sample s${dots}" title="${sampleText}"><i></i><i></i><i></i><span>${sampleText}</span></em></strong><small>${z.pickups} 次取餐 · ${z.hours.toFixed(1)} h · ${z.shifts} 班次</small>${bar == null ? '' : `<span class="plan-zone-bar" aria-hidden="true"><i style="width:${(bar / barMax * 100).toFixed(1)}%"></i></span>`}</span>
+        <span class="plan-zone-rate">${sort === 'wait' ? (z.waitCount >= 4 ? (z.wait/60).toFixed(1) : '—') : sort === 'hours' ? z.hours.toFixed(1) : z.rate == null ? '—' : z.rate.toFixed(1)}<small>${sort === 'wait' ? '停留中位 / min' : sort === 'hours' ? '记录小时' : z.enough ? '次 / 记录小时' : '待积累样本'}</small></span></button><button type="button" class="plan-compare-toggle" data-compare="${esc(z.name)}" aria-pressed="${selected.includes(z.name)}" aria-label="${selected.includes(z.name)?'取消比较':'比较'} ${esc(z.label)}" ${selected.length>=3 && !selected.includes(z.name)?'disabled':''}>${selected.includes(z.name)?'✓':'+'}</button></div>`; };
       const list = host.querySelector('.plan-zone-list');
       if (!rows.length) list.innerHTML = '<p class="plan-empty">没有匹配区域。可修改搜索词或扩大记录范围。</p>';
       else if (search) list.innerHTML = rows.map(rowHtml).join('');
@@ -496,9 +518,12 @@
         : '<span>没有满足条件的组合，放宽日期类型或餐段后再看。</span>';
       const days = q('day').value === 'weekday' ? [false] : q('day').value === 'weekend' ? [true] : [false, true];
       const usedParts = parts.filter(d => q('part').value === 'all' || d.key === q('part').value);
+      const cellBest = (d, w) => { const cell = all.filter(r => r.daypart === d.key && r.weekend === w); return cell.filter(r => !r.thin)[0] || cell[0]; };
+      const matrixMax = Math.max(1e-9, ...usedParts.flatMap(d => days.map(w => (cellBest(d, w) || { rate: 0 }).rate)));
       host.querySelector('.slot-matrix').innerHTML = `<div class="slot-table-scroll" tabindex="0" aria-label="时段与地点对照，可横向滚动"><table class="slot-table"><thead><tr><th>餐段</th>${days.map(w => `<th>${w ? '周末' : '工作日'}</th>`).join('')}</tr></thead><tbody>${usedParts.map(d => `<tr><th>${d.label}<small>${d.from}–${d.to}</small></th>${days.map(w => {
         const cell = all.filter(r => r.daypart === d.key && r.weekend === w), best = cell.filter(r => !r.thin)[0] || cell[0], next = cell.filter(r => r !== best && !r.thin)[0];
-        return best ? `<td><button type="button" class="slot-pick ${best.thin ? 'thin' : ''}" ${slotAttributes(best, curve, filters.period)} aria-label="${esc(`${best.label}，${dayLabel(best)} ${best.daypartLabel}，代入接单计算器的历史对照`)}"><strong>${esc(best.label)}</strong><b>${best.rate.toFixed(2)}<small> 次/记录小时</small></b><small>80% 区间 ${range(best)}${best.thin ? ' · 样本少' : ''}</small><span class="slot-pick-action">带入接单检查 ↓</span></button>${next ? `<small class="slot-next">其次 ${esc(next.label)} ${next.rate.toFixed(2)} 次/记录小时</small>` : ''}</td>` : '<td class="slot-none">记录不足</td>';
+        const isTop = best === top;
+        return best ? `<td><button type="button" class="slot-pick ${best.thin ? 'thin' : ''}${isTop ? ' is-top' : ''}" ${slotAttributes(best, curve, filters.period)} aria-label="${esc(`${best.label}，${dayLabel(best)} ${best.daypartLabel}${isTop ? '，取餐频率最高' : ''}，代入接单计算器的历史对照`)}"><strong>${esc(best.label)}${isTop ? '<em class="slot-top-tag">最高</em>' : ''}</strong><b>${best.rate.toFixed(2)}<small> 次/记录小时</small></b><span class="slot-pick-bar" aria-hidden="true"><i style="width:${(best.rate / matrixMax * 100).toFixed(1)}%"></i></span><small>80% 区间 ${range(best)}${best.thin ? ' · 样本少' : ''}</small><span class="slot-pick-action">带入接单检查 ↓</span></button>${next ? `<small class="slot-next">其次 ${esc(next.label)} ${next.rate.toFixed(2)} 次/记录小时</small>` : ''}</td>` : '<td class="slot-none">记录不足</td>';
       }).join('')}</tr>`).join('')}</tbody></table></div>`;
       const top10 = rows.slice(0, 10), max = Math.max(1, ...top10.map(r => r.rateHi));
       host.querySelector('.slot-rank').innerHTML = top10.length ? top10.map((r, i) => `<button type="button" class="slot-row ${r.thin ? 'thin' : ''}" ${slotAttributes(r, curve, filters.period)} aria-label="${esc(`${r.label}，${dayLabel(r)} ${r.daypartLabel}，代入接单计算器的历史对照`)}">
