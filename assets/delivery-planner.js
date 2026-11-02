@@ -419,9 +419,14 @@
         if (sort === 'wait') return Number(b.waitCount >= 4)-Number(a.waitCount >= 4) || (a.waitCount>=4 && b.waitCount>=4 ? a.wait-b.wait : 0) || b.hours-a.hours;
         return Number(b.enough)-Number(a.enough) || (b.rate || 0)-(a.rate || 0) || b.hours-a.hours;
       });
-      const rowHtml = (z,i)=>`<div class="plan-zone-row"><button type="button" class="plan-zone ${z.enough?'':'thin'}" data-zone="${esc(z.name)}" aria-pressed="false">
-        <span class="plan-zone-index">${String(i+1).padStart(2,'0')}</span><span class="plan-zone-main"><strong>${esc(z.label)}</strong><small>${z.pickups} 次取餐 · ${z.hours.toFixed(1)} h · ${z.shifts} 班次</small></span>
-        <span class="plan-zone-rate">${sort === 'wait' ? (z.waitCount >= 4 ? (z.wait/60).toFixed(1) : '—') : sort === 'hours' ? z.hours.toFixed(1) : z.rate == null ? '—' : z.rate.toFixed(1)}<small>${sort === 'wait' ? '停留中位 / min' : sort === 'hours' ? '记录小时' : z.enough ? '次 / 记录小时' : '待积累样本'}</small></span></button><button type="button" class="plan-compare-toggle" data-compare="${esc(z.name)}" aria-pressed="${selected.includes(z.name)}" aria-label="${selected.includes(z.name)?'取消比较':'比较'} ${esc(z.label)}" ${selected.length>=3 && !selected.includes(z.name)?'disabled':''}>${selected.includes(z.name)?'✓':'+'}</button></div>`;
+      // Bars compare the sorted metric; wait is "lower is better", so it gets none.
+      const barOf = z => sort === 'hours' ? z.hours : sort === 'rate' && z.enough ? z.rate || 0 : null;
+      const barMax = Math.max(1e-9, ...rows.map(z => barOf(z) || 0));
+      // Sample tiers are display hints only; ranking still uses the model's own threshold.
+      const sample = z => z.hours >= 10 ? [3, '样本充足'] : z.hours >= 4 ? [2, '样本中等'] : [1, '样本少'];
+      const rowHtml = (z,i)=>{ const [dots, sampleText] = sample(z), bar = barOf(z); return `<div class="plan-zone-row"><button type="button" class="plan-zone ${z.enough?'':'thin'}" data-zone="${esc(z.name)}" aria-pressed="false">
+        <span class="plan-zone-index">${String(i+1).padStart(2,'0')}</span><span class="plan-zone-main"><strong>${esc(z.label)}<em class="plan-sample s${dots}" title="${sampleText}"><i></i><i></i><i></i><span>${sampleText}</span></em></strong><small>${z.pickups} 次取餐 · ${z.hours.toFixed(1)} h · ${z.shifts} 班次</small>${bar == null ? '' : `<span class="plan-zone-bar" aria-hidden="true"><i style="width:${(bar / barMax * 100).toFixed(1)}%"></i></span>`}</span>
+        <span class="plan-zone-rate">${sort === 'wait' ? (z.waitCount >= 4 ? (z.wait/60).toFixed(1) : '—') : sort === 'hours' ? z.hours.toFixed(1) : z.rate == null ? '—' : z.rate.toFixed(1)}<small>${sort === 'wait' ? '停留中位 / min' : sort === 'hours' ? '记录小时' : z.enough ? '次 / 记录小时' : '待积累样本'}</small></span></button><button type="button" class="plan-compare-toggle" data-compare="${esc(z.name)}" aria-pressed="${selected.includes(z.name)}" aria-label="${selected.includes(z.name)?'取消比较':'比较'} ${esc(z.label)}" ${selected.length>=3 && !selected.includes(z.name)?'disabled':''}>${selected.includes(z.name)?'✓':'+'}</button></div>`; };
       const list = host.querySelector('.plan-zone-list');
       if (!rows.length) list.innerHTML = '<p class="plan-empty">没有匹配区域。可修改搜索词或扩大记录范围。</p>';
       else if (search) list.innerHTML = rows.map(rowHtml).join('');
