@@ -48,13 +48,13 @@ class SiteBuildTests(unittest.TestCase):
     def test_generated_pages_are_current_and_build_is_idempotent(self):
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory)
-            for file in ("build_pages.py", "cycling-analysis.html", "dashboard.html"):
+            for file in ("build_pages.py", "cycling-analysis.html", "dashboard.html", "plan.html"):
                 shutil.copy2(ROOT / file, target / file)
             (target / "assets").symlink_to(ROOT / "assets", target_is_directory=True)
             command = [sys.executable, str(target / "build_pages.py")]
             subprocess.run(command, check=True, capture_output=True)
             first = {page.name: page.read_bytes() for page in target.glob("*.html")}
-            self.assertEqual(len(first), 10)
+            self.assertEqual(len(first), 11)
             subprocess.run(command, check=True, capture_output=True)
             for name, contents in first.items():
                 with self.subTest(page=name):

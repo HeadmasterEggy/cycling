@@ -13,6 +13,7 @@
 | `training.html` | `training` | 滚动负荷、Fitness/Form、训练效率、强度象限 |
 | `rides.html` | `rides` | 能量构成、海拔画廊、爬升/下降、骑行明细表 |
 | `delivery.html` | `delivery` | 配送分析：区域与时段筛选、整轮接单估算、Quest 情景、三周收入核对、历史地图与数据口径 |
+| `plan.html` | `plan` | 三件事：把配送分析压成一屏 —— 这单接不接（分钟上限速查表）、何时出门、在哪等单 |
 | `dashboard.html` | `dashboard` | 配送作战台：手机/桌面自适应，区域候选、地图、落点续接、接单估算与收入账本联动 |
 | `explorer.html` | `explorer` | 单次骑行逐条放大 |
 | `recovery.html` | `recovery` | HRV、静息心率、呼吸、血氧、睡眠 |
@@ -121,6 +122,18 @@ python3 parse_health.py --routes-only
 
 > 城市判定用的是 `CITY_BOXES` 里的经纬度方框。去了新地方就往里加一个,
 > 否则轨迹会落进 `Unknown`,只出现在「全部」里。
+
+### 三件事（降熵入口）
+
+`plan.html` 不新增任何推断，只把已有结论压成三个决定：
+
+- **这单接不接**：Quest 按完成单数发放，所以一单的价值约等于 `运费 + 每单 Quest`，
+  决定时薪的是整轮分钟。`DeliveryModel.acceptLine` 给出上限
+  `最多分钟 = (运费 + 每单 Quest − 成本) × 60 / 目标时薪`，页面附运费 → 分钟速查表。
+  每单 Quest 取 2026-08-17（最低标准生效）以来账本的周平均（`ledgerSince`），可切换淡周/旺周/不算。
+- **何时出门 / 在哪等单**：直接复用 `timeCurve` 与 `slots` 的取餐频率排序，只排先后，不换算收入。
+
+输入不保存，刷新即重置。
 
 ### 配送分析与作战台
 
