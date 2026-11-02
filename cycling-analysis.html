@@ -696,7 +696,7 @@
 
 <section class="analysis-section">
   <div class="section-title">热点地图<em>·</em>Order Hotspots</div>
-  <div class="section-sub">已记录的悉尼骑行里，每一次停车都判过是取餐、送达还是等红灯 —— 蓝点是取的，橙点是送的，红点是反复堵住你的路口。底色可以换成任意一项指标，点一个区钻进去只看它，拖时间轴看某个时段。已排除每次出勤自己起点/终点 150 米内的停留。</div>
+  <div class="section-sub">蓝点取餐、橙点送达、红点堵点。点一个区钻进去，拖时间轴看各时段。</div>
   <div class="dlv-map-controls">
     <div class="dlv-layer-chips" id="dlvLayerChips">
       <button class="dlv-chip active" data-layer="pickups"><i class="dlv-dot dot-pickup"></i>取餐点</button>
@@ -746,15 +746,15 @@
 
 <section class="analysis-section">
   <div class="section-title">配送概览<em>·</em>Shift Economics</div>
-  <div class="section-sub">一单从取到送要花多久、路上与停留各花多少时间 —— 全部从 GPS 停留反推，每一次超过 <span id="dlvStopSec">20</span> 秒的停车都对着地图判过（方法见最后两节）</div>
+  <div class="section-sub">每一单的时间和距离汇总 —— 看清楚一趟能赚多少、耗在哪里。</div>
   <div class="dlv-kpis" id="dlvKpis"></div>
   <div class="dlv-note" id="dlvMethod"></div>
 </section>
 
 
 <section class="analysis-section">
-  <div class="section-title">区域排行<em>·</em>Zone Leaderboard</div>
-  <div class="section-sub">默认用全部历史记录比较混合平台 GPS 推断取餐频率，样本更稳定；可切到最近 28 天观察变化。频率不是派单率、平台订单率或时薪。</div>
+  <div class="section-title">哪个区值得跑<em>·</em>Zone Leaderboard</div>
+  <div class="section-sub">比较各区的取餐频率、通行效率和餐厅密度，找出最值得试跑的区域。可切换全部历史或最近 28 天。</div>
   <div class="chart-card">
     <div id="dlvZonePlanner" style="margin-bottom:28px"></div>
     <svg id="zoneQuadrant" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid meet"></svg>
@@ -790,7 +790,7 @@
 
 <section class="analysis-section">
   <div class="section-title">这一单该不该接<em>·</em>Offer Planner</div>
-  <div class="section-sub">先算整轮时间，再看报价和奖励增量。输入当前派单的实际情况；历史账本和三周保底单独核对。</div>
+  <div class="section-sub">输入当前派单距离和预估时间，算出整轮时薪。历史收入和三周保底一并核对。</div>
   <div class="delivery-tools">
     <div class="chart-card"><div id="dlvOfferCalc"></div></div>
     <div class="chart-card"><div class="chart-title">Uber 三周最低收入</div><div id="dlvSettlement"></div></div>
@@ -800,41 +800,29 @@
 
 
 <section class="analysis-section">
-  <div class="section-title">什么时候去哪试跑<em>·</em>Best Time &amp; Place</div>
-  <div class="section-sub">按历史 GPS 推断的取餐频率挑时段和区域：先看每个餐段，再看全城逐小时。记录混合 Uber、DoorDash 和熊猫，所以这里只比较活动频率，不估算平台收入；每个数字都带区间和样本量。</div>
+  <div class="section-title">什么时候去<em>·</em>Best Time &amp; Place</div>
+  <div class="section-sub">午餐、晚餐还是夜宵？按历史取餐频率挑最忙的餐段，每个数字都带置信区间。</div>
   <div class="chart-card"><div id="dlvSlots"></div></div>
 </section>
 
 
 <section class="analysis-section">
-  <div class="section-title">接单区还是送达区<em>·</em>Collect or Deliver</div>
-  <div class="section-sub">同一个区，做「取餐点」和做「送达点」是两件不同的事 —— 而真正吃掉时薪的是第三件：把餐送到之后，下一单是就在手边，还是要先骑回市区</div>
+  <div class="section-title">送完去哪等<em>·</em>Next Pickup</div>
+  <div class="section-sub">送达之后，下一单在哪？取餐集中的区续接快，送到偏远区的单要多花时间骑回来。</div>
 
   <div class="dlv-kpis" id="dlvChainSum"></div>
 
-  <div class="chart-card" style="margin-top: 20px;">
-    <div class="chart-title">送完之后，你在往哪儿骑</div>
-    <div class="chart-sub">Observed transitions · 送达之后到下次取餐，不代表未付费时间</div>
-    <div class="ch-dirs" id="dlvChainDirs"></div>
-  </div>
-
   <div class="analysis-grid dlv-chain-grid">
     <div class="chart-card">
-      <div class="chart-title">取餐较多的区</div>
-      <div class="chart-sub">Where the orders come from · 按取餐次数排 · 送出去越近越能多跑</div>
+      <div class="chart-title">取餐最多的区</div>
+      <div class="chart-sub">按取餐次数排 · 送出去越近越能多跑</div>
       <div class="ch-list" id="dlvPickupRank"></div>
     </div>
     <div class="chart-card">
-      <div class="chart-title">落在这里之后</div>
-      <div class="chart-sub">What landing here costs · 按送完之后的续接时间排，越短越好</div>
+      <div class="chart-title">送到这里之后要等多久</div>
+      <div class="chart-sub">按续接时间排 · 越短越好</div>
       <div class="ch-list" id="dlvDropRank"></div>
     </div>
-  </div>
-
-  <div class="chart-card" style="margin-top: 20px;">
-    <div class="chart-title">送完之后，下一单从哪来</div>
-    <div class="chart-sub">Drop-off → next pickup · 蓝色是留在同一个区</div>
-    <div class="ch-flows" id="dlvFlows"></div>
   </div>
 
   <div class="dlv-note" id="dlvChainNote"></div>
