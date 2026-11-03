@@ -114,6 +114,35 @@
 .plan-ledger td { padding: 12px 8px; text-align: right; border-bottom: 1px solid #2a3334; font-family: var(--mono, monospace); }
 .plan-ledger th:first-child, .plan-ledger td:first-child { text-align: left; }
 .quest-cell { color: #e8c697; }
+/* Ledger: a mix bar per week, a source badge, and cards instead of a clipped table on phones. */
+.ledger-legend { float: right; display: inline-flex; align-items: center; gap: 4px 6px; color: #9ea9a8; }
+.ledger-legend i, .ledger-mix i { display: inline-block; background: #77b59e; }
+.ledger-legend i { width: 8px; height: 8px; border-radius: 2px; margin-left: 6px; }
+.ledger-legend i.quest, .ledger-mix i.quest { background: #e0b76e; }
+.ledger-legend i.other, .ledger-mix i.other { background: #9b91c7; }
+.ledger-week { display: block; }
+.ledger-mix { display: flex; width: 100%; min-width: 90px; height: 4px; margin-top: 6px; border-radius: 2px; background: #ffffff0d; overflow: hidden; }
+.ledger-mix i { height: 100%; }
+.ledger-source { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid #3a4545; color: #a7b2b0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif; font-size: 11px; }
+.is-checked .ledger-source { border-color: #4f7d6e; color: #a8dcc5; background: #77b59e14; }
+.ledger-total { color: #f0dcb6; }
+@media(max-width: 600px) {
+  .plan-table-scroll { overflow: visible; }
+  .plan-ledger, .plan-ledger tbody { display: block; white-space: normal; }
+  .plan-ledger caption { display: block; }
+  .ledger-legend { float: none; display: flex; margin-top: 6px; }
+  .ledger-legend i:first-child { margin-left: 0; }
+  .plan-ledger thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+  .plan-ledger tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 10px; padding: 12px; margin-bottom: 8px; border: 1px solid #2f3a3b; border-radius: 9px; background: #182124; }
+  .plan-ledger tr.is-checked { border-color: #3d5d54; }
+  .plan-ledger td { display: block; padding: 0; border: 0; text-align: left; font-size: 13px; }
+  .plan-ledger td::before { content: attr(data-label); display: block; margin-bottom: 2px; color: #8f9c9a; font: 10px -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; }
+  .plan-ledger td:first-child { grid-column: 1 / 3; font-size: 14px; color: #e3e6df; }
+  .plan-ledger td:first-child::before, .plan-ledger td:nth-child(2)::before { display: none; }
+  .plan-ledger td:nth-child(2) { text-align: right; align-self: start; }
+  /* Unchecked weeks have no tips or statement total; skip the empty second row. */
+  .plan-ledger tr:not(.is-checked) td:nth-child(n+6) { display: none; }
+}
 .plan-verified { padding: 16px; border: 1px solid #345754; border-radius: 8px; margin-top: 16px; color: #b9d1c9; font-size: 12px; }
 .plan-verified > span { color: #8fc7b5; font-size: 11px; }
 .plan-verified p { margin: 8px 0; }

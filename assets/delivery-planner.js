@@ -593,10 +593,13 @@
     host.classList.add('planner');
     const checks = o.statement_checks || [];
     host.innerHTML = `<p class="plan-help"><strong>我的账号 · 原有账本</strong> — ${o.n} 条 Uber 活动记录。2026-10-19 扫描的其他账号数据未纳入本账本及配送分析。已核对的周采用网页账单金额；其他周显示日志分类，小费未知。Quest 单独列出，不平摊到下一单。</p>
-      <div class="plan-table-scroll" tabindex="0" aria-label="每周收入，可横向滚动"><table class="plan-ledger"><caption>每周分类金额（A$）· 周一 04:00 起</caption><thead><tr><th>结算周</th><th>来源</th><th>运费</th><th>Quest</th><th>其他调整</th><th>小费</th><th>账单合计</th></tr></thead><tbody>${o.weeks.map(raw => {
-        const checked = checks.find(c => c.week === raw.week), w = checked || raw;
-        return `<tr><td>${esc(w.week)}</td><td>${checked ? '账单已核对' : '活动日志'}</td><td>${money(w.fare)}</td><td class="quest-cell">${money(w.quest)}</td><td>${money(w.other)}</td><td>${checked ? money(w.tips) : '—'}</td><td>${checked ? money(w.total) : '—'}</td></tr>`;
-      }).join('')}</tbody></table></div>
+      <div class="plan-table-scroll" tabindex="0" aria-label="每周收入，可横向滚动"><table class="plan-ledger"><caption>每周分类金额（A$）· 周一 04:00 起<span class="ledger-legend"><i class="fare"></i>运费 <i class="quest"></i>Quest <i class="other"></i>其他</span></caption><thead><tr><th>结算周</th><th>来源</th><th>运费</th><th>Quest</th><th>其他调整</th><th>小费</th><th>账单合计</th></tr></thead><tbody>${(() => {
+        const rows = o.weeks.map(raw => { const checked = checks.find(c => c.week === raw.week); return { checked, w: checked || raw }; });
+        // The mix bar shows the categories every week has; tips are known only for checked weeks.
+        const part = v => Math.max(0, v || 0), max = Math.max(1e-9, ...rows.map(({ w }) => part(w.fare) + part(w.quest) + part(w.other)));
+        const pct = v => (part(v) / max * 100).toFixed(1);
+        return rows.map(({ checked, w }) => `<tr class="${checked ? 'is-checked' : ''}"><td data-label="结算周"><span class="ledger-week">${esc(w.week)}</span><span class="ledger-mix" aria-hidden="true"><i class="fare" style="width:${pct(w.fare)}%"></i><i class="quest" style="width:${pct(w.quest)}%"></i><i class="other" style="width:${pct(w.other)}%"></i></span></td><td data-label="来源"><span class="ledger-source">${checked ? '账单已核对' : '活动日志'}</span></td><td data-label="运费">${money(w.fare)}</td><td data-label="Quest" class="quest-cell">${money(w.quest)}</td><td data-label="其他调整">${money(w.other)}</td><td data-label="小费">${checked ? money(w.tips) : '—'}</td><td data-label="账单合计" class="ledger-total">${checked ? money(w.total) : '—'}</td></tr>`).join('');
+      })()}</tbody></table></div>
       <p class="plan-help">日志按金额与时间排除 ${o.duplicates_removed} 笔疑似重复 MISC。大额调整另列：${o.large_adjustments.map(a => `${esc(a.on)} ${money(a.amt)}`).join('、') || '无'}，不按单摊销。未核对周的调整分类仍需账单确认。</p>
       <details class="plan-verified"><summary>账单核对与日志差异</summary>${checks.map(w => {
         const log = o.weeks.find(r => r.week === w.week);
