@@ -91,9 +91,13 @@
         } else {
           const pct = Math.min(100, r.minutes / Math.max(r.maxMinutes, r.minutes) * 100);
           const lim = Math.min(100, r.maxMinutes / Math.max(r.maxMinutes, r.minutes) * 100);
-          v.className = 'pl-verdict ' + (r.take ? 'take' : 'skip');
+          // A miss by a couple of minutes reads differently from a bad order: tint it amber.
+          const close = !r.take && -r.slack <= 2;
+          const fareNeeded = r.fare + Math.max(0, r.target * r.minutes / 60 - r.value);
+          v.className = 'pl-verdict ' + (r.take ? 'take' : close ? 'skip close' : 'skip');
           v.innerHTML = `<div class="pl-v-main"><b>${r.take ? '接' : '不接'}</b><span>${money(r.rate, 0)}/h · ${r.take ? `还有 ${Math.floor(r.slack)} 分钟余量` : `超出 ${Math.ceil(-r.slack)} 分钟`}</span></div>
-            <div class="pl-v-bar" role="img" aria-label="这单 ${r.minutes} 分钟，上限 ${limit} 分钟"><i style="width:${pct}%"></i><em style="left:${lim}%"><span>上限 ${limit}′</span></em></div>`;
+            ${r.take ? '' : `<div class="pl-v-side">${close ? '差一点：' : ''}报价 ≥ <b>${money(fareNeeded)}</b> 才接<br>或整轮 ≤ ${limit} 分钟</div>`}
+            <div class="pl-v-bar" role="img" aria-label="这单 ${r.minutes} 分钟，上限 ${limit} 分钟"><i style="width:${pct}%"><span>这单 ${Number(r.minutes)}′</span></i><em style="left:${lim}%"><span>上限 ${limit}′</span></em></div>`;
         }
       } catch (err) {
         v.className = 'pl-verdict idle';

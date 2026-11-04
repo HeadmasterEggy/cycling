@@ -102,6 +102,10 @@ input { font: inherit; }
 .pl-v-bar i { position: absolute; inset: 0 auto 0 0; border-radius: 99px; background: currentColor; transition: width .3s ease; }
 .take .pl-v-bar { color: var(--green); } .skip .pl-v-bar { color: var(--rose); }
 .pl-v-bar em { position: absolute; top: -5px; bottom: -5px; width: 2px; background: var(--ink); border-radius: 2px; font-style: normal; transition: left .3s ease; }
+.pl-verdict.close { border-color: rgba(230,197,139,.45); background: linear-gradient(120deg, rgba(230,197,139,.12), rgba(230,197,139,.02)); }
+.pl-verdict.close b, .close .pl-v-bar { color: var(--gold); }
+.pl-v-side b { font: 500 15px var(--mono); color: var(--ink); }
+.pl-v-bar i span { position: absolute; top: 20px; left: 0; white-space: nowrap; font: 10px var(--mono); color: currentColor; }
 .pl-v-bar em span { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); white-space: nowrap; font: 10px var(--mono); color: var(--ink2); }
 
 /* assumptions */
@@ -183,8 +187,10 @@ input { font: inherit; }
   .pl-inputs { grid-template-columns: 1fr; }
   .pl-v-main b { font-size: 40px; }
   .pl-v-side { margin-left: 0; text-align: left; }
-  .pl-assume-row { grid-template-columns: 1fr 84px; }
-  .pl-assume-row > span { grid-column: 1 / -1; }
+  .pl-assume-row { grid-template-columns: 1fr 84px; grid-template-areas: 'label input' 'chips chips'; row-gap: 8px; }
+  .pl-assume-row > span { grid-area: label; }
+  .pl-assume-row .pl-chips { grid-area: chips; }
+  .pl-assume-row .pl-mini { grid-area: input; height: 36px; }
   .pl-sheet-grid b { font-size: 16px; }
   .pl-heat-row { grid-template-columns: 38px repeat(15, 1fr); gap: 2px; }
   .pl-heat-row i { height: 26px; border-radius: 4px; }
