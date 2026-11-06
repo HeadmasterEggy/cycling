@@ -169,15 +169,23 @@
   }
 
   // ---------- 03 where ----------
-  const rows = M.slots(D, { period: 'all' }, { value: 1 }).filter(r => !r.thin).slice(0, 6);
+  const settled = M.slots(D, { period: 'all' }, { value: 1 }).filter(r => !r.thin);
+  const rows = settled.slice(0, 6);
   if (rows.length) {
     const top = rows[0].rate;
-    $('plRank').innerHTML = rows.map((r, i) => `<li><span class="pl-rank-n">${i + 1}</span>
-      <div class="pl-rank-main"><b>${esc(r.label)}</b><small>${r.weekend ? '周末' : '工作日'} · ${r.daypartLabel} ${r.window}</small>
+    // Tie the ranking to the clock: which slot is live now, or which part of the day comes next.
+    const nowAt = sydneyNow();
+    const part = nowAt && (M.daypartOf(nowAt.hour) || M.DAYPARTS.find(d => d.from > nowAt.hour));
+    const live = !!(nowAt && M.daypartOf(nowAt.hour));
+    const isNow = r => part && r.weekend === nowAt.weekend && r.daypart === part.key;
+    const best = part && settled.find(isNow);
+    $('plRank').innerHTML = rows.map((r, i) => `<li class="${isNow(r) ? 'now' : ''}"><span class="pl-rank-n">${i + 1}</span>
+      <div class="pl-rank-main"><b>${esc(r.label)}</b><small>${r.weekend ? '周末' : '工作日'} · ${r.daypartLabel} ${r.window}</small>${isNow(r) ? `<em class="pl-now-tag">${live ? '现在' : '下一段'}</em>` : ''}
       <div class="pl-rank-bar"><i style="width:${(r.rate / top * 100).toFixed(1)}%"></i></div></div>
       <span class="pl-rank-v">${r.rate.toFixed(1)}<small>次/h</small></span></li>`).join('');
     const names = [...new Set(rows.map(r => r.label))].slice(0, 3);
-    $('plZoneAnswer').innerHTML = `先去 <b>${names.map(esc).join(' · ')}</b>。送完落在别处，就往最近的这几个区骑回来等。`;
+    $('plZoneAnswer').innerHTML = `先去 <b>${names.map(esc).join(' · ')}</b>。送完落在别处，就往最近的这几个区骑回来等。` +
+      (best ? `<span class="pl-now-line"><em class="pl-now-tag">${live ? '现在' : '下一段'}</em>${nowAt.weekend ? '周末' : '工作日'}${best.daypartLabel} ${best.window} 点，最密的是 <b>${esc(best.label)}</b> · ${best.rate.toFixed(1)} 次/h</span>` : '');
   }
 
   // ---------- basis ----------
