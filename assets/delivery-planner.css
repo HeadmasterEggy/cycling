@@ -107,6 +107,17 @@
 .plan-settlement-result > * { display: block; }
 .plan-settlement-result strong { font: 30px var(--mono, monospace); margin: 8px 0; }
 .plan-settlement-result small { color: #adb9b6; font-size: 12px; }
+.plan-settle-card { padding: 14px 16px; border-radius: 10px; border: 1px solid #3c4b4a; background: #172225; }
+.plan-settle-card > * { display: block; }
+.plan-settle-card.above { border-color: #42776a; background: linear-gradient(135deg, #193631, #17201f); }
+.plan-settle-card.below { border-color: #8a7140; background: linear-gradient(135deg, #2b261b, #1a1f1e); }
+.plan-settle-card.below strong { color: #f1d4a7; }
+.plan-settle-verdict { margin: 10px 0 12px; color: #d9e3dc; font-size: 13px; line-height: 1.6; }
+.plan-settle-bar { position: relative !important; height: 8px; border-radius: 99px; background: #ffffff10; }
+.plan-settle-bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: inherit; background: #77c9a0; }
+.below .plan-settle-bar i { background: #e0b76e; }
+.plan-settle-bar b { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: #f4f1e8; border-radius: 1px; }
+.plan-settle-scale { display: flex !important; justify-content: space-between; margin-top: 7px; font-size: 11px; color: #a9b8b3; }
 .plan-table-scroll { overflow-x: auto; }
 .plan-ledger { border-collapse: collapse; width: 100%; font-size: 12px; white-space: nowrap; }
 .plan-ledger caption { text-align: left; color: #a9b3b1; padding: 8px 0; font-size: 11px; }
