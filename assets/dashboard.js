@@ -91,6 +91,19 @@
       if (typeof L === 'undefined') throw new Error('Leaflet unavailable');
       renderDeliveryMap();
     } catch(e) { document.getElementById('dlvMap').textContent = '地图暂时无法加载；仍可使用区域列表和接单计算器。'; }
+    // Phone jump bar: underline the section currently on screen.
+    const jump = document.querySelector('.dash-jump');
+    if (jump && 'IntersectionObserver' in window) {
+      const links = new Map([...jump.querySelectorAll('a')].map(a => [a.getAttribute('href').slice(1), a]));
+      const seen = new Map();
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(e => seen.set(e.target.id, e.isIntersecting ? e.intersectionRatio : 0));
+        let best = null, ratio = 0;
+        seen.forEach((r, id) => { if (r > ratio) { ratio = r; best = id; } });
+        links.forEach((a, id) => { const on = id === best; a.classList.toggle('on', on); if (on) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current'); });
+      }, { rootMargin: '-56px 0px -45% 0px', threshold: [0, .1, .25, .5] });
+      links.forEach((a, id) => { const el = document.getElementById(id); if (el) io.observe(el); });
+    }
     const kick = () => { if (typeof DLVMAP !== 'undefined' && DLVMAP.map) DLVMAP.map.invalidateSize(); };
     setTimeout(kick, 250);
     let timer;
