@@ -22,7 +22,7 @@
 <link rel="stylesheet" href="assets/delivery-planner.css?v=201b93d47b28">
 <link rel="stylesheet" href="assets/delivery-charts.css?v=aa5b91abf5d1">
 <link rel="stylesheet" href="assets/site-ui.css?v=c418bbcc1df0">
-<link rel="stylesheet" href="assets/dashboard.css?v=9350ae2cf244">
+<link rel="stylesheet" href="assets/dashboard.css?v=761052634a54">
 </head>
 <body data-page="dashboard">
 <div class="dash">
@@ -43,21 +43,26 @@
       <span class="dash-note" id="dashMapNote"></span>
     </div>
     <div class="dash-mapbar" id="dlvLayerChips">
-      <button class="dlv-chip active" data-layer="pickups"><i class="dlv-dot dot-pickup"></i>取餐</button>
-      <button class="dlv-chip active" data-layer="drops"><i class="dlv-dot dot-drop"></i>送达</button>
-      <button class="dlv-chip" data-layer="lights"><i class="dlv-dot dot-light"></i>红灯</button>
-      <button class="dlv-chip active" data-layer="zones"><i class="dlv-dot dot-zone"></i>区域</button>
-      <button class="dlv-chip" data-layer="common"><i class="dlv-dot dot-common"></i>常走</button>
-      <button class="dlv-chip" data-layer="hard"><i class="dlv-dot dot-hard"></i>难走</button>
-      <span class="dash-sep"></span>
-      <button class="dlv-reset" id="dlvReset">回到全图</button>
-      <span class="dash-sep"></span>
-      <span class="dash-mapbar-label">底色</span>
-      <div class="dlv-metric-chips" id="dlvMetricChips"></div>
+      <div class="dash-maprow" role="group" aria-label="地图图层">
+        <span class="dash-mapbar-label">图层</span>
+        <div class="dash-maprow-chips">
+          <button class="dlv-chip active" data-layer="pickups"><i class="dlv-dot dot-pickup"></i>取餐</button>
+          <button class="dlv-chip active" data-layer="drops"><i class="dlv-dot dot-drop"></i>送达</button>
+          <button class="dlv-chip" data-layer="lights"><i class="dlv-dot dot-light"></i>红灯</button>
+          <button class="dlv-chip active" data-layer="zones"><i class="dlv-dot dot-zone"></i>区域</button>
+          <button class="dlv-chip" data-layer="common"><i class="dlv-dot dot-common"></i>常走</button>
+          <button class="dlv-chip" data-layer="hard"><i class="dlv-dot dot-hard"></i>难走</button>
+        </div>
+      </div>
+      <div class="dash-maprow" role="group" aria-label="区域底色指标">
+        <span class="dash-mapbar-label">底色</span>
+        <div class="dlv-metric-chips" id="dlvMetricChips"></div>
+      </div>
     </div>
     <p class="dash-map-scope" id="dlvMetricNote">区域取餐频率跟随候选区域筛选；点位和骑行指标为全期记录。小时滑条只筛点位与取送事件。</p>
     <div class="dash-mapwrap">
       <div id="dlvMap"></div>
+      <button class="dlv-reset dash-map-reset" id="dlvReset">回到全图</button>
       <div class="dlv-focus-bar dash-focus" id="dlvFocusBar" hidden></div>
     </div>
     <div class="dash-timebar">
@@ -91,7 +96,7 @@
 <script src="assets/delivery-model.js?v=decd78e99a45"></script>
 <script src="assets/delivery-planner.js?v=778d4157f83e"></script>
 <script src="assets/delivery.js?v=4527225b19b9"></script>
-<script src="assets/dashboard.js?v=9a9daf6fde85"></script>
+<script src="assets/dashboard.js?v=e51645640bc2"></script>
 <script src="assets/site-ui.js?v=01dd1afd6670"></script>
 <script src="assets/analysis-guide.js?v=eac52c0f5848"></script>
 </body></html>

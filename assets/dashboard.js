@@ -90,7 +90,12 @@
     try {
       if (typeof L === 'undefined') throw new Error('Leaflet unavailable');
       renderDeliveryMap();
-    } catch(e) { document.getElementById('dlvMap').textContent = '地图暂时无法加载；仍可使用区域列表和接单计算器。'; }
+    } catch(e) {
+      const m = document.getElementById('dlvMap');
+      m.classList.add('dash-map-fallback');
+      m.innerHTML = '<p><b>地图暂时无法加载</b>上面的区域列表和接单计算器仍可正常使用，刷新页面可重试。</p>';
+      ['dlvReset', 'dlvLayerChips', 'dlvMetricNote'].forEach(id => document.getElementById(id)?.setAttribute('hidden', ''));
+    }
     // Phone jump bar: underline the section currently on screen.
     const jump = document.querySelector('.dash-jump');
     if (jump && 'IntersectionObserver' in window) {
