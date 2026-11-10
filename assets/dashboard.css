@@ -71,8 +71,30 @@ body[data-page=dashboard] { margin: 0; background: #101719; color: #e8e6de; over
 .drop-empty h3, .drop-title h3 { font-size: 22px; font-weight: 400; color: #e7ddc9; margin: 10px 0; }
 .drop-empty p, .drop-description { color: #b4c0b9; font-size: 13px; line-height: 1.8; margin: 8px 0 16px; }
 .drop-title { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-.drop-title > span { color: #96b6ad; font-size: 10px; }
-.drop-metrics { display: grid; grid-template-columns: repeat(3,1fr); padding: 20px 0; gap: 14px; }
+.drop-title { justify-content: flex-start; }
+.drop-title h3 { margin-right: 4px; }
+.drop-ref { color: #96b6ad; font-size: 10px; margin-left: auto; }
+.drop-pill { font-size: 11px; line-height: 1; padding: 5px 8px; border-radius: 999px; border: 1px solid #455352; color: #c9d6cf; }
+.drop-pill.fast { color: #a9e2c0; border-color: #3f7a5b; background: #1d3328; }
+.drop-pill.mid { color: #d7dccf; background: #222c2e; }
+.drop-pill.slow { color: #f0c88a; border-color: #8a6a3a; background: #33291b; }
+.drop-pill.thin { color: #a5b6b0; border-style: dashed; }
+.drop-metrics { display: grid; grid-template-columns: repeat(3,1fr); padding: 18px 0 14px; gap: 14px; max-width: 680px; }
+.drop-metrics b.fast { color: #a9e2c0; }
+.drop-metrics b.slow { color: #f0c88a; }
+.drop-scale { max-width: 680px; margin-bottom: 6px; }
+.drop-scale-track { position: relative; height: 18px; border-bottom: 1px solid #455352; }
+.drop-scale-track i { position: absolute; bottom: 0; width: 2px; height: 8px; margin-left: -1px; background: #4d5d5a; }
+.drop-scale-median { position: absolute; bottom: -1px; top: 0; width: 0; border-left: 1px dashed #8fa49d; }
+.drop-scale-me { position: absolute; bottom: -5px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: #ddcdaa; box-shadow: 0 0 0 3px #172023; }
+.drop-scale-me.fast { background: #7fd3a3; }
+.drop-scale-me.slow { background: #e9b468; }
+.drop-scale-axis { position: relative; display: flex; justify-content: space-between; color: #8fa49d; font: 10px var(--mono, monospace); margin-top: 8px; }
+.drop-scale-mlabel { position: absolute; top: 0; transform: translateX(-50%); color: #b4c0b9; }
+.drop-scale p { color: #b4c0b9; font-size: 12px; line-height: 1.7; margin: 8px 0 0; }
+.drop-next { display: inline-flex; align-items: center; gap: 10px; margin: 0 0 16px; padding: 8px 12px; border: 1px solid #34413e; border-radius: 8px; background: #1b2629; font-size: 12px; }
+.drop-next span { color: #9aafa7; }
+.drop-next strong { color: #e7ddc9; font-weight: 500; }
 .drop-metrics span { display: block; color: #9aafa7; font-size: 11px; margin-bottom: 9px; }
 .drop-metrics b { color: #ddcdaa; font: 25px var(--mono, monospace); }
 .drop-metrics small { font-size: 11px; }
