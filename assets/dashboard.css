@@ -57,7 +57,24 @@ body[data-page=dashboard] { margin: 0; background: #101719; color: #e8e6de; over
 .dash-map-scope { font-size: 10px; color: #a5b6b0; padding: 0 14px 10px; margin: 0; }
 .dash-mapwrap { position: relative; }
 .dash #dlvMap { height: 430px; min-height: 300px; width: 100%; border: 0; border-radius: 0; background: #22292c; }
-.dash-focus { position: relative; margin: 0; max-height: 180px; overflow: auto; border-radius: 0; }
+/* Zone focus bar under the map: name + exit on one line, stats in a grid, the pickup rate leads. */
+.dash-focus { position: relative; margin: 0; border-radius: 0; }
+.dash .dash-focus:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'name exit' 'stats stats' 'parts parts'; align-items: center; gap: 12px 16px; padding: 14px 16px; }
+.dash-focus .dlv-focus-name { grid-area: name; flex-basis: auto; font-size: 20px; }
+.dash-focus .dlv-focus-exit { grid-area: exit; min-height: 36px; }
+.dash-focus .dlv-focus-details { grid-area: parts; }
+.dash-focus .dlv-focus-details summary { min-height: 36px; padding: 6px 0; }
+.dash-focus .dlv-focus-stats { grid-area: stats; display: grid; grid-template-columns: repeat(6, max-content); gap: 10px 26px; min-width: 0; }
+.dash-focus .dlv-focus-stats span { font-size: 13px; color: #e2e6dc; flex: none; }
+.dash-focus .dlv-focus-stats em { font-size: 10px; letter-spacing: .04em; margin-bottom: 4px; }
+.dash-focus .dlv-focus-stats span:nth-child(3) { order: -1; color: #eccb95; font-size: 20px; line-height: 1.1; padding-right: 26px; border-right: 1px solid #3b4a4b; }
+.dash-focus .dlv-focus-stats span:nth-child(3) em { color: #d9bb86; }
+@media (max-width: 760px) {
+  .dash .dash-focus:not([hidden]) { padding: 12px; gap: 10px 12px; }
+  .dash-focus .dlv-focus-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 10px; }
+  .dash-focus .dlv-focus-stats span { font-size: 12px; overflow-wrap: anywhere; }
+  .dash-focus .dlv-focus-stats span:nth-child(3) { grid-column: 1 / -1; padding: 0 0 10px; border-right: 0; border-bottom: 1px solid #3b4a4b; font-size: 22px; }
+}
 .dash-timebar { display: flex; align-items: center; gap: 8px; padding: 12px; flex-wrap: wrap; border-top: 1px solid #344145; }
 .dash-timebar input { flex: 1; min-width: 80px; }
 .dash .dlv-map-legend { width: 100%; font-size: 10px; margin: 0; }
