@@ -86,9 +86,12 @@
     const d = dlvData();
     if (!d) { document.getElementById('dashStatus').textContent = '配送数据未加载，请刷新后重试。'; return; }
     const s = d.summary, v = d.validation;
-    document.getElementById('dashStats').innerHTML = [
-      [d.meta.shifts, '推定班次'], [s.hours.toFixed(0) + ' h', '骑行记录'], [s.pickups, '推断取餐'], [v ? v.recall_drop + '%' : '—', '送达召回率'],
-    ].map(([n,k])=>`<div><b>${n}</b><span>${k}</span></div>`).join('');
+    // Lead with pace (orders per recorded hour, minutes per order): the two numbers that turn into $/h.
+    // Sample size and detection recall stay, as smaller context.
+    const stat = (n, u, k, cls = '') => `<div class="${cls}"><b>${n}${u ? `<small>${u}</small>` : ''}</b><span>${k}</span></div>`;
+    document.getElementById('dashStats').innerHTML =
+      `<div class="dash-pace">${stat(s.orders_per_hour.toFixed(2), ' 单/h', '每记录小时单量', 'lead')}${stat(s.min_per_order.toFixed(0), ' min', '平均每单用时')}</div>`
+      + `<div class="dash-sample">${stat(s.hours.toFixed(0), ' h', `${d.meta.shifts} 班次记录`)}${stat(s.pickups, '', `推断取餐 · 送达召回 ${v ? v.recall_drop + '%' : '—'}`)}</div>`;
     document.getElementById('dashStatus').innerHTML = `<span class="dash-history-tag">历史数据</span><span>${d.meta.first} — ${d.meta.last}</span><span>悉尼时间 · 非实时派单热力图</span><a href="#offer">输入一单 ↓</a>`;
     document.getElementById('dashMapNote').textContent = d.meta.shifts + ' 班次';
     DeliveryPlanner.mountOffer(document.getElementById('dashOffer'), d);
