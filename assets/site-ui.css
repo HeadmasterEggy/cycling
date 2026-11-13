@@ -120,6 +120,8 @@ footer>div:last-child { flex-wrap:wrap; }
   .section-title { font-size:23px; }.section-sub { font-size:12px; margin-bottom:18px; }
   .section-index { margin:12px 14px 0; gap:3px; }.section-index-label { padding:0 5px; }
   .section-index a { min-height:40px; padding:10px; font-size:11px; }
+  .section-index { scrollbar-width:none; -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent); mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent); padding-right:24px; }
+  .section-index::-webkit-scrollbar { display:none; }
   .chart-card { padding:18px 14px; border-radius:10px; }
   .chart-title { font-size:14px; }.chart-sub { font-size:11px; }
   .analysis-grid { gap:16px; }.chart-expand { min-height:40px; font-size:12px; }
