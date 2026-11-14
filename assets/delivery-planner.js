@@ -581,10 +581,22 @@
         const values = Object.fromEntries(new FormData(form)), r = M.settlement(values);
         out.innerHTML = Number(values.hours) === 0 && Number(values.fare) === 0 && Number(values.promotions) === 0
           ? '填入同一周期的实际数据后查看补差估算'
-          : `<span>周期补差估算</span><strong>${money(r.topup)}</strong><small>最低金额 ${money(r.minimum)} · 纳入比较 ${money(r.eligible)}</small>`;
+          : settlementCard(r, Number(values.hours), Number(values.rate));
       } catch(e) { out.textContent = e.message; }
     };
     form.addEventListener('submit', e=>e.preventDefault()); form.addEventListener('input',paint); form.addEventListener('change',paint); paint();
+  }
+  // Read the period as an hourly rate against the standard, so "$0.00 top-up" says why.
+  function settlementCard(r, hours, rate) {
+    const head = `<span>周期补差估算</span><strong>${money(r.topup)}</strong><small>最低金额 ${money(r.minimum)} · 纳入比较 ${money(r.eligible)}</small>`;
+    if (!(hours > 0)) return head;
+    const per = r.eligible / hours, scale = Math.max(per, rate) * 1.15;
+    const pct = v => Math.min(100, v / scale * 100).toFixed(1);
+    const above = r.topup === 0;
+    return `<div class="plan-settle-card ${above ? 'above' : 'below'}">${head}
+      <p class="plan-settle-verdict">${above ? `有效时薪 ${money(per)}/h，已达到 ${money(rate)}/h 标准，不触发补差` : `有效时薪 ${money(per)}/h，低于 ${money(rate)}/h 标准，差额按 ${hours} h 计`}</p>
+      <div class="plan-settle-bar" role="img" aria-label="有效时薪 ${money(per)}/h，标准 ${money(rate)}/h"><i style="width:${pct(per)}%"></i><b style="left:${pct(rate)}%"></b></div>
+      <div class="plan-settle-scale"><span>有效时薪 ${money(per)}</span><span>标准 ${money(rate)}</span></div></div>`;
   }
   function mountLedger(host, data) {
     if (!host) return;

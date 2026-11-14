@@ -63,9 +63,21 @@
     if (!z) {
       host.innerHTML = `<div class="drop-empty"><span>↗</span><h3>选一个区域，看看下一步。</h3><p>点候选区或地图区域，查看送完后的续接时间。落点也会同步到接单计算器。</p></div>`;
     } else {
-      host.innerHTML = `<div class="drop-title"><h3>${esc(z.label)}</h3><span>全期历史参考</span></div>` + (ad
-        ? `<div class="drop-metrics"><div><span>到下次取餐</span><b>${ad.dead_min}<small> min</small></b></div><div><span>中位移动距离</span><b>${ad.dead_km}<small> km</small></b></div><div><span>观察样本</span><b>${ad.legs}<small> 段</small></b></div></div>
-           <p class="drop-description">${ad.legs < 8 ? '样本偏少，先作为参考。' : ''}${ad.dead_min >= 8 ? '续接时间较长，接送入单时多留转场余量。' : '历史续接较短，仍需结合当前等单情况。'}${ad.next_zone ? `跨区后续取餐较常见于 <strong>${esc(ad.next_zone)}</strong>。` : ''}</p>`
+      const peers = data.zones.filter(q => q.as_drop && q.as_drop.legs >= 5).map(q => ({ name: q.name, min: q.as_drop.dead_min })).sort((a, b) => a.min - b.min);
+      const median = peers.length ? peers[Math.floor(peers.length / 2)].min : 0;
+      const tone = !ad ? '' : ad.dead_min >= 8 ? 'slow' : ad.dead_min <= median ? 'fast' : 'mid';
+      const toneLabel = { fast: '续接快', mid: '续接一般', slow: '续接慢' }[tone];
+      const rank = ad ? peers.findIndex(q => q.name === z.name) + 1 : 0;
+      const rankText = rank === 1 ? '最快' : rank === peers.length ? '最慢' : rank <= peers.length / 2 ? `第 ${rank} 快` : `倒数第 ${peers.length - rank + 1}`;
+      const top = Math.max(15, ...peers.map(q => q.min), ad ? ad.dead_min : 0), pos = v => Math.min(100, v / top * 100).toFixed(1);
+      const scale = ad && peers.length ? `<div class="drop-scale" aria-label="和其他落点比较：${ad.dead_min} 分钟，样本足够的 ${peers.length} 区中位数 ${median} 分钟">
+          <div class="drop-scale-track">${peers.map(q => `<i style="left:${pos(q.min)}%"></i>`).join('')}<em class="drop-scale-median" style="left:${pos(median)}%"></em><b class="drop-scale-me ${tone}" style="left:${pos(ad.dead_min)}%"></b></div>
+          <div class="drop-scale-axis"><span>0′</span><span class="drop-scale-mlabel" style="left:${pos(median)}%">中位 ${median}′</span><span>${top}′</span></div>
+          <p>${rank ? `在样本 ≥5 段的 ${peers.length} 个落点里${rankText}` : `样本不足 5 段，未参与 ${peers.length} 区排名`}${ad.dead_min < median ? `，比中位少 ${(median - ad.dead_min).toFixed(1)} 分钟。` : ad.dead_min > median ? `，比中位多 ${(ad.dead_min - median).toFixed(1)} 分钟。` : '，和中位持平。'}</p>
+        </div>` : '';
+      host.innerHTML = `<div class="drop-title"><h3>${esc(z.label)}</h3>${tone ? `<span class="drop-pill ${tone}">${toneLabel}</span>` : ''}${ad && ad.legs < 8 ? '<span class="drop-pill thin">样本偏少</span>' : ''}<span class="drop-ref">全期历史参考</span></div>` + (ad
+        ? `<div class="drop-metrics"><div><span>到下次取餐</span><b class="${tone}">${ad.dead_min}<small> min</small></b></div><div><span>中位移动距离</span><b>${ad.dead_km}<small> km</small></b></div><div><span>观察样本</span><b>${ad.legs}<small> 段</small></b></div></div>${scale}
+           <p class="drop-description">${ad.dead_min >= 8 ? '续接时间较长，接送入单时多留转场余量。' : '历史续接较短，仍需结合当前等单情况。'}</p>${ad.next_zone ? `<p class="drop-next"><span>下一单常在</span><strong>→ ${esc(ad.next_zone)}</strong></p>` : ''}`
         : '<p class="drop-description">还没有足够的取送链条判断这个落点。</p>');
     }
     host.innerHTML += `<div class="drop-basis"><span>样本边界</span> ${c.dead_legs} 段续接 · 匹配链条覆盖总里程 ${c.coverage_pct}%。送达后到下一次取餐包含已接单去店；无法据此计算无偿空驶。</div>`;
@@ -74,9 +86,12 @@
     const d = dlvData();
     if (!d) { document.getElementById('dashStatus').textContent = '配送数据未加载，请刷新后重试。'; return; }
     const s = d.summary, v = d.validation;
-    document.getElementById('dashStats').innerHTML = [
-      [d.meta.shifts, '推定班次'], [s.hours.toFixed(0) + ' h', '骑行记录'], [s.pickups, '推断取餐'], [v ? v.recall_drop + '%' : '—', '送达召回率'],
-    ].map(([n,k])=>`<div><b>${n}</b><span>${k}</span></div>`).join('');
+    // Lead with pace (orders per recorded hour, minutes per order): the two numbers that turn into $/h.
+    // Sample size and detection recall stay, as smaller context.
+    const stat = (n, u, k, cls = '') => `<div class="${cls}"><b>${n}${u ? `<small>${u}</small>` : ''}</b><span>${k}</span></div>`;
+    document.getElementById('dashStats').innerHTML =
+      `<div class="dash-pace">${stat(s.orders_per_hour.toFixed(2), ' 单/h', '每记录小时单量', 'lead')}${stat(s.min_per_order.toFixed(0), ' min', '平均每单用时')}</div>`
+      + `<div class="dash-sample">${stat(s.hours.toFixed(0), ' h', `${d.meta.shifts} 班次记录`)}${stat(s.pickups, '', `推断取餐 · 送达召回 ${v ? v.recall_drop + '%' : '—'}`)}</div>`;
     document.getElementById('dashStatus').innerHTML = `<span class="dash-history-tag">历史数据</span><span>${d.meta.first} — ${d.meta.last}</span><span>悉尼时间 · 非实时派单热力图</span><a href="#offer">输入一单 ↓</a>`;
     document.getElementById('dashMapNote').textContent = d.meta.shifts + ' 班次';
     DeliveryPlanner.mountOffer(document.getElementById('dashOffer'), d);
@@ -90,7 +105,25 @@
     try {
       if (typeof L === 'undefined') throw new Error('Leaflet unavailable');
       renderDeliveryMap();
-    } catch(e) { document.getElementById('dlvMap').textContent = '地图暂时无法加载；仍可使用区域列表和接单计算器。'; }
+    } catch(e) {
+      const m = document.getElementById('dlvMap');
+      m.classList.add('dash-map-fallback');
+      m.innerHTML = '<p><b>地图暂时无法加载</b>上面的区域列表和接单计算器仍可正常使用，刷新页面可重试。</p>';
+      ['dlvReset', 'dlvLayerChips', 'dlvMetricNote'].forEach(id => document.getElementById(id)?.setAttribute('hidden', ''));
+    }
+    // Phone jump bar: underline the section currently on screen.
+    const jump = document.querySelector('.dash-jump');
+    if (jump && 'IntersectionObserver' in window) {
+      const links = new Map([...jump.querySelectorAll('a')].map(a => [a.getAttribute('href').slice(1), a]));
+      const seen = new Map();
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(e => seen.set(e.target.id, e.isIntersecting ? e.intersectionRatio : 0));
+        let best = null, ratio = 0;
+        seen.forEach((r, id) => { if (r > ratio) { ratio = r; best = id; } });
+        links.forEach((a, id) => { const on = id === best; a.classList.toggle('on', on); if (on) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current'); });
+      }, { rootMargin: '-56px 0px -45% 0px', threshold: [0, .1, .25, .5] });
+      links.forEach((a, id) => { const el = document.getElementById(id); if (el) io.observe(el); });
+    }
     const kick = () => { if (typeof DLVMAP !== 'undefined' && DLVMAP.map) DLVMAP.map.invalidateSize(); };
     setTimeout(kick, 250);
     let timer;

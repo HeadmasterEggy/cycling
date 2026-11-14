@@ -511,12 +511,16 @@
       const filterNavigation = () => {
         const nav = $('.section-index');
         if (!nav) return;
-        const primary = new Set(['什么时候去哪试跑', '区域排行', '这一单该不该接', '平台归属与核验']);
+        // Keep the decision sections in the strip; sections folded into evidence get one 研究依据 link.
+        // Match by prefix so a renamed English subtitle doesn't drop a link (the strip once shrank to one).
+        const primary = ['什么时候去', '哪个区值得跑', '区域排行', '这一单该不该接', '送完去哪等', '平台归属与核验'];
         nav.querySelectorAll('a[href^="#"]').forEach(link => {
-          if (!primary.has(link.textContent.trim())) link.remove();
+          if (link.dataset.deliveryEvidenceLink) return;
+          const text = link.textContent.trim();
+          if (!primary.some(p => text.startsWith(p))) link.remove();
         });
         const evidenceSection = [...main.querySelectorAll(':scope > section.analysis-section')]
-          .find(section => section.querySelector('.section-title')?.textContent.trim().startsWith('接单区还是送达区'));
+          .find(section => /^(接单区还是送达区|热点地图)/.test(section.querySelector('.section-title')?.textContent.trim() || ''));
         if (evidenceSection && !nav.querySelector('[data-delivery-evidence-link]')) {
           const link = document.createElement('a');
           link.href = `#${evidenceSection.id}`;

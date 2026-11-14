@@ -90,3 +90,21 @@
 @media (prefers-reduced-motion: reduce) {
   .dlv-row, .corridor-row, .ch-row[data-zone], #zoneTable tbody tr { transition: none; }
 }
+
+/* 送完去哪等: each row leads with the number it is sorted by (取餐频率 / 续接分钟);
+   sample counts drop to a muted tone so they stop competing with it. */
+#dlvPickupRank .ch-name, #dlvDropRank .ch-name { justify-content: space-between; flex-wrap: wrap; row-gap: 2px; }
+#dlvPickupRank .ch-name em, #dlvDropRank .ch-name em { color: #92a59f; font-size: 10px; }
+#dlvPickupRank .ch-row, #dlvDropRank .ch-row { padding: 12px 6px; }
+#dlvPickupRank .ch-stats span:first-child, #dlvDropRank .ch-stats span:first-child { color: #eccb95; font-size: 15px; flex-basis: 100%; }
+#dlvPickupRank .ch-stats span:first-child i, #dlvDropRank .ch-stats span:first-child i { color: #c9ad7c; font-size: 11px; }
+@media (max-width: 520px) {
+  #dlvChainSum.dlv-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #dlvChainSum .dlv-kpi { padding: 14px 14px 16px; }
+  #dlvChainSum .dlv-kpi-label { font-size: 10px; letter-spacing: .06em; }
+  #dlvChainSum .dlv-kpi-value { font-size: 26px; margin-top: 6px; }
+  #dlvChainSum .dlv-kpi-foot { font-size: 10.5px; line-height: 1.45; }
+  #dlvPickupRank .ch-stats, #dlvDropRank .ch-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; }
+  #dlvPickupRank .ch-stats span, #dlvDropRank .ch-stats span { min-width: 0; flex-wrap: wrap; }
+  #dlvPickupRank .ch-stats span:first-child, #dlvDropRank .ch-stats span:first-child { grid-column: 1 / -1; }
+}
