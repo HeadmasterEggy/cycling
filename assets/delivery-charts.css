@@ -108,3 +108,13 @@
   #dlvPickupRank .ch-stats span, #dlvDropRank .ch-stats span { min-width: 0; flex-wrap: wrap; }
   #dlvPickupRank .ch-stats span:first-child, #dlvDropRank .ch-stats span:first-child { grid-column: 1 / -1; }
 }
+
+/* 哪个区值得跑 quadrant: at phone width the 900×460 chart shrank to ~330px and its labels to ~3px.
+   Keep it at a readable width and let it scroll sideways; the toolbar stays pinned. */
+.dlv-quad-hint { display: none; }
+@media (max-width: 640px) {
+  .dlv-quad-scroll { overflow-x: auto; overscroll-behavior-x: contain; margin: 0 -4px; padding: 0 4px 6px; scrollbar-width: thin; }
+  .dlv-quad-scroll > svg#zoneQuadrant { display: block; width: 640px; max-width: none; height: auto; }
+  .dlv-quad-scroll > :not(svg) { position: sticky; left: 0; }
+  .dlv-quad-hint { display: block; margin: 6px 0 0; color: #91a6a0; font-size: 10.5px; }
+}

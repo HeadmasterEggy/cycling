@@ -20,7 +20,7 @@
   crossorigin=""/>
 <link rel="stylesheet" href="assets/styles.css?v=d1652980118b">
 <link rel="stylesheet" href="assets/delivery-planner.css?v=201b93d47b28">
-<link rel="stylesheet" href="assets/delivery-charts.css?v=a204f3a2c7f6">
+<link rel="stylesheet" href="assets/delivery-charts.css?v=3b6cdaef605a">
 <link rel="stylesheet" href="assets/site-ui.css?v=b75df0e508fe">
 </head>
 <body data-page="all">
@@ -757,7 +757,10 @@
   <div class="section-sub">比较各区的取餐频率、通行效率和餐厅密度，找出最值得试跑的区域。可切换全部历史或最近 28 天。</div>
   <div class="chart-card">
     <div id="dlvZonePlanner" style="margin-bottom:28px"></div>
-    <svg id="zoneQuadrant" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="dlv-quad-scroll" tabindex="0" aria-label="区域四象限图，可横向滚动">
+      <svg id="zoneQuadrant" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+    <p class="dlv-quad-hint" aria-hidden="true">左右滑动看完整四象限 · 或点「放大图表」</p>
     <div class="eq-legend" id="zoneQuadLegend"></div>
     <div class="dlv-table-foot" style="padding: 10px 2px 0;">横轴跟随区域筛选，纵轴为全期通行效率；竖线为纵轴 90% 区间，虚线为当前候选区中位数。</div>
   </div>
