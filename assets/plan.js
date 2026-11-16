@@ -104,18 +104,30 @@
         v.innerHTML = `<div class="pl-v-main"><b>？</b><span>${esc(err.message)}</span></div>`;
       }
     }
-    sheet(target, fareRaw === '' ? null : Number(fareRaw));
+    sheet(target, fareRaw === '' ? null : Number(fareRaw), Number(minRaw || $('plMin').placeholder) || null, minRaw === '');
   }
 
-  function sheet(target, current) {
+  // Tapping a cell fills the fare. Cells that cover the trip length in the minutes box are lit,
+  // and the head names the exact break-even fare for that length.
+  function sheet(target, current, minutes, typical) {
     const fares = [5, 6, 7, 8, 9, 10, 12, 14, 16, 20];
     const near = current == null ? null : fares.reduce((a, f) => Math.abs(f - current) < Math.abs(a - current) ? f : a, fares[0]);
     $('plSheet').innerHTML = fares.map(f => {
       const m = Math.floor(M.acceptLine({ fare: f, quest: state.quest, target }).maxMinutes);
-      return `<div class="${f === near ? 'on' : ''}"><span>${money(f, 0)}</span><b>${m}′</b></div>`;
+      const fit = minutes ? (m >= minutes ? ' fits' : ' short') : '';
+      return `<button type="button" class="${f === near ? 'on' : ''}${fit}" data-fare="${f}" aria-label="运费 ${money(f, 0)}，整轮最多 ${m} 分钟${fit === ' fits' ? '，够跑这单' : ''}"><span>${money(f, 0)}</span><b>${m}′</b></button>`;
     }).join('');
-    $('plSheetNote').textContent = `运费 → 整轮最多分钟 · Quest ${money(state.quest, 1)} · 目标 ${money(target, target % 1 ? 2 : 0)}/h`;
+    const need = minutes ? Math.max(0, target * minutes / 60 - state.quest) : null;
+    $('plSheetNote').innerHTML = need == null
+      ? `运费 → 整轮最多分钟 · Quest ${money(state.quest, 1)} · 目标 ${money(target, target % 1 ? 2 : 0)}/h`
+      : `${typical ? '按平均整轮' : '整轮'} ${minutes}′ → 运费 ≥ <b>${money(need)}</b> 就接 · Quest ${money(state.quest, 1)} · 目标 ${money(target, target % 1 ? 2 : 0)}/h`;
   }
+  $('plSheet').addEventListener('click', e => {
+    const b = e.target.closest('button[data-fare]');
+    if (!b) return;
+    $('plFare').value = b.dataset.fare;
+    render();
+  });
   render();
 
   // ---------- 02 when ----------

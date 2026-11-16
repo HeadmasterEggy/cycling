@@ -128,11 +128,16 @@ input { font: inherit; }
 .pl-sheet-head h3 { margin: 0; font: 500 14px var(--serif); }
 .pl-sheet-head span { color: var(--ink3); font-size: 11px; }
 .pl-sheet-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-.pl-sheet-grid div { background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 4px 8px; text-align: center; transition: all .2s; }
+.pl-sheet-grid button { font: inherit; color: var(--ink); cursor: pointer; background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 4px 8px; text-align: center; transition: all .2s; min-height: 52px; }
+.pl-sheet-grid button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.pl-sheet-grid button.fits { border-color: rgba(127,211,163,.45); }
+.pl-sheet-grid button.fits b { color: #a9e2c0; }
+.pl-sheet-grid button.short { opacity: .5; }
+.pl-sheet-head span b { color: var(--gold); font-weight: 500; }
 .pl-sheet-grid span { display: block; font: 11px var(--mono); color: var(--ink3); }
 .pl-sheet-grid b { display: block; font: 500 19px var(--mono); margin-top: 3px; }
-.pl-sheet-grid div.on { border-color: var(--gold); background: rgba(230,197,139,.1); }
-.pl-sheet-grid div.on b { color: var(--gold); }
+.pl-sheet-grid button.on { border-color: var(--gold); background: rgba(230,197,139,.1); opacity: 1; }
+.pl-sheet-grid button.on b { color: var(--gold); }
 
 /* heat */
 .pl-heat { display: grid; gap: 5px; }
