@@ -24,11 +24,12 @@
   // ---------- hero ----------
   const perOrder = (L.farePer || 0) + (L.questPer || 0);
   const pace = S.min_per_order || null;
+  // Read left to right as the sum it is: fare + Quest per order, at your pace, gives $/h.
   $('plStats').innerHTML = [
-    [money(L.farePer || 0), '平均运费 / 单'],
-    [money(L.questPer || 0), '平均 Quest / 单'],
-    [pace ? money(perOrder * 60 / pace, 0) : '—', `按你 ${pace ? pace.toFixed(0) : '—'} 分钟一单`],
-  ].map(([b, s]) => `<div><b>${b}</b><span>${s}</span></div>`).join('');
+    [money(L.farePer || 0), '', '平均运费 / 单', ''],
+    [money(L.questPer || 0), '', '平均 Quest / 单', '＋'],
+    [pace ? money(perOrder * 60 / pace, 0) : '—', '/h', `估算时薪 · 每单 ${pace ? pace.toFixed(0) : '—'} 分钟`, '→'],
+  ].map(([b, u, s, op]) => `<div>${op ? `<em class="pl-op" aria-hidden="true">${op}</em>` : ''}<b>${b}${u ? `<small>${u}</small>` : ''}</b><span>${s}</span></div>`).join('');
   if (L.total > 0) {
     const parts = [['fare', '运费', L.fare], ['quest', 'Quest', L.quest], ['other', '其他调整', L.other]];
     $('plMix').innerHTML = `<div class="pl-mix-label">自 ${since.slice(5).replace('-', '/')} 起 Uber 账本 ${money(L.total, 0)} · ${L.records} 单</div>

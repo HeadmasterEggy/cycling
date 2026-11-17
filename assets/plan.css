@@ -41,8 +41,13 @@ input { font: inherit; }
 .pl-hero h1 em { font-style: normal; color: var(--gold); }
 .pl-hero p { color: var(--ink2); font-size: 15px; line-height: 1.8; margin: 20px 0 0; max-width: 34em; }
 .pl-hero p b { color: var(--ink); font-weight: 600; border-bottom: 1px solid var(--gold2); }
-.pl-stats { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 14px; background: rgba(21,30,33,.7); backdrop-filter: blur(6px); overflow: hidden; }
-.pl-stats > div { padding: 18px 18px 16px; border-left: 1px solid var(--line); }
+.pl-stats { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 14px; background: rgba(21,30,33,.7); backdrop-filter: blur(6px); overflow: visible; }
+.pl-stats > div:first-child { border-radius: 14px 0 0 14px; }
+.pl-stats > div:last-child { border-radius: 0 14px 14px 0; }
+.pl-stats > div { position: relative; padding: 18px 18px 16px; border-left: 1px solid var(--line); }
+.pl-stats .pl-op { position: absolute; left: -10px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font: 12px var(--mono); font-style: normal; color: var(--ink2); background: var(--bg2, #172124); border: 1px solid var(--line); z-index: 1; }
+.pl-stats b small { font-size: 13px; color: var(--gold2, #c9ad7c); margin-left: 2px; }
+.pl-stats > div:last-child { background: rgba(230,197,139,.06); }
 .pl-stats > div:first-child { border-left: 0; }
 .pl-stats > div:last-child b { color: var(--gold); }
 .pl-stats b { display: block; font: 500 26px var(--mono); letter-spacing: -.01em; }
