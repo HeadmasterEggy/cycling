@@ -149,3 +149,9 @@ footer>div:last-child { flex-wrap:wrap; }
 .chart-reading { min-width: 0; }
 .chart-record-controls { display: flex; gap: 6px; flex-shrink: 0; }
 .chart-record-controls button { min-width: 40px; min-height: 40px; padding: 5px; color: #cde5dd; border: 1px solid #54726a; border-radius: 6px; background: #203631; cursor: pointer; font-size: 18px; }
+/* One disclosure cue for every <summary>: flex summaries drop the native ▶, so draw a chevron that always shows and turns when open. */
+summary { list-style:none; }
+summary::-webkit-details-marker { display:none; }
+summary::before { content:""; flex:none; display:inline-block; width:5px; height:5px; margin:0 10px 0 1px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; opacity:.65; transform:translateY(-1px) rotate(-45deg); transition:transform .15s ease; vertical-align:middle; }
+details[open]>summary::before { transform:translateY(-3px) rotate(45deg); }
+@media (prefers-reduced-motion:reduce) { summary::before { transition:none; } }
