@@ -321,6 +321,10 @@ body[data-page="delivery"] .main > .analysis-section:first-child { margin-top: 0
 .plan-zone-row .plan-zone-main small { font-size:11px; }
 .plan-zone-row .plan-zone-rate { font-size:19px; flex-shrink:0; }
 .plan-zone-row .plan-zone-rate small { font-size:10px; }
+/* Wide panels: the bar spans the row so it reads as a chart against the rate on the right, not a stub under the name. */
+@media(min-width:760px) {
+  .plan-zone-row .plan-zone-bar { max-width:none; height:4px; margin-top:9px; }
+}
 .plan-zone-more { margin-top:8px; border-top:1px solid #354144; }
 .plan-zone-more summary { min-height:42px; display:flex; align-items:center; cursor:pointer; color:#aebcb5; font-size:11px; }
 .plan-compare-toggle { flex:0 0 34px; height:40px; border:1px solid #40564e; border-radius:7px; background:transparent; color:#9bcebf; font-size:20px !important; cursor:pointer; }
