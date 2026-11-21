@@ -523,7 +523,7 @@
       host.querySelector('.slot-matrix').innerHTML = `<div class="slot-table-scroll" tabindex="0" aria-label="时段与地点对照，可横向滚动"><table class="slot-table"><thead><tr><th>餐段</th>${days.map(w => `<th>${w ? '周末' : '工作日'}</th>`).join('')}</tr></thead><tbody>${usedParts.map(d => `<tr><th>${d.label}<small>${d.from}–${d.to}</small></th>${days.map(w => {
         const cell = all.filter(r => r.daypart === d.key && r.weekend === w), best = cell.filter(r => !r.thin)[0] || cell[0], next = cell.filter(r => r !== best && !r.thin)[0];
         const isTop = best === top;
-        return best ? `<td><button type="button" class="slot-pick ${best.thin ? 'thin' : ''}${isTop ? ' is-top' : ''}" ${slotAttributes(best, curve, filters.period)} aria-label="${esc(`${best.label}，${dayLabel(best)} ${best.daypartLabel}${isTop ? '，取餐频率最高' : ''}，代入接单计算器的历史对照`)}"><strong>${esc(best.label)}${isTop ? '<em class="slot-top-tag">最高</em>' : ''}</strong><b>${best.rate.toFixed(2)}<small> 次/记录小时</small></b><span class="slot-pick-bar" aria-hidden="true"><i style="width:${(best.rate / matrixMax * 100).toFixed(1)}%"></i></span><small>80% 区间 ${range(best)}${best.thin ? ' · 样本少' : ''}</small><span class="slot-pick-action">带入接单检查 ↓</span></button>${next ? `<small class="slot-next">其次 ${esc(next.label)} ${next.rate.toFixed(2)} 次/记录小时</small>` : ''}</td>` : '<td class="slot-none">记录不足</td>';
+        return best ? `<td><button type="button" class="slot-pick ${best.thin ? 'thin' : ''}${isTop ? ' is-top' : ''}" ${slotAttributes(best, curve, filters.period)} aria-label="${esc(`${best.label}，${dayLabel(best)} ${best.daypartLabel}${isTop ? '，取餐频率最高' : ''}，代入接单计算器的历史对照`)}"><strong>${esc(best.label)}${isTop ? '<em class="slot-top-tag">最高</em>' : ''}</strong><b>${best.rate.toFixed(2)}<small> 次/记录小时</small></b><span class="slot-pick-bar" aria-hidden="true"><i style="width:${(best.rate / matrixMax * 100).toFixed(1)}%"></i></span><small>80% 区间 ${range(best)}${best.thin ? ' · 样本少' : ''}</small><span class="slot-pick-action">带入接单检查 ↓</span></button>${next ? `<small class="slot-next">其次 <span>${esc(next.label)}</span> <b>${next.rate.toFixed(2)}</b><i> 次/记录小时</i></small>` : ''}</td>` : '<td class="slot-none">记录不足</td>';
       }).join('')}</tr>`).join('')}</tbody></table></div>`;
       const top10 = rows.slice(0, 10), max = Math.max(1, ...top10.map(r => r.rateHi));
       host.querySelector('.slot-rank').innerHTML = top10.length ? top10.map((r, i) => `<button type="button" class="slot-row ${r.thin ? 'thin' : ''}" ${slotAttributes(r, curve, filters.period)} aria-label="${esc(`${r.label}，${dayLabel(r)} ${r.daypartLabel}，代入接单计算器的历史对照`)}">
@@ -581,10 +581,22 @@
         const values = Object.fromEntries(new FormData(form)), r = M.settlement(values);
         out.innerHTML = Number(values.hours) === 0 && Number(values.fare) === 0 && Number(values.promotions) === 0
           ? '填入同一周期的实际数据后查看补差估算'
-          : `<span>周期补差估算</span><strong>${money(r.topup)}</strong><small>最低金额 ${money(r.minimum)} · 纳入比较 ${money(r.eligible)}</small>`;
+          : settlementCard(r, Number(values.hours), Number(values.rate));
       } catch(e) { out.textContent = e.message; }
     };
     form.addEventListener('submit', e=>e.preventDefault()); form.addEventListener('input',paint); form.addEventListener('change',paint); paint();
+  }
+  // Read the period as an hourly rate against the standard, so "$0.00 top-up" says why.
+  function settlementCard(r, hours, rate) {
+    const head = `<span>周期补差估算</span><strong>${money(r.topup)}</strong><small>最低金额 ${money(r.minimum)} · 纳入比较 ${money(r.eligible)}</small>`;
+    if (!(hours > 0)) return head;
+    const per = r.eligible / hours, scale = Math.max(per, rate) * 1.15;
+    const pct = v => Math.min(100, v / scale * 100).toFixed(1);
+    const above = r.topup === 0;
+    return `<div class="plan-settle-card ${above ? 'above' : 'below'}">${head}
+      <p class="plan-settle-verdict">${above ? `有效时薪 ${money(per)}/h，已达到 ${money(rate)}/h 标准，不触发补差` : `有效时薪 ${money(per)}/h，低于 ${money(rate)}/h 标准，差额按 ${hours} h 计`}</p>
+      <div class="plan-settle-bar" role="img" aria-label="有效时薪 ${money(per)}/h，标准 ${money(rate)}/h"><i style="width:${pct(per)}%"></i><b style="left:${pct(rate)}%"></b></div>
+      <div class="plan-settle-scale"><span>有效时薪 ${money(per)}</span><span>标准 ${money(rate)}</span></div></div>`;
   }
   function mountLedger(host, data) {
     if (!host) return;
@@ -592,13 +604,13 @@
     if (!o) { host.innerHTML = '<p class="plan-empty">没有可用的 Uber 账本。</p>'; return; }
     host.classList.add('planner');
     const checks = o.statement_checks || [];
-    host.innerHTML = `<p class="plan-help"><strong>我的账号 · 原有账本</strong> — ${o.n} 条 Uber 活动记录。2026-10-19 扫描的其他账号数据未纳入本账本及配送分析。已核对的周采用网页账单金额；其他周显示日志分类，小费未知。Quest 单独列出，不平摊到下一单。</p>
-      <div class="plan-table-scroll" tabindex="0" aria-label="每周收入，可横向滚动"><table class="plan-ledger"><caption>每周分类金额（A$）· 周一 04:00 起<span class="ledger-legend"><i class="fare"></i>运费 <i class="quest"></i>Quest <i class="other"></i>其他</span></caption><thead><tr><th>结算周</th><th>来源</th><th>运费</th><th>Quest</th><th>其他调整</th><th>小费</th><th>账单合计</th></tr></thead><tbody>${(() => {
+    host.innerHTML = `<p class="plan-help"><strong>我的账号 · 原有账本</strong> — ${o.n} 条 Uber 活动记录。2026-10-19 扫描的其他账号数据未纳入本账本及配送分析。已核对的周采用网页账单金额；其他周按日志分类相加，小费未知，合计不含小费。Quest 单独列出，不平摊到下一单。</p>
+      <div class="plan-table-scroll" tabindex="0" aria-label="每周收入，可横向滚动"><table class="plan-ledger"><caption>每周分类金额（A$）· 周一 04:00 起<span class="ledger-legend"><i class="fare"></i>运费 <i class="quest"></i>Quest <i class="other"></i>其他</span></caption><thead><tr><th>结算周</th><th>来源</th><th>运费</th><th>Quest</th><th>其他调整</th><th>小费</th><th>周合计</th></tr></thead><tbody>${(() => {
         const rows = o.weeks.map(raw => { const checked = checks.find(c => c.week === raw.week); return { checked, w: checked || raw }; });
         // The mix bar shows the categories every week has; tips are known only for checked weeks.
         const part = v => Math.max(0, v || 0), max = Math.max(1e-9, ...rows.map(({ w }) => part(w.fare) + part(w.quest) + part(w.other)));
         const pct = v => (part(v) / max * 100).toFixed(1);
-        return rows.map(({ checked, w }) => `<tr class="${checked ? 'is-checked' : ''}"><td data-label="结算周"><span class="ledger-week">${esc(w.week)}</span><span class="ledger-mix" aria-hidden="true"><i class="fare" style="width:${pct(w.fare)}%"></i><i class="quest" style="width:${pct(w.quest)}%"></i><i class="other" style="width:${pct(w.other)}%"></i></span></td><td data-label="来源"><span class="ledger-source">${checked ? '账单已核对' : '活动日志'}</span></td><td data-label="运费">${money(w.fare)}</td><td data-label="Quest" class="quest-cell">${money(w.quest)}</td><td data-label="其他调整">${money(w.other)}</td><td data-label="小费">${checked ? money(w.tips) : '—'}</td><td data-label="账单合计" class="ledger-total">${checked ? money(w.total) : '—'}</td></tr>`).join('');
+        return rows.map(({ checked, w }) => `<tr class="${checked ? 'is-checked' : ''}"><td data-label="结算周"><span class="ledger-week">${esc(w.week)}</span><span class="ledger-mix" aria-hidden="true"><i class="fare" style="width:${pct(w.fare)}%"></i><i class="quest" style="width:${pct(w.quest)}%"></i><i class="other" style="width:${pct(w.other)}%"></i></span></td><td data-label="来源"><span class="ledger-source">${checked ? '账单已核对' : '活动日志'}</span></td><td data-label="运费">${money(w.fare)}</td><td data-label="Quest" class="quest-cell">${money(w.quest)}</td><td data-label="其他调整">${money(w.other)}</td><td data-label="小费">${checked ? money(w.tips) : '—'}</td><td data-label="${checked ? '账单合计' : '日志合计'}" class="ledger-total${checked ? '' : ' is-log'}">${checked ? money(w.total) : `${money((w.fare || 0) + (w.quest || 0) + (w.other || 0))}<small>不含小费</small>`}</td></tr>`).join('');
       })()}</tbody></table></div>
       <p class="plan-help">日志按金额与时间排除 ${o.duplicates_removed} 笔疑似重复 MISC。大额调整另列：${o.large_adjustments.map(a => `${esc(a.on)} ${money(a.amt)}`).join('、') || '无'}，不按单摊销。未核对周的调整分类仍需账单确认。</p>
       <details class="plan-verified"><summary>账单核对与日志差异</summary>${checks.map(w => {
