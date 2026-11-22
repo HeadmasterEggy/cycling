@@ -89,10 +89,16 @@ body[data-page=dashboard] { margin: 0; background: #101719; color: #e8e6de; over
 .map-list-details summary { padding: 13px; color: #acbfba; font-size: 12px; cursor: pointer; min-height: 44px; }
 .map-list-details .dash-tabs { display: flex; flex-wrap: wrap; padding: 10px; gap: 6px; }
 .map-list-details #dlvList { max-height: 250px; overflow: auto; padding: 0; }
-.drop-empty { padding: 12px 0 24px; }
-.drop-empty > span { font-size: 28px; color: #9dc9c4; }
+.drop-empty { padding: 4px 0 18px; }
+.drop-quick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; }
+.drop-quick > span { color: #93a39d; font-size: 11px; margin-right: 2px; }
+.drop-quick button { display: inline-flex; align-items: baseline; gap: 6px; min-height: 40px; padding: 8px 12px; border: 1px solid #40564e; border-radius: 8px; background: #17251f; color: #e3e8df; font-size: 13px; cursor: pointer; }
+.drop-quick button:hover { background: #1d3228; border-color: #5f8a78; }
+.drop-quick button small { color: #9eb0a8; font: 11px var(--mono, monospace); }
 .drop-empty h3, .drop-title h3 { font-size: 22px; font-weight: 400; color: #e7ddc9; margin: 10px 0; }
 .drop-empty p, .drop-description { color: #b4c0b9; font-size: 13px; line-height: 1.8; margin: 8px 0 16px; }
+.drop-empty h3 { font-size: 18px; margin: 4px 0 6px; }
+.drop-empty p { margin: 0 0 14px; }
 .drop-title { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 .drop-title { justify-content: flex-start; }
 .drop-title h3 { margin-right: 4px; }

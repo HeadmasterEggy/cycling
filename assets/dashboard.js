@@ -61,7 +61,9 @@
     const host = document.getElementById('dashDrop'), c = data.chain;
     const z = data.zones.find(z => z.name === name), ad = z && z.as_drop;
     if (!z) {
-      host.innerHTML = `<div class="drop-empty"><span>↗</span><h3>选一个区域，看看下一步。</h3><p>点候选区或地图区域，查看送完后的续接时间。落点也会同步到接单计算器。</p></div>`;
+      // Offer the most-delivered-to places as one-tap starts, so the card is never just an instruction.
+      const common = data.zones.filter(q => q.as_drop && q.as_drop.legs >= 8).sort((a, b) => b.as_drop.legs - a.as_drop.legs).slice(0, 3);
+      host.innerHTML = `<div class="drop-empty"><h3>选一个区域，看看下一步。</h3><p>点候选区或地图区域，查看送完后的续接时间。落点也会同步到接单计算器。</p>${common.length ? `<div class="drop-quick"><span>最常送到</span>${common.map(q => `<button type="button" data-drop-pick="${esc(q.name)}">${esc(q.label)}<small>${q.as_drop.dead_min}′ · ${q.as_drop.legs} 段</small></button>`).join('')}</div>` : ''}</div>`;
     } else {
       const peers = data.zones.filter(q => q.as_drop && q.as_drop.legs >= 5).map(q => ({ name: q.name, min: q.as_drop.dead_min })).sort((a, b) => a.min - b.min);
       const median = peers.length ? peers[Math.floor(peers.length / 2)].min : 0;
@@ -102,6 +104,12 @@
     mountActivity();
     renderDrop(d, null);
     window.addEventListener('delivery-zone-focus', e => renderDrop(d, e.detail));
+    document.getElementById('dashDrop').addEventListener('click', e => {
+      const pick = e.target.closest('[data-drop-pick]');
+      if (!pick) return;
+      if (typeof dlvSetFocus === 'function') dlvSetFocus(pick.dataset.dropPick);
+      else window.dispatchEvent(new CustomEvent('delivery-zone-focus', { detail: pick.dataset.dropPick }));
+    });
     try {
       if (typeof L === 'undefined') throw new Error('Leaflet unavailable');
       renderDeliveryMap();
