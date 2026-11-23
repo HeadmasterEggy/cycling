@@ -33,7 +33,10 @@
 .plan-result.invalid { background: linear-gradient(135deg, #302222, #1e1b1b); border-color: #8a5a52; }
 .plan-result.invalid p { margin: 6px 0 0; color: #f3c6bb; }
 .plan-missing { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 12px 0 0; padding: 0; }
-.plan-missing li { padding: 4px 10px; border: 1px solid #3c5352; border-radius: 999px; color: #c9dcd8; font-size: 12px; background: #1a2729; }
+.plan-missing li { display: contents; }
+.plan-missing button { min-height: 34px; padding: 6px 12px; border: 1px solid #3c5352; border-radius: 999px; color: #c9dcd8; font-size: 12px; background: #1a2729; cursor: pointer; }
+.plan-missing button:hover { border-color: #74cdd8; color: #e6f3f1; background: #1f3134; }
+.plan-missing-hint { display: block; margin-top: 10px; color: #8f9c9a; font-size: 11px; }
 .plan-rate-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; }
 .plan-verdict { display: inline-flex; align-items: center; gap: 7px; margin: 0; padding: 5px 12px 5px 9px; border-radius: 999px; font-size: 13px; font-weight: 500; color: #f0d9ae; background: #e0b76e1f; border: 1px solid #e0b76e55; }
 .plan-verdict::before { content: '!'; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; font: 700 11px/1 var(--mono, monospace); color: #1b1a16; background: #e0b76e; }

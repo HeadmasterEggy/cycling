@@ -245,7 +245,7 @@
         if (invalid) throw new Error(`请检查「${fieldName(invalid)}」的输入`);
         // Blank fields are an unfinished form, not a mistake: list what is left.
         const missing = live.filter(el => el.validity.valueMissing);
-        if (missing.length) throw Object.assign(new Error('missing'), { missing: missing.map(fieldName) });
+        if (missing.length) throw Object.assign(new Error('missing'), { missing: missing.map(el => ({ label: fieldName(el), name: el.name })) });
         const r = M.estimate(values);
         const budget = M.delayBudget(values);
         // Round down: a displayed extra minute must not exceed the budget.
@@ -279,7 +279,7 @@
         host.querySelector('.plan-offer-insights').innerHTML = '';
         if (e.missing) {
           result.className = 'plan-result pending';
-          result.innerHTML = `<div class="plan-eyebrow">还差 ${e.missing.length} 项，就能算出这单时薪</div><ul class="plan-missing">${e.missing.map(n => `<li>${esc(n)}</li>`).join('')}</ul>`;
+          result.innerHTML = `<div class="plan-eyebrow">还差 ${e.missing.length} 项，就能算出这单时薪</div><ul class="plan-missing">${e.missing.map(m => `<li><button type="button" data-fill="${esc(m.name)}">${esc(m.label)}</button></li>`).join('')}</ul><small class="plan-missing-hint">点一项直接跳到输入框</small>`;
         } else {
           result.className = 'plan-result invalid';
           result.innerHTML = `<div class="plan-eyebrow">输入需要调整</div><p>${esc(e.message)}</p>`;
@@ -290,6 +290,12 @@
       host.querySelector('.plan-save-offer').disabled = !current || saved.length >= 3;
     }
     host.addEventListener('click', e => {
+      const jump = e.target.closest('[data-fill]');
+      if (jump) {
+        const input = host.querySelector(`input[name="${jump.dataset.fill}"]`);
+        if (input) { input.scrollIntoView({ block: 'center', behavior: 'smooth' }); input.focus({ preventScroll: true }); }
+        return;
+      }
       const save = e.target.closest('.plan-save-offer');
       const load = e.target.closest('[data-load-offer]');
       const remove = e.target.closest('[data-remove-offer]');
