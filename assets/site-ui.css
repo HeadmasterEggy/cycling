@@ -155,3 +155,11 @@ summary::-webkit-details-marker { display:none; }
 summary::before { content:""; flex:none; display:inline-block; width:5px; height:5px; margin:0 10px 0 1px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; opacity:.65; transform:translateY(-1px) rotate(-45deg); transition:transform .15s ease; vertical-align:middle; }
 details[open]>summary::before { transform:translateY(-3px) rotate(45deg); }
 @media (prefers-reduced-motion:reduce) { summary::before { transition:none; } }
+/* Delivery view switcher in the 配送 hero: links the three delivery pages the way 三件事/作战台 already do. */
+.dlv-views { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+.dlv-views a { display:flex; flex-direction:column; justify-content:center; min-height:48px; padding:7px 16px; border:1px solid #3a4a4c; border-radius:10px; background:#152023; color:#dfe6e0; font-size:14px; text-decoration:none; line-height:1.3; transition:border-color .15s, background .15s; }
+.dlv-views a small { color:#8f9c9a; font-size:10px; letter-spacing:.02em; }
+.dlv-views a:hover { border-color:#6e8b80; background:#1b2a2d; }
+.dlv-views a.active { border-color:#a98b55; background:linear-gradient(135deg,#2b261b,#1a231f); color:#f1d4a7; cursor:default; }
+.dlv-views a.active small { color:#c9ad7c; }
+@media (max-width:520px) { .dlv-views { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; } .dlv-views a { padding:7px 10px; font-size:13px; } }
