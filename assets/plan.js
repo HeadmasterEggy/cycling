@@ -148,18 +148,37 @@
         const r = by.get(h);
         const mark = (win && h >= win.from && h < win.to ? ' best' : '') + (isNowRow && h === now.hour ? ' now' : '');
         const info = r ? `${label} ${h}:00–${h + 1}:00 · ${r.enough ? `约 ${r.rate.toFixed(1)} 次取餐/记录小时` : '样本不足'} · ${r.hours.toFixed(1)} h 记录` : `${label} ${h}:00–${h + 1}:00 · 无记录`;
-        if (!r) return `<i class="none${mark}" tabindex="0" role="button" data-info="${esc(info)}" aria-label="${esc(info)}"></i>`;
+        if (!r) return `<i class="none${mark}" tabindex="-1" role="button" data-info="${esc(info)}" aria-label="${esc(info)}"></i>`;
         const t = hi > lo ? (r.rate - lo) / (hi - lo) : .5;
-        return `<i class="${r.enough ? '' : 'thin'}${mark}" style="--t:${r.enough ? t.toFixed(3) : 0}" tabindex="0" role="button" data-info="${esc(info)}" aria-label="${esc(info)}"></i>`;
+        return `<i class="${r.enough ? '' : 'thin'}${mark}" style="--t:${r.enough ? t.toFixed(3) : 0}" tabindex="-1" role="button" data-info="${esc(info)}" aria-label="${esc(info)}"></i>`;
       }).join('')}</div>`;
     };
     $('plHeat').innerHTML = row('工作日', curve.weekday) + row('周末', curve.weekend) +
       `<div class="pl-heat-row pl-heat-axis"><span class="pl-heat-label"></span>${HOURS.map(h => `<em>${h % 3 === 0 ? h : ''}</em>`).join('')}</div>` +
       `<p class="pl-heat-read" aria-live="polite">点格子看该小时的取餐频率${now && now.hour >= 9 && now.hour <= 23 ? ' · 白点是现在' : ''}</p>`;
     const read = $('plHeat').querySelector('.pl-heat-read');
-    const pick = cell => { $('plHeat').querySelectorAll('i.on').forEach(c => c.classList.remove('on')); cell.classList.add('on'); read.textContent = cell.dataset.info; };
+    // One tab stop for the whole grid (roving tabindex): Tab enters at "now" (or the first best hour),
+    // arrow keys walk the hours and read each one out, Tab leaves. Before, all 30 cells were tab stops.
+    const rows = [...$('plHeat').querySelectorAll('.pl-heat-row:not(.pl-heat-axis)')].map(r => [...r.querySelectorAll('i[data-info]')]);
+    const start = $('plHeat').querySelector('i.now') || $('plHeat').querySelector('i.best') || rows[0][0];
+    if (start) start.tabIndex = 0;
+    const pick = cell => {
+      $('plHeat').querySelectorAll('i.on').forEach(c => c.classList.remove('on'));
+      $('plHeat').querySelectorAll('i[tabindex="0"]').forEach(c => { c.tabIndex = -1; });
+      cell.classList.add('on'); cell.tabIndex = 0; read.textContent = cell.dataset.info;
+    };
     $('plHeat').addEventListener('click', e => { const c = e.target.closest('i[data-info]'); if (c) pick(c); });
-    $('plHeat').addEventListener('keydown', e => { const c = e.target.closest('i[data-info]'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); pick(c); } });
+    $('plHeat').addEventListener('keydown', e => {
+      const c = e.target.closest('i[data-info]');
+      if (!c) return;
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(c); return; }
+      const ri = rows.findIndex(r => r.includes(c)), ci = rows[ri].indexOf(c);
+      const move = { ArrowLeft: [ri, ci - 1], ArrowRight: [ri, ci + 1], ArrowUp: [ri - 1, ci], ArrowDown: [ri + 1, ci], Home: [ri, 0], End: [ri, rows[ri].length - 1] }[e.key];
+      if (!move) return;
+      const next = rows[move[0]] && rows[move[0]][move[1]];
+      e.preventDefault();
+      if (next) { pick(next); next.focus(); }
+    });
     $('plTimeAnswer').innerHTML = windows.map(w => `<b>${w.label} ${w.from}–${w.to} 点</b>`).join('，') +
       '。热的格子取餐更密，单与单之间等得少。';
   }

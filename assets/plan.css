@@ -219,3 +219,7 @@ input { font: inherit; }
   .pl-foot a { white-space: normal; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* Keyboard focus: one gold ring for links and buttons, matching the cheat-sheet cells (plan.html has no site-ui.css). */
+:where(a, button):focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.pl-links a:focus-visible { outline-offset: 2px; }
