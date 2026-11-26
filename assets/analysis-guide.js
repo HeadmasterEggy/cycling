@@ -369,7 +369,12 @@
       if (!candidate) return '现有记录不足以生成时段与区域候选。';
       const v = data.validation;
       const matched = v ? `Uber 对照找到 ${number(v.recall_drop)}% 送达、${number(v.recall_pickup)}% 取餐；其余 GPS 停留无法区分平台。` : '目前没有 Uber 账单可做覆盖核验。';
-      return `先试跑：${candidate.label} · ${candidate.weekend ? '周末' : '工作日'} ${candidate.daypartLabel}。历史 GPS 推断 ${number(candidate.rate,2)} 次取餐 / 记录小时（${number(candidate.pickups)} 次 / ${number(candidate.hours,1)} 小时 / ${number(candidate.shifts)} 班）。这是 Uber、DoorDash、熊猫混合活动的候选，不是单平台订单率或收入。${matched}`;
+      return {
+        head: `${candidate.label} · ${candidate.weekend ? '周末' : '工作日'} ${candidate.daypartLabel}`,
+        rate: number(candidate.rate,2),
+        sample: `${number(candidate.pickups)} 次 / ${number(candidate.hours,1)} 小时 / ${number(candidate.shifts)} 班`,
+        note: `这是 Uber、DoorDash、熊猫混合活动的候选，不是单平台订单率或收入。${matched}`,
+      };
     }
     return filtered(() => {
       const H = window.HEALTH_DATA || {};
@@ -569,7 +574,19 @@
     const guide = makeGuide();
     if (!guide) return;
     const refresh = () => {
-      guide.result.textContent = resultForPage();
+      const res = resultForPage();
+      if (res && typeof res === 'object') {
+        const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+        const pick = el('span', 'guide-pick');
+        pick.append(el('small', null, '先试跑'), el('b', null, res.head));
+        const rate = el('span', 'guide-rate');
+        rate.append(el('b', null, res.rate), el('small', null, '次取餐 / 记录小时'), el('i', null, res.sample));
+        guide.result.replaceChildren(pick, rate, el('span', 'guide-note', res.note));
+        guide.result.classList.add('is-structured');
+      } else {
+        guide.result.textContent = res;
+        guide.result.classList.remove('is-structured');
+      }
       const findings = filtered(() => guide.readings.map(({title, note}) => ({
         value: sectionFinding(title), note,
       })));
