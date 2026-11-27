@@ -359,7 +359,10 @@
   }
 
   function resultForPage() {
-    if (page === 'dashboard') return '先看历史记录里值得试跑的时段，再选区域；用真实报价检查单笔，送完后记录实际收入与时间来校准。时段排序依据 GPS 推断取餐频率，不是 Uber 在线时薪。';
+    if (page === 'dashboard') return {
+      steps: [['#slots', '挑时段', '历史里值得试跑的'], ['#zones', '选区域', '再定在哪等'], ['#offer', '算一单', '用真实报价检查'], ['#map', '记落点', '送完记收入和时间']],
+      note: '时段排序依据 GPS 推断取餐频率，不是 Uber 在线时薪；送完后的实际记录用来校准。',
+    };
     if (page === 'delivery') {
       const data = window.DELIVERY_DATA;
       const model = window.DeliveryModel;
@@ -575,7 +578,17 @@
     if (!guide) return;
     const refresh = () => {
       const res = resultForPage();
-      if (res && typeof res === 'object') {
+      if (res && res.steps) {
+        const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+        const list = el('ol', 'guide-steps');
+        res.steps.forEach(([href, label, hint]) => {
+          const a = el('a'); a.href = href;
+          a.append(el('b', null, label), el('small', null, hint));
+          const li = el('li'); li.append(a); list.append(li);
+        });
+        guide.result.replaceChildren(list, el('span', 'guide-note', res.note));
+        guide.result.classList.add('is-structured');
+      } else if (res && typeof res === 'object') {
         const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
         const pick = el('span', 'guide-pick');
         pick.append(el('small', null, '先试跑'), el('b', null, res.head));
