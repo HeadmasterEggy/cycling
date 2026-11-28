@@ -24,11 +24,12 @@
   // ---------- hero ----------
   const perOrder = (L.farePer || 0) + (L.questPer || 0);
   const pace = S.min_per_order || null;
+  // Read left to right as the sum it is: fare + Quest per order, at your pace, gives $/h.
   $('plStats').innerHTML = [
-    [money(L.farePer || 0), '平均运费 / 单'],
-    [money(L.questPer || 0), '平均 Quest / 单'],
-    [pace ? money(perOrder * 60 / pace, 0) : '—', `按你 ${pace ? pace.toFixed(0) : '—'} 分钟一单`],
-  ].map(([b, s]) => `<div><b>${b}</b><span>${s}</span></div>`).join('');
+    [money(L.farePer || 0), '', '平均运费 / 单', ''],
+    [money(L.questPer || 0), '', '平均 Quest / 单', '＋'],
+    [pace ? money(perOrder * 60 / pace, 0) : '—', '/h', `估算时薪 · 每单 ${pace ? pace.toFixed(0) : '—'} 分钟`, '→'],
+  ].map(([b, u, s, op]) => `<div>${op ? `<em class="pl-op" aria-hidden="true">${op}</em>` : ''}<b>${b}${u ? `<small>${u}</small>` : ''}</b><span>${s}</span></div>`).join('');
   if (L.total > 0) {
     const parts = [['fare', '运费', L.fare], ['quest', 'Quest', L.quest], ['other', '其他调整', L.other]];
     $('plMix').innerHTML = `<div class="pl-mix-label">自 ${since.slice(5).replace('-', '/')} 起 Uber 账本 ${money(L.total, 0)} · ${L.records} 单</div>
@@ -91,27 +92,43 @@
         } else {
           const pct = Math.min(100, r.minutes / Math.max(r.maxMinutes, r.minutes) * 100);
           const lim = Math.min(100, r.maxMinutes / Math.max(r.maxMinutes, r.minutes) * 100);
-          v.className = 'pl-verdict ' + (r.take ? 'take' : 'skip');
+          // A miss by a couple of minutes reads differently from a bad order: tint it amber.
+          const close = !r.take && -r.slack <= 2;
+          const fareNeeded = r.fare + Math.max(0, r.target * r.minutes / 60 - r.value);
+          v.className = 'pl-verdict ' + (r.take ? 'take' : close ? 'skip close' : 'skip');
           v.innerHTML = `<div class="pl-v-main"><b>${r.take ? '接' : '不接'}</b><span>${money(r.rate, 0)}/h · ${r.take ? `还有 ${Math.floor(r.slack)} 分钟余量` : `超出 ${Math.ceil(-r.slack)} 分钟`}</span></div>
-            <div class="pl-v-bar" role="img" aria-label="这单 ${r.minutes} 分钟，上限 ${limit} 分钟"><i style="width:${pct}%"></i><em style="left:${lim}%"><span>上限 ${limit}′</span></em></div>`;
+            ${r.take ? '' : `<div class="pl-v-side">${close ? '差一点：' : ''}报价 ≥ <b>${money(fareNeeded)}</b> 才接<br>或整轮 ≤ ${limit} 分钟</div>`}
+            <div class="pl-v-bar" role="img" aria-label="这单 ${r.minutes} 分钟，上限 ${limit} 分钟"><i style="width:${pct}%"><span>这单 ${Number(r.minutes)}′</span></i><em style="left:${lim}%"><span>上限 ${limit}′</span></em></div>`;
         }
       } catch (err) {
         v.className = 'pl-verdict idle';
         v.innerHTML = `<div class="pl-v-main"><b>？</b><span>${esc(err.message)}</span></div>`;
       }
     }
-    sheet(target, fareRaw === '' ? null : Number(fareRaw));
+    sheet(target, fareRaw === '' ? null : Number(fareRaw), Number(minRaw || $('plMin').placeholder) || null, minRaw === '');
   }
 
-  function sheet(target, current) {
+  // Tapping a cell fills the fare. Cells that cover the trip length in the minutes box are lit,
+  // and the head names the exact break-even fare for that length.
+  function sheet(target, current, minutes, typical) {
     const fares = [5, 6, 7, 8, 9, 10, 12, 14, 16, 20];
     const near = current == null ? null : fares.reduce((a, f) => Math.abs(f - current) < Math.abs(a - current) ? f : a, fares[0]);
     $('plSheet').innerHTML = fares.map(f => {
       const m = Math.floor(M.acceptLine({ fare: f, quest: state.quest, target }).maxMinutes);
-      return `<div class="${f === near ? 'on' : ''}"><span>${money(f, 0)}</span><b>${m}′</b></div>`;
+      const fit = minutes ? (m >= minutes ? ' fits' : ' short') : '';
+      return `<button type="button" class="${f === near ? 'on' : ''}${fit}" data-fare="${f}" aria-label="运费 ${money(f, 0)}，整轮最多 ${m} 分钟${fit === ' fits' ? '，够跑这单' : ''}"><span>${money(f, 0)}</span><b>${m}′</b></button>`;
     }).join('');
-    $('plSheetNote').textContent = `运费 → 整轮最多分钟 · Quest ${money(state.quest, 1)} · 目标 ${money(target, target % 1 ? 2 : 0)}/h`;
+    const need = minutes ? Math.max(0, target * minutes / 60 - state.quest) : null;
+    $('plSheetNote').innerHTML = need == null
+      ? `运费 → 整轮最多分钟 · Quest ${money(state.quest, 1)} · 目标 ${money(target, target % 1 ? 2 : 0)}/h`
+      : `${typical ? '按平均整轮' : '整轮'} ${minutes}′ → 运费 ≥ <b>${money(need)}</b> 就接 · Quest ${money(state.quest, 1)} · 目标 ${money(target, target % 1 ? 2 : 0)}/h`;
   }
+  $('plSheet').addEventListener('click', e => {
+    const b = e.target.closest('button[data-fare]');
+    if (!b) return;
+    $('plFare').value = b.dataset.fare;
+    render();
+  });
   render();
 
   // ---------- 02 when ----------
@@ -120,20 +137,57 @@
   if (curve) {
     const all = [...curve.weekday, ...curve.weekend].filter(r => r.enough);
     const lo = Math.min(...all.map(r => r.rate)), hi = Math.max(...all.map(r => r.rate));
+    const windows = bestWindows(curve.weekday, '工作日').concat(bestWindows(curve.weekend, '周末'));
+    const now = sydneyNow();
+    // Hover titles never show on phones, so each cell is a tap target with a readout line.
     const row = (label, list) => {
       const by = new Map(list.map(r => [r.hour, r]));
+      const win = windows.find(w => w.label === label);
+      const isNowRow = now && (label === '周末') === now.weekend;
       return `<div class="pl-heat-row"><span class="pl-heat-label">${label}</span>${HOURS.map(h => {
         const r = by.get(h);
-        if (!r) return `<i class="none" title="${h} 点 无记录"></i>`;
+        const mark = (win && h >= win.from && h < win.to ? ' best' : '') + (isNowRow && h === now.hour ? ' now' : '');
+        const info = r ? `${label} ${h}:00–${h + 1}:00 · ${r.enough ? `约 ${r.rate.toFixed(1)} 次取餐/记录小时` : '样本不足'} · ${r.hours.toFixed(1)} h 记录` : `${label} ${h}:00–${h + 1}:00 · 无记录`;
+        if (!r) return `<i class="none${mark}" tabindex="-1" role="button" data-info="${esc(info)}" aria-label="${esc(info)}"></i>`;
         const t = hi > lo ? (r.rate - lo) / (hi - lo) : .5;
-        return `<i class="${r.enough ? '' : 'thin'}" style="--t:${r.enough ? t.toFixed(3) : 0}" title="${label} ${h}:00 · 约 ${r.rate.toFixed(1)} 次取餐/记录小时 · ${r.hours.toFixed(1)} h 样本"></i>`;
+        return `<i class="${r.enough ? '' : 'thin'}${mark}" style="--t:${r.enough ? t.toFixed(3) : 0}" tabindex="-1" role="button" data-info="${esc(info)}" aria-label="${esc(info)}"></i>`;
       }).join('')}</div>`;
     };
     $('plHeat').innerHTML = row('工作日', curve.weekday) + row('周末', curve.weekend) +
-      `<div class="pl-heat-row pl-heat-axis"><span class="pl-heat-label"></span>${HOURS.map(h => `<em>${h % 3 === 0 ? h : ''}</em>`).join('')}</div>`;
-    const windows = bestWindows(curve.weekday, '工作日').concat(bestWindows(curve.weekend, '周末'));
+      `<div class="pl-heat-row pl-heat-axis"><span class="pl-heat-label"></span>${HOURS.map(h => `<em>${h % 3 === 0 ? h : ''}</em>`).join('')}</div>` +
+      `<p class="pl-heat-read" aria-live="polite">点格子看该小时的取餐频率${now && now.hour >= 9 && now.hour <= 23 ? ' · 白点是现在' : ''}</p>`;
+    const read = $('plHeat').querySelector('.pl-heat-read');
+    // One tab stop for the whole grid (roving tabindex): Tab enters at "now" (or the first best hour),
+    // arrow keys walk the hours and read each one out, Tab leaves. Before, all 30 cells were tab stops.
+    const rows = [...$('plHeat').querySelectorAll('.pl-heat-row:not(.pl-heat-axis)')].map(r => [...r.querySelectorAll('i[data-info]')]);
+    const start = $('plHeat').querySelector('i.now') || $('plHeat').querySelector('i.best') || rows[0][0];
+    if (start) start.tabIndex = 0;
+    const pick = cell => {
+      $('plHeat').querySelectorAll('i.on').forEach(c => c.classList.remove('on'));
+      $('plHeat').querySelectorAll('i[tabindex="0"]').forEach(c => { c.tabIndex = -1; });
+      cell.classList.add('on'); cell.tabIndex = 0; read.textContent = cell.dataset.info;
+    };
+    $('plHeat').addEventListener('click', e => { const c = e.target.closest('i[data-info]'); if (c) pick(c); });
+    $('plHeat').addEventListener('keydown', e => {
+      const c = e.target.closest('i[data-info]');
+      if (!c) return;
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(c); return; }
+      const ri = rows.findIndex(r => r.includes(c)), ci = rows[ri].indexOf(c);
+      const move = { ArrowLeft: [ri, ci - 1], ArrowRight: [ri, ci + 1], ArrowUp: [ri - 1, ci], ArrowDown: [ri + 1, ci], Home: [ri, 0], End: [ri, rows[ri].length - 1] }[e.key];
+      if (!move) return;
+      const next = rows[move[0]] && rows[move[0]][move[1]];
+      e.preventDefault();
+      if (next) { pick(next); next.focus(); }
+    });
     $('plTimeAnswer').innerHTML = windows.map(w => `<b>${w.label} ${w.from}–${w.to} 点</b>`).join('，') +
       '。热的格子取餐更密，单与单之间等得少。';
+  }
+  function sydneyNow() {
+    try {
+      const parts = Object.fromEntries(new Intl.DateTimeFormat('en-AU', { timeZone: 'Australia/Sydney', hour: 'numeric', hour12: false, weekday: 'short' })
+        .formatToParts(new Date()).map(p => [p.type, p.value]));
+      return { hour: Number(parts.hour) % 24, weekend: parts.weekday === 'Sat' || parts.weekday === 'Sun' };
+    } catch (e) { return null; }
   }
   // Best two-hour run per day type, among hours with enough record time.
   function bestWindows(list, label) {
@@ -147,15 +201,23 @@
   }
 
   // ---------- 03 where ----------
-  const rows = M.slots(D, { period: 'all' }, { value: 1 }).filter(r => !r.thin).slice(0, 6);
+  const settled = M.slots(D, { period: 'all' }, { value: 1 }).filter(r => !r.thin);
+  const rows = settled.slice(0, 6);
   if (rows.length) {
     const top = rows[0].rate;
-    $('plRank').innerHTML = rows.map((r, i) => `<li><span class="pl-rank-n">${i + 1}</span>
-      <div class="pl-rank-main"><b>${esc(r.label)}</b><small>${r.weekend ? '周末' : '工作日'} · ${r.daypartLabel} ${r.window}</small>
+    // Tie the ranking to the clock: which slot is live now, or which part of the day comes next.
+    const nowAt = sydneyNow();
+    const part = nowAt && (M.daypartOf(nowAt.hour) || M.DAYPARTS.find(d => d.from > nowAt.hour));
+    const live = !!(nowAt && M.daypartOf(nowAt.hour));
+    const isNow = r => part && r.weekend === nowAt.weekend && r.daypart === part.key;
+    const best = part && settled.find(isNow);
+    $('plRank').innerHTML = rows.map((r, i) => `<li class="${isNow(r) ? 'now' : ''}"><span class="pl-rank-n">${i + 1}</span>
+      <div class="pl-rank-main"><b>${esc(r.label)}</b><small>${r.weekend ? '周末' : '工作日'} · ${r.daypartLabel} ${r.window}</small>${isNow(r) ? `<em class="pl-now-tag">${live ? '现在' : '下一段'}</em>` : ''}
       <div class="pl-rank-bar"><i style="width:${(r.rate / top * 100).toFixed(1)}%"></i></div></div>
       <span class="pl-rank-v">${r.rate.toFixed(1)}<small>次/h</small></span></li>`).join('');
     const names = [...new Set(rows.map(r => r.label))].slice(0, 3);
-    $('plZoneAnswer').innerHTML = `先去 <b>${names.map(esc).join(' · ')}</b>。送完落在别处，就往最近的这几个区骑回来等。`;
+    $('plZoneAnswer').innerHTML = `先去 <b>${names.map(esc).join(' · ')}</b>。送完落在别处，就往最近的这几个区骑回来等。` +
+      (best ? `<span class="pl-now-line"><em class="pl-now-tag">${live ? '现在' : '下一段'}</em>${nowAt.weekend ? '周末' : '工作日'}${best.daypartLabel} ${best.window} 点，最密的是 <b>${esc(best.label)}</b> · ${best.rate.toFixed(1)} 次/h</span>` : '');
   }
 
   // ---------- basis ----------

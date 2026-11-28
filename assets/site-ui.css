@@ -120,6 +120,8 @@ footer>div:last-child { flex-wrap:wrap; }
   .section-title { font-size:23px; }.section-sub { font-size:12px; margin-bottom:18px; }
   .section-index { margin:12px 14px 0; gap:3px; }.section-index-label { padding:0 5px; }
   .section-index a { min-height:40px; padding:10px; font-size:11px; }
+  .section-index { scrollbar-width:none; -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent); mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent); padding-right:24px; }
+  .section-index::-webkit-scrollbar { display:none; }
   .chart-card { padding:18px 14px; border-radius:10px; }
   .chart-title { font-size:14px; }.chart-sub { font-size:11px; }
   .analysis-grid { gap:16px; }.chart-expand { min-height:40px; font-size:12px; }
@@ -147,3 +149,35 @@ footer>div:last-child { flex-wrap:wrap; }
 .chart-reading { min-width: 0; }
 .chart-record-controls { display: flex; gap: 6px; flex-shrink: 0; }
 .chart-record-controls button { min-width: 40px; min-height: 40px; padding: 5px; color: #cde5dd; border: 1px solid #54726a; border-radius: 6px; background: #203631; cursor: pointer; font-size: 18px; }
+/* One disclosure cue for every <summary>: flex summaries drop the native ▶, so draw a chevron that always shows and turns when open. */
+summary { list-style:none; }
+summary::-webkit-details-marker { display:none; }
+summary::before { content:""; flex:none; display:inline-block; width:5px; height:5px; margin:0 10px 0 1px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; opacity:.65; transform:translateY(-1px) rotate(-45deg); transition:transform .15s ease; vertical-align:middle; }
+details[open]>summary::before { transform:translateY(-3px) rotate(45deg); }
+@media (prefers-reduced-motion:reduce) { summary::before { transition:none; } }
+/* Delivery view switcher in the 配送 hero: links the three delivery pages the way 三件事/作战台 already do. */
+.dlv-views { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+.dlv-views a { display:flex; flex-direction:column; justify-content:center; min-height:48px; padding:7px 16px; border:1px solid #3a4a4c; border-radius:10px; background:#152023; color:#dfe6e0; font-size:14px; text-decoration:none; line-height:1.3; transition:border-color .15s, background .15s; }
+.dlv-views a small { color:#8f9c9a; font-size:10px; letter-spacing:.02em; }
+.dlv-views a:hover { border-color:#6e8b80; background:#1b2a2d; }
+.dlv-views a.active { border-color:#a98b55; background:linear-gradient(135deg,#2b261b,#1a231f); color:#f1d4a7; cursor:default; }
+.dlv-views a.active small { color:#c9ad7c; }
+@media (max-width:520px) { .dlv-views { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; } .dlv-views a { padding:7px 10px; font-size:13px; } }
+.analysis-guide-result.is-structured { display:grid; gap:8px; }
+.analysis-guide-result .guide-pick { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px; }
+.analysis-guide-result .guide-pick small { color:#e4c88e; font-size:12px; }
+.analysis-guide-result .guide-pick b { color:#f4efe2; font-size:17px; font-weight:600; }
+.analysis-guide-result .guide-rate { display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 8px; }
+.analysis-guide-result .guide-rate b { color:#ecd09b; font:600 26px/1.1 var(--mono); }
+.analysis-guide-result .guide-rate small { color:#d8d2c0; font-size:12px; }
+.analysis-guide-result .guide-rate i { color:#8fa29b; font-size:11px; font-style:normal; }
+.analysis-guide-result .guide-note { color:#a9b8b1; font-size:12px; line-height:1.7; }
+.analysis-guide-result .guide-steps { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; counter-reset:gstep; }
+.analysis-guide-result .guide-steps li { counter-increment:gstep; min-width:0; }
+.analysis-guide-result .guide-steps a { display:grid; grid-template-columns:auto 1fr; column-gap:8px; align-items:center; height:100%; padding:9px 10px; border:1px solid #3d4b4c; border-radius:8px; background:#ffffff06; color:inherit; text-decoration:none; transition:border-color .15s, background .15s; }
+.analysis-guide-result .guide-steps a::before { content:counter(gstep); grid-row:span 2; width:22px; height:22px; border-radius:50%; display:grid; place-items:center; background:#ecd09b1f; color:#ecd09b; font:600 11px var(--mono); }
+.analysis-guide-result .guide-steps b { color:#f4efe2; font-size:14px; font-weight:600; line-height:1.3; }
+.analysis-guide-result .guide-steps small { color:#93a69f; font-size:11px; line-height:1.4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.analysis-guide-result .guide-steps a:hover { border-color:#ecd09b80; background:#ecd09b0d; }
+.analysis-guide-result .guide-steps a:focus-visible { outline:2px solid #ecd09b; outline-offset:2px; }
+@media(max-width:620px) { .analysis-guide-result .guide-steps { grid-template-columns:repeat(2,minmax(0,1fr)); } }

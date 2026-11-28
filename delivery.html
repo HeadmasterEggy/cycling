@@ -19,9 +19,9 @@
   integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
   crossorigin=""/>
 <link rel="stylesheet" href="assets/styles.css?v=d1652980118b">
-<link rel="stylesheet" href="assets/delivery-planner.css?v=c1b8e2b28a78">
-<link rel="stylesheet" href="assets/delivery-charts.css?v=aa5b91abf5d1">
-<link rel="stylesheet" href="assets/site-ui.css?v=c418bbcc1df0">
+<link rel="stylesheet" href="assets/delivery-planner.css?v=d8ac60758d26">
+<link rel="stylesheet" href="assets/delivery-charts.css?v=3b6cdaef605a">
+<link rel="stylesheet" href="assets/site-ui.css?v=95672be36cc0">
 </head>
 <body data-page="delivery">
 
@@ -30,7 +30,7 @@
 <section class="hero">
   <div class="hero-meta"><span id="heroMetaText">配送 · Delivery</span><span class="hero-fresh" id="heroFresh"></span></div>
   <h1 id="heroH1">怎么多赚一点<br><em>时段 · 区域 · 接单</em></h1>
-  <p class="hero-sub" id="heroSub">六张图回答六个问题：一趟赚多少、什么时候去、去哪个区、这单接不接、送完去哪等、哪里单最多。</p>
+  <p class="hero-sub" id="heroSub">六张图回答六个问题：一趟赚多少、什么时候去、去哪个区、这单接不接、送完去哪等、哪里单最多。<span class="dlv-views" role="navigation" aria-label="配送视图"><a href="plan.html">三件事<small>一屏决定</small></a><a href="dashboard.html">作战台<small>地图与算单</small></a><a class="active" aria-current="page" href="delivery.html">配送分析<small>证据与细节</small></a></span></p>
 </section>
 
 
@@ -57,7 +57,10 @@
   <div class="section-sub">比较各区的取餐频率、通行效率和餐厅密度，找出最值得试跑的区域。可切换全部历史或最近 28 天。</div>
   <div class="chart-card">
     <div id="dlvZonePlanner" style="margin-bottom:28px"></div>
-    <svg id="zoneQuadrant" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="dlv-quad-scroll" tabindex="0" aria-label="区域四象限图，可横向滚动">
+      <svg id="zoneQuadrant" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+    <p class="dlv-quad-hint" aria-hidden="true">左右滑动看完整四象限 · 或点「放大图表」</p>
     <div class="eq-legend" id="zoneQuadLegend"></div>
     <div class="dlv-table-foot" style="padding: 10px 2px 0;">横轴跟随区域筛选，纵轴为全期通行效率；竖线为纵轴 90% 区间，虚线为当前候选区中位数。</div>
   </div>
@@ -193,10 +196,10 @@
 <script src="assets/recovery.js?v=2b35cf9c8f19"></script>
 <script src="assets/delivery-data.js?v=580d0942fa00"></script>
 <script src="assets/delivery-model.js?v=decd78e99a45"></script>
-<script src="assets/delivery-planner.js?v=fa76a3108454"></script>
+<script src="assets/delivery-planner.js?v=c6a4e73ccaa1"></script>
 <script src="assets/delivery.js?v=4527225b19b9"></script>
 <script src="assets/app.js?v=40b227072a13"></script>
 <script src="assets/site-ui.js?v=01dd1afd6670"></script>
-<script src="assets/analysis-guide.js?v=eac52c0f5848"></script>
+<script src="assets/analysis-guide.js?v=42ec2b161816"></script>
 </body>
 </html>

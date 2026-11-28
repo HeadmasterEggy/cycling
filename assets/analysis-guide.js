@@ -359,7 +359,10 @@
   }
 
   function resultForPage() {
-    if (page === 'dashboard') return '先看历史记录里值得试跑的时段，再选区域；用真实报价检查单笔，送完后记录实际收入与时间来校准。时段排序依据 GPS 推断取餐频率，不是 Uber 在线时薪。';
+    if (page === 'dashboard') return {
+      steps: [['#slots', '挑时段', '历史里值得试跑的'], ['#zones', '选区域', '再定在哪等'], ['#offer', '算一单', '用真实报价检查'], ['#map', '记落点', '送完记收入和时间']],
+      note: '时段排序依据 GPS 推断取餐频率，不是 Uber 在线时薪；送完后的实际记录用来校准。',
+    };
     if (page === 'delivery') {
       const data = window.DELIVERY_DATA;
       const model = window.DeliveryModel;
@@ -369,7 +372,12 @@
       if (!candidate) return '现有记录不足以生成时段与区域候选。';
       const v = data.validation;
       const matched = v ? `Uber 对照找到 ${number(v.recall_drop)}% 送达、${number(v.recall_pickup)}% 取餐；其余 GPS 停留无法区分平台。` : '目前没有 Uber 账单可做覆盖核验。';
-      return `先试跑：${candidate.label} · ${candidate.weekend ? '周末' : '工作日'} ${candidate.daypartLabel}。历史 GPS 推断 ${number(candidate.rate,2)} 次取餐 / 记录小时（${number(candidate.pickups)} 次 / ${number(candidate.hours,1)} 小时 / ${number(candidate.shifts)} 班）。这是 Uber、DoorDash、熊猫混合活动的候选，不是单平台订单率或收入。${matched}`;
+      return {
+        head: `${candidate.label} · ${candidate.weekend ? '周末' : '工作日'} ${candidate.daypartLabel}`,
+        rate: number(candidate.rate,2),
+        sample: `${number(candidate.pickups)} 次 / ${number(candidate.hours,1)} 小时 / ${number(candidate.shifts)} 班`,
+        note: `这是 Uber、DoorDash、熊猫混合活动的候选，不是单平台订单率或收入。${matched}`,
+      };
     }
     return filtered(() => {
       const H = window.HEALTH_DATA || {};
@@ -511,12 +519,16 @@
       const filterNavigation = () => {
         const nav = $('.section-index');
         if (!nav) return;
-        const primary = new Set(['什么时候去哪试跑', '区域排行', '这一单该不该接', '平台归属与核验']);
+        // Keep the decision sections in the strip; sections folded into evidence get one 研究依据 link.
+        // Match by prefix so a renamed English subtitle doesn't drop a link (the strip once shrank to one).
+        const primary = ['什么时候去', '哪个区值得跑', '区域排行', '这一单该不该接', '送完去哪等', '平台归属与核验'];
         nav.querySelectorAll('a[href^="#"]').forEach(link => {
-          if (!primary.has(link.textContent.trim())) link.remove();
+          if (link.dataset.deliveryEvidenceLink) return;
+          const text = link.textContent.trim();
+          if (!primary.some(p => text.startsWith(p))) link.remove();
         });
         const evidenceSection = [...main.querySelectorAll(':scope > section.analysis-section')]
-          .find(section => section.querySelector('.section-title')?.textContent.trim().startsWith('接单区还是送达区'));
+          .find(section => /^(接单区还是送达区|热点地图)/.test(section.querySelector('.section-title')?.textContent.trim() || ''));
         if (evidenceSection && !nav.querySelector('[data-delivery-evidence-link]')) {
           const link = document.createElement('a');
           link.href = `#${evidenceSection.id}`;
@@ -565,7 +577,29 @@
     const guide = makeGuide();
     if (!guide) return;
     const refresh = () => {
-      guide.result.textContent = resultForPage();
+      const res = resultForPage();
+      if (res && res.steps) {
+        const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+        const list = el('ol', 'guide-steps');
+        res.steps.forEach(([href, label, hint]) => {
+          const a = el('a'); a.href = href;
+          a.append(el('b', null, label), el('small', null, hint));
+          const li = el('li'); li.append(a); list.append(li);
+        });
+        guide.result.replaceChildren(list, el('span', 'guide-note', res.note));
+        guide.result.classList.add('is-structured');
+      } else if (res && typeof res === 'object') {
+        const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+        const pick = el('span', 'guide-pick');
+        pick.append(el('small', null, '先试跑'), el('b', null, res.head));
+        const rate = el('span', 'guide-rate');
+        rate.append(el('b', null, res.rate), el('small', null, '次取餐 / 记录小时'), el('i', null, res.sample));
+        guide.result.replaceChildren(pick, rate, el('span', 'guide-note', res.note));
+        guide.result.classList.add('is-structured');
+      } else {
+        guide.result.textContent = res;
+        guide.result.classList.remove('is-structured');
+      }
       const findings = filtered(() => guide.readings.map(({title, note}) => ({
         value: sectionFinding(title), note,
       })));

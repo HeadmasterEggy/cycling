@@ -388,7 +388,9 @@ PAGES = [
         'title': '配送 · Delivery',
         'hero': make_hero(
             custom_h1='怎么多赚一点<br><em>时段 · 区域 · 接单</em>',
-            custom_sub='六张图回答六个问题：一趟赚多少、什么时候去、去哪个区、这单接不接、送完去哪等、哪里单最多。',
+            custom_sub='六张图回答六个问题：一趟赚多少、什么时候去、去哪个区、这单接不接、送完去哪等、哪里单最多。'
+                # Same three views the 三件事 and 作战台 headers link between, so every delivery page can reach the other two.
+                '<span class="dlv-views" role="navigation" aria-label="配送视图"><a href="plan.html">三件事<small>一屏决定</small></a><a href="dashboard.html">作战台<small>地图与算单</small></a><a class="active" aria-current="page" href="delivery.html">配送分析<small>证据与细节</small></a></span>',
             custom_meta='配送 · Delivery'),
         'intro': '',
         # Decision flow: overview → timing → zone → offers → next pickup → map
