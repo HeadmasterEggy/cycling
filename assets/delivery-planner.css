@@ -168,6 +168,15 @@
   .plan-ledger tr > td:nth-child(4), .plan-ledger tr > td:nth-child(5) { padding-top: 8px; border-top: 1px solid #ffffff0d; }
   /* Unchecked weeks have no tips; skip the empty last row. */
   .plan-ledger tr:not(.is-checked) td:nth-child(6) { display: none; }
+  /* Compact card: date, source and total share the first row; parts read as one line. */
+  .plan-ledger tr { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-areas: "week src total" "fare quest other" "tips tips tips"; gap: 6px 8px; padding: 10px 12px; margin-bottom: 6px; }
+  .plan-ledger td:nth-child(2) { align-self: start; padding-top: 1px; }
+  .plan-ledger td:nth-child(7) { font-size: 17px; }
+  .plan-ledger td:nth-child(7)::before { margin-bottom: 1px; }
+  .plan-ledger td.ledger-total small { margin-top: 1px; }
+  .plan-ledger td:nth-child(n+3):nth-child(-n+6) { font-size: 12px; }
+  .plan-ledger td:nth-child(n+3):nth-child(-n+6)::before { display: inline; margin: 0 5px 0 0; }
+  .plan-ledger tr > td:nth-child(3), .plan-ledger tr > td:nth-child(4), .plan-ledger tr > td:nth-child(5) { padding-top: 7px; }
 }
 .plan-verified { padding: 16px; border: 1px solid #345754; border-radius: 8px; margin-top: 16px; color: #b9d1c9; font-size: 12px; }
 .plan-verified > span { color: #8fc7b5; font-size: 11px; }
@@ -453,3 +462,7 @@ body[data-page="delivery"] .main > .analysis-section:first-child { margin-top: 0
 .slot-bar em { position:absolute; top:-2px; bottom:-2px; width:2px; background:#f1d4a7; }
 .slot-value { margin:12px 0; }
 .slot-value .plan-offer-actions { margin:0; align-self:end; }
+@media(max-width: 380px) {
+  .plan-ledger .ledger-mix { min-width: 0; }
+  .plan-ledger td:nth-child(n+3):nth-child(-n+6) { font-size: 11.5px; }
+}
